@@ -1,12 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import type { Conteudo } from "@/types/database";
 import CardFilme from "./CardFilme";
-
-const LARGURA_CARD = 170;
-const GAP = 12;
 
 export default function Carrossel({
   titulo,
@@ -17,29 +14,19 @@ export default function Carrossel({
   itens: Conteudo[];
   verTudoHref?: string;
 }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [pagina, setPagina] = useState(0);
-  const [porPagina, setPorPagina] = useState(6);
-
-  useEffect(() => {
-    function medir() {
-      const largura = containerRef.current?.clientWidth ?? 0;
-      const qtd = Math.max(
-        1,
-        Math.floor((largura + GAP) / (LARGURA_CARD + GAP))
-      );
-      setPorPagina(qtd);
-    }
-    medir();
-    window.addEventListener("resize", medir);
-    return () => window.removeEventListener("resize", medir);
-  }, []);
+  const trilhoRef = useRef<HTMLDivElement>(null);
 
   if (itens.length === 0) return null;
 
-  const totalPaginas = Math.max(1, Math.ceil(itens.length / porPagina));
-  const paginaAtual = Math.min(pagina, totalPaginas - 1);
-  const deslocamento = paginaAtual * porPagina * (LARGURA_CARD + GAP);
+  function rolar(direcao: "esquerda" | "direita") {
+    const trilho = trilhoRef.current;
+    if (!trilho) return;
+    const distancia = trilho.clientWidth * 0.85;
+    trilho.scrollBy({
+      left: direcao === "esquerda" ? -distancia : distancia,
+      behavior: "smooth",
+    });
+  }
 
   return (
     <section className="relative py-5">
@@ -55,44 +42,34 @@ export default function Carrossel({
         )}
       </div>
 
-      <div className="group/carrossel relative px-4 sm:px-8">
-        <div ref={containerRef} className="overflow-hidden">
-          <div
-            className="flex gap-3 transition-transform duration-500 ease-out"
-            style={{ transform: `translateX(-${deslocamento}px)` }}
-          >
-            {itens.map((item) => (
-              <CardFilme
-                key={item.cd_conteudo}
-                conteudo={item}
-                variant="carrossel"
-              />
-            ))}
-          </div>
+      <div className="group/carrossel relative">
+        <div
+          ref={trilhoRef}
+          className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-4 pb-2 [scrollbar-width:none] sm:px-8 [&::-webkit-scrollbar]:hidden"
+        >
+          {itens.map((item) => (
+            <div key={item.cd_conteudo} className="snap-start">
+              <CardFilme conteudo={item} variant="carrossel" />
+            </div>
+          ))}
         </div>
 
-        {paginaAtual > 0 && (
-          <button
-            type="button"
-            aria-label="Anterior"
-            onClick={() => setPagina((p) => Math.max(0, p - 1))}
-            className="absolute left-4 top-0 z-20 hidden h-full w-10 items-center justify-center bg-gradient-to-r from-background to-transparent text-2xl text-foreground opacity-0 transition-opacity group-hover/carrossel:opacity-100 sm:left-8 sm:flex"
-          >
-            ‹
-          </button>
-        )}
-        {paginaAtual < totalPaginas - 1 && (
-          <button
-            type="button"
-            aria-label="Próximo"
-            onClick={() =>
-              setPagina((p) => Math.min(totalPaginas - 1, p + 1))
-            }
-            className="absolute right-4 top-0 z-20 hidden h-full w-10 items-center justify-center bg-gradient-to-l from-background to-transparent text-2xl text-foreground opacity-0 transition-opacity group-hover/carrossel:opacity-100 sm:right-8 sm:flex"
-          >
-            ›
-          </button>
-        )}
+        <button
+          type="button"
+          aria-label="Anterior"
+          onClick={() => rolar("esquerda")}
+          className="absolute left-0 top-0 z-20 hidden h-full w-10 items-center justify-center bg-gradient-to-r from-background to-transparent text-2xl text-foreground opacity-0 transition-opacity group-hover/carrossel:opacity-100 sm:flex"
+        >
+          ‹
+        </button>
+        <button
+          type="button"
+          aria-label="Próximo"
+          onClick={() => rolar("direita")}
+          className="absolute right-0 top-0 z-20 hidden h-full w-10 items-center justify-center bg-gradient-to-l from-background to-transparent text-2xl text-foreground opacity-0 transition-opacity group-hover/carrossel:opacity-100 sm:flex"
+        >
+          ›
+        </button>
       </div>
     </section>
   );

@@ -1,13 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Conteudo } from "@/types/database";
 import { formatarPreco, calcularRating } from "@/lib/catalogo";
 import Estrelas from "./Estrelas";
 
+const INTERVALO_MS = 7000;
+
 export default function HeroBanner({ destaques }: { destaques: Conteudo[] }) {
   const [index, setIndex] = useState(0);
+  const [pausado, setPausado] = useState(false);
+
+  useEffect(() => {
+    if (destaques.length <= 1 || pausado) return;
+    const id = setInterval(() => {
+      setIndex((i) => (i + 1) % destaques.length);
+    }, INTERVALO_MS);
+    return () => clearInterval(id);
+  }, [destaques.length, pausado, index]);
 
   if (destaques.length === 0) return null;
 
@@ -29,7 +40,11 @@ export default function HeroBanner({ destaques }: { destaques: Conteudo[] }) {
   }
 
   return (
-    <section className="relative flex h-[85vh] min-h-[560px] w-full items-end overflow-hidden">
+    <section
+      className="relative flex h-[85vh] min-h-[560px] w-full items-end overflow-hidden"
+      onMouseEnter={() => setPausado(true)}
+      onMouseLeave={() => setPausado(false)}
+    >
       <div className="absolute inset-0">
         {atual.ds_url_poster ? (
           // eslint-disable-next-line @next/next/no-img-element

@@ -38,8 +38,10 @@ export default function Navbar({
   const [buscaAberta, setBuscaAberta] = useState(false);
   const [buscaLocal, setBuscaLocal] = useState("");
   const [menuAberto, setMenuAberto] = useState(false);
+  const [menuMobileAberto, setMenuMobileAberto] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const menuMobileRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function aoRolar() {
@@ -64,6 +66,12 @@ export default function Navbar({
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuAberto(false);
       }
+      if (
+        menuMobileRef.current &&
+        !menuMobileRef.current.contains(e.target as Node)
+      ) {
+        setMenuMobileAberto(false);
+      }
     }
     document.addEventListener("mousedown", aoClicarFora);
     return () => document.removeEventListener("mousedown", aoClicarFora);
@@ -73,12 +81,30 @@ export default function Navbar({
     const supabase = createSupabaseBrowserClient();
     await supabase.auth.signOut();
     setMenuAberto(false);
+    setMenuMobileAberto(false);
     window.location.href = "/";
   }
 
   const inicial = (user?.user_metadata?.nome ?? user?.email ?? "?")
     .charAt(0)
     .toUpperCase();
+
+  const links = user ? LINKS_LOGADO : LINKS_DESLOGADO;
+
+  function aoDigitarBusca(valor: string) {
+    if (onBuscaChange) {
+      onBuscaChange(valor);
+    } else {
+      setBuscaLocal(valor);
+    }
+  }
+
+  function aoPressionarBusca(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!onBuscaChange && e.key === "Enter" && buscaLocal.trim()) {
+      router.push(`/catalogo?busca=${encodeURIComponent(buscaLocal.trim())}`);
+      setMenuMobileAberto(false);
+    }
+  }
 
   return (
     <header
@@ -97,7 +123,7 @@ export default function Navbar({
         </Link>
 
         <nav className="hidden items-center gap-6 md:flex">
-          {(user ? LINKS_LOGADO : LINKS_DESLOGADO).map((link) => (
+          {links.map((link) => (
             <Link
               key={link.href}
               href={link.href}
@@ -108,24 +134,18 @@ export default function Navbar({
           ))}
         </nav>
 
-        <div className="ml-auto flex items-center gap-3">
-          <div className="hidden items-center sm:flex">
+        <div className="ml-auto hidden items-center gap-3 md:flex">
+          <div className="flex items-center">
             <input
               type="search"
               value={onBuscaChange ? busca : buscaLocal}
-              onChange={(e) =>
-                onBuscaChange
-                  ? onBuscaChange(e.target.value)
-                  : setBuscaLocal(e.target.value)
-              }
-              onKeyDown={(e) => {
-                if (!onBuscaChange && e.key === "Enter" && buscaLocal.trim()) {
-                  router.push(`/catalogo?busca=${encodeURIComponent(buscaLocal.trim())}`);
-                }
-              }}
+              onChange={(e) => aoDigitarBusca(e.target.value)}
+              onKeyDown={aoPressionarBusca}
               placeholder="Buscar título..."
               className={`rounded-full border border-secondary/30 bg-black/30 px-3.5 py-1.5 text-sm text-foreground outline-none transition-all duration-300 placeholder:text-secondary/50 focus:border-primary ${
-                buscaAberta ? "w-48 opacity-100" : "w-0 border-transparent px-0 opacity-0"
+                buscaAberta
+                  ? "w-48 opacity-100"
+                  : "w-0 border-transparent px-0 opacity-0"
               }`}
             />
             <button
@@ -182,7 +202,97 @@ export default function Navbar({
             </div>
           )}
         </div>
+
+        {user && (
+          <Link
+            href="/conta"
+            className="ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-[#6d28d9] text-sm font-bold text-white shadow-[0_0_0_2px_rgba(139,92,246,0.4)] md:hidden"
+          >
+            {inicial}
+          </Link>
+        )}
+
+        <button
+          type="button"
+          aria-label={menuMobileAberto ? "Fechar menu" : "Abrir menu"}
+          onClick={() => setMenuMobileAberto((v) => !v)}
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xl text-foreground md:hidden ${
+            user ? "" : "ml-auto"
+          }`}
+        >
+          {menuMobileAberto ? "✕" : "☰"}
+        </button>
       </div>
+
+      {menuMobileAberto && (
+        <div
+          ref={menuMobileRef}
+          className="border-t border-secondary/10 px-4 pb-5 pt-3 sm:px-8 md:hidden"
+        >
+          <input
+            type="search"
+            value={onBuscaChange ? busca : buscaLocal}
+            onChange={(e) => aoDigitarBusca(e.target.value)}
+            onKeyDown={aoPressionarBusca}
+            placeholder="Buscar título..."
+            className="w-full rounded-full border border-secondary/30 bg-black/30 px-4 py-2.5 text-sm text-foreground outline-none placeholder:text-secondary/50 focus:border-primary"
+          />
+
+          <nav className="mt-4 flex flex-col gap-1">
+            {links.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setMenuMobileAberto(false)}
+                className="rounded-lg px-2 py-2.5 text-sm font-semibold text-secondary transition-colors hover:bg-primary/10 hover:text-foreground"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="mt-3 border-t border-secondary/10 pt-3">
+            {user ? (
+              <div className="flex flex-col gap-1">
+                <p className="truncate px-2 py-1 text-xs text-secondary">
+                  {user.email}
+                </p>
+                <Link
+                  href="/conta"
+                  onClick={() => setMenuMobileAberto(false)}
+                  className="rounded-lg px-2 py-2.5 text-sm font-semibold text-secondary transition-colors hover:bg-primary/10 hover:text-foreground"
+                >
+                  Minha Conta
+                </Link>
+                <button
+                  type="button"
+                  onClick={sair}
+                  className="rounded-lg px-2 py-2.5 text-left text-sm font-semibold text-secondary transition-colors hover:bg-primary/10 hover:text-foreground"
+                >
+                  Sair
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Link
+                  href="/login"
+                  onClick={() => setMenuMobileAberto(false)}
+                  className="flex-1 rounded-full border border-secondary/40 px-4 py-2.5 text-center text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary"
+                >
+                  Entrar
+                </Link>
+                <Link
+                  href="/cadastro"
+                  onClick={() => setMenuMobileAberto(false)}
+                  className="flex-1 rounded-full bg-primary px-4 py-2.5 text-center text-sm font-semibold text-white shadow-[0_4px_16px_rgba(139,92,246,0.4)] transition-colors hover:bg-primary-dark"
+                >
+                  Assinar
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {categorias.length > 0 && (
         <div className="flex gap-2 overflow-x-auto px-4 pb-3 [scrollbar-width:none] sm:px-8 [&::-webkit-scrollbar]:hidden">
