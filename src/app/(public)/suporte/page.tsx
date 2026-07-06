@@ -34,7 +34,7 @@ export default function SuportePage() {
     <div className="flex min-h-screen flex-col">
       <Navbar categorias={[]} />
 
-      <section className="mx-auto w-full max-w-2xl px-4 py-16 sm:px-8">
+      <section className="mx-auto w-full max-w-2xl px-4 pb-16 pt-28 sm:px-8">
         <h1 className="text-3xl font-black text-foreground sm:text-4xl">
           Suporte
         </h1>
@@ -52,7 +52,7 @@ export default function SuportePage() {
           ))}
         </div>
 
-        <div className="mt-10 rounded-2xl border border-primary/30 bg-gradient-to-br from-[#2a1152] via-[#1a0836] to-[#0f0620] p-6 text-center sm:p-8">
+        <div className="mt-10 rounded-lg border border-border bg-surface p-6 text-center sm:p-8">
           <p className="text-lg font-bold text-foreground">
             Não encontrou o que procurava?
           </p>
@@ -61,7 +61,7 @@ export default function SuportePage() {
           </p>
           <a
             href="mailto:suporte@yarinreels.com"
-            className="mt-5 inline-block rounded-full bg-primary px-8 py-3 text-sm font-bold text-white shadow-[0_8px_30px_rgba(139,92,246,0.4)] transition-colors hover:bg-primary-dark"
+            className="mt-5 inline-block rounded-md bg-primary px-8 py-3 text-sm font-bold text-white transition-colors hover:bg-primary-dark"
           >
             suporte@yarinreels.com
           </a>

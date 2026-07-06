@@ -59,3 +59,12 @@ export interface Plano {
 export interface Ban {
   nr_id_telegram: number;
 }
+
+export interface Universo {
+  nm_categoria: string;
+  slug: string;
+  label: string;
+  cor: string;
+  ds_url_imagem?: string;
+  nr_total_conteudos: number;
+}

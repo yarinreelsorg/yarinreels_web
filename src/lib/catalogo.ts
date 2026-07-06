@@ -15,6 +15,16 @@ export function calcularRating(views: number) {
   return Math.round(base * 2) / 2;
 }
 
+export function formatarViews(views: number) {
+  if (views >= 1_000_000) {
+    return `${(views / 1_000_000).toFixed(1).replace(".", ",")}M visualizações`;
+  }
+  if (views >= 1_000) {
+    return `${(views / 1_000).toFixed(1).replace(".", ",")}K visualizações`;
+  }
+  return `${views} visualizações`;
+}
+
 export function isNovo(dtLancamento: string | null) {
   if (!dtLancamento) return false;
   const dias = (Date.now() - new Date(dtLancamento).getTime()) / 86400000;

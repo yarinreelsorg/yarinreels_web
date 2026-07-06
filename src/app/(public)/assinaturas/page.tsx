@@ -22,7 +22,7 @@ export default async function AssinaturasPage() {
     <div className="flex min-h-screen flex-col">
       <Navbar categorias={[]} />
 
-      <section className="mx-auto w-full max-w-5xl px-4 py-16 text-center sm:px-8">
+      <section className="mx-auto w-full max-w-5xl px-4 pb-16 pt-28 text-center sm:px-8">
         <h1 className="text-3xl font-black text-foreground sm:text-4xl">
           Escolha sua assinatura
         </h1>
@@ -40,9 +40,9 @@ export default async function AssinaturasPage() {
             {planos.map((plano) => (
               <div
                 key={plano.cd_plano}
-                className="flex flex-col rounded-2xl border border-secondary/20 bg-black/30 p-6 transition-all duration-300 hover:border-primary/60 hover:shadow-[0_18px_50px_rgba(139,92,246,0.25)]"
+                className="flex flex-col rounded-lg border border-border bg-surface p-6 transition-colors duration-300 hover:border-foreground/30"
               >
-                <span className="w-fit rounded-full border border-[rgba(139,92,246,0.5)] bg-[rgba(139,92,246,0.2)] px-3 py-1 text-xs font-bold uppercase tracking-wide text-foreground">
+                <span className="w-fit text-xs font-semibold uppercase tracking-[0.08em] text-secondary">
                   {plano.nm_categoria}
                 </span>
 
@@ -68,7 +68,7 @@ export default async function AssinaturasPage() {
 
                 <Link
                   href="/cadastro"
-                  className="mt-6 rounded-full bg-primary px-6 py-3 text-center text-sm font-bold text-white shadow-[0_8px_30px_rgba(139,92,246,0.4)] transition-colors hover:bg-primary-dark"
+                  className="mt-6 rounded-md bg-primary px-6 py-3 text-center text-sm font-bold text-white transition-colors hover:bg-primary-dark"
                 >
                   Assinar agora
                 </Link>

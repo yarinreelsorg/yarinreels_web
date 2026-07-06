@@ -3,14 +3,13 @@
 import Link from "next/link";
 import { useState } from "react";
 import type { Conteudo } from "@/types/database";
-import { formatarPreco, calcularRating, isNovo } from "@/lib/catalogo";
-import Estrelas from "./Estrelas";
+import { formatarPreco, isNovo } from "@/lib/catalogo";
 
 type Variant = "carrossel" | "top12" | "grid";
 
 const TAMANHOS: Record<"carrossel" | "top12", { largura: number; altura: number }> = {
-  carrossel: { largura: 170, altura: 255 },
-  top12: { largura: 200, altura: 300 },
+  carrossel: { largura: 160, altura: 240 },
+  top12: { largura: 180, altura: 270 },
 };
 
 export default function CardFilme({
@@ -29,35 +28,36 @@ export default function CardFilme({
     .map((g) => g.trim())
     .filter(Boolean);
   const preco = formatarPreco(conteudo.vl_aluguel ?? conteudo.vl_vitalicio);
-  const rating = calcularRating(conteudo.nr_views);
   const novo = isNovo(conteudo.dt_lancamento);
 
   const fixo = variant !== "grid";
-  const gigante = variant === "top12" && typeof rank === "number";
+  const mostraRank = variant === "top12" && typeof rank === "number";
   const { largura, altura } = TAMANHOS[variant === "top12" ? "top12" : "carrossel"];
+  const escalaHover =
+    variant === "top12" ? "group-hover/card:scale-[1.06]" : "group-hover/card:scale-[1.08]";
 
   return (
     <div
-      className={`group/card relative ${fixo ? "shrink-0" : "w-full"}`}
-      style={fixo ? { width: gigante ? largura + 50 : largura } : undefined}
+      className={`group/card relative flex items-end ${fixo ? "shrink-0" : "w-full"}`}
+      style={fixo ? { width: mostraRank ? largura + 56 : largura } : undefined}
     >
-      {gigante && (
+      {mostraRank && (
         <span
-          className="pointer-events-none absolute -left-1 bottom-0 z-0 select-none text-[120px] font-black leading-none text-transparent [-webkit-text-stroke:2px_rgba(139,92,246,0.35)]"
-          aria-hidden
+          className="pointer-events-none relative z-0 -mr-8 shrink-0 select-none font-black leading-none text-white/[0.08]"
+          style={{ fontSize: 96 }}
         >
           {rank}
         </span>
       )}
 
       <div
-        className={`relative z-10 overflow-hidden rounded-[8px] bg-[#150c28] ring-1 ring-white/5 transition-all duration-300 ease-out group-hover/card:z-20 group-hover/card:scale-[1.08] group-hover/card:shadow-[0_18px_40px_rgba(139,92,246,0.45)] group-hover/card:ring-2 group-hover/card:ring-primary ${
-          gigante ? "ml-auto" : ""
-        } ${fixo ? "" : "aspect-[2/3] w-full"}`}
+        className={`relative z-10 origin-bottom-left overflow-hidden rounded-[6px] bg-surface ring-1 ring-white/[0.08] transition-all duration-300 ease-out group-hover/card:z-20 group-hover/card:ring-2 group-hover/card:ring-accent group-hover/card:shadow-[0_8px_32px_rgba(123,47,190,0.5)] ${escalaHover} ${
+          fixo ? "" : "aspect-[2/3] w-full"
+        }`}
         style={fixo ? { width: largura, height: altura } : undefined}
       >
         {!carregada && conteudo.ds_url_poster && (
-          <div className="absolute inset-0 animate-shimmer bg-[linear-gradient(110deg,#150c28_30%,#2a1a4a_50%,#150c28_70%)]" />
+          <div className="absolute inset-0 animate-shimmer bg-[linear-gradient(110deg,#0d0a1a_30%,#18101f_50%,#0d0a1a_70%)]" />
         )}
 
         {conteudo.ds_url_poster ? (
@@ -77,20 +77,28 @@ export default function CardFilme({
           </div>
         )}
 
-        <span className="absolute right-1.5 top-1.5 rounded border border-[rgba(139,92,246,0.5)] bg-[rgba(139,92,246,0.2)] px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-foreground backdrop-blur-sm">
-          {conteudo.tp_formato}
-        </span>
-
         {novo && (
-          <span className="absolute left-1.5 top-1.5 rounded bg-primary px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-[0_0_12px_rgba(139,92,246,0.6)]">
+          <span className="absolute left-1.5 top-1.5 rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
             Novo
           </span>
         )}
 
-        <div className="absolute inset-0 flex flex-col justify-end gap-1.5 bg-gradient-to-t from-black/95 via-black/70 to-transparent p-2.5 opacity-0 transition-opacity duration-200 group-hover/card:opacity-100">
+        <span className="absolute right-1.5 top-1.5 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-foreground/90 backdrop-blur-sm">
+          {conteudo.tp_formato}
+        </span>
+
+        <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/95 via-black/30 to-transparent p-3 opacity-0 transition-opacity duration-200 group-hover/card:opacity-100">
+          <button
+            type="button"
+            aria-label={`Assistir ${conteudo.nm_titulo}`}
+            className="absolute left-1/2 top-1/2 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-primary text-white shadow-[0_4px_20px_rgba(123,47,190,0.6)] transition-transform hover:scale-110"
+          >
+            ▶
+          </button>
+
           <Link
             href={`/filme/${conteudo.cd_conteudo}`}
-            className="line-clamp-2 text-[14px] font-semibold text-foreground hover:underline"
+            className="line-clamp-1 text-[13px] font-semibold text-foreground hover:underline"
           >
             {conteudo.nm_titulo}
           </Link>
@@ -99,24 +107,7 @@ export default function CardFilme({
               {generos.join(" • ")}
             </p>
           )}
-          <Estrelas rating={rating} />
-          {preco && <p className="text-xs font-bold text-primary">{preco}</p>}
-
-          <div className="mt-1 flex items-center gap-1.5">
-            <Link
-              href={`/assistir/${conteudo.cd_conteudo}`}
-              className="flex-1 rounded bg-primary px-2 py-1 text-center text-xs font-semibold text-white transition-colors hover:bg-primary-dark"
-            >
-              ▶ Assistir
-            </Link>
-            <button
-              type="button"
-              aria-label="Adicionar à Minha Lista"
-              className="rounded border border-secondary/40 px-2 py-1 text-xs font-semibold text-secondary transition-colors hover:border-primary hover:text-primary"
-            >
-              +
-            </button>
-          </div>
+          {preco && <p className="mt-0.5 text-xs font-semibold text-accent">{preco}</p>}
         </div>
       </div>
     </div>

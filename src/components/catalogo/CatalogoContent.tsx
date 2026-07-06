@@ -90,18 +90,12 @@ export default function CatalogoContent({
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Navbar
-        categorias={categorias}
-        categoriaAtiva={categoriaAtiva}
-        busca={busca}
-        onBuscaChange={aoMudarBusca}
-        onCategoriaChange={aoMudarCategoria}
-      />
+      <Navbar busca={busca} onBuscaChange={aoMudarBusca} />
 
-      <section className="px-4 pb-16 pt-8 sm:px-8">
+      <section className="px-4 pb-16 pt-24 sm:px-8">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-black text-foreground sm:text-3xl">
+            <h1 className="text-2xl font-black tracking-tight text-foreground sm:text-3xl">
               Catálogo
             </h1>
             <p className="mt-1 text-sm text-secondary">
@@ -113,7 +107,7 @@ export default function CatalogoContent({
           <select
             value={ordenacao}
             onChange={(e) => setOrdenacao(e.target.value as Ordenacao)}
-            className="rounded-full border border-secondary/30 bg-black/30 px-4 py-1.5 text-sm text-foreground outline-none focus:border-primary"
+            className="rounded-md border border-border bg-surface px-4 py-1.5 text-sm text-foreground outline-none focus:border-accent/50"
           >
             <option value="relevancia" className="bg-background">
               Mais vistos
@@ -127,22 +121,52 @@ export default function CatalogoContent({
           </select>
         </div>
 
-        <div className="mb-8 flex flex-wrap gap-2">
+        <div className="mb-4 flex flex-wrap gap-2">
           {FORMATOS.map((formato) => (
             <button
               key={formato.label}
               type="button"
               onClick={() => aoMudarFormato(formato.value)}
-              className={`rounded-full border px-4 py-1.5 text-sm font-semibold transition-colors ${
+              className={`rounded-md border px-4 py-1.5 text-sm font-medium transition-colors ${
                 formatoAtivo === formato.value
-                  ? "border-primary bg-[rgba(139,92,246,0.2)] text-foreground"
-                  : "border-secondary/30 text-secondary hover:border-primary/60 hover:text-foreground"
+                  ? "border-accent bg-accent/15 text-foreground"
+                  : "border-border text-secondary hover:border-accent/40 hover:text-foreground"
               }`}
             >
               {formato.label}
             </button>
           ))}
         </div>
+
+        {categorias.length > 0 && (
+          <div className="mb-8 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => aoMudarCategoria(null)}
+              className={`rounded-full border px-3.5 py-1 text-xs font-medium capitalize transition-colors ${
+                categoriaAtiva === null
+                  ? "border-accent bg-accent/15 text-foreground"
+                  : "border-border text-secondary hover:border-accent/40 hover:text-foreground"
+              }`}
+            >
+              Todas as categorias
+            </button>
+            {categorias.map((categoria) => (
+              <button
+                key={categoria}
+                type="button"
+                onClick={() => aoMudarCategoria(categoria)}
+                className={`rounded-full border px-3.5 py-1 text-xs font-medium capitalize transition-colors ${
+                  categoriaAtiva === categoria
+                    ? "border-accent bg-accent/15 text-foreground"
+                    : "border-border text-secondary hover:border-accent/40 hover:text-foreground"
+                }`}
+              >
+                {categoria}
+              </button>
+            ))}
+          </div>
+        )}
 
         {resultados.length === 0 ? (
           <p className="py-16 text-center text-secondary">
@@ -165,7 +189,7 @@ export default function CatalogoContent({
                 <button
                   type="button"
                   onClick={() => setVisiveis((v) => v + TAMANHO_PAGINA)}
-                  className="rounded-full border border-primary/60 px-8 py-2.5 text-sm font-bold text-foreground transition-colors hover:bg-primary/15"
+                  className="rounded-md border border-border px-8 py-2.5 text-sm font-semibold text-foreground transition-colors hover:border-foreground/40"
                 >
                   Carregar mais
                 </button>

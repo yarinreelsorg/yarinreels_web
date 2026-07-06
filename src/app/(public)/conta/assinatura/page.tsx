@@ -64,17 +64,17 @@ export default async function ContaAssinaturaPage() {
     <div className="flex min-h-screen flex-col">
       <Navbar categorias={[]} />
 
-      <section className="mx-auto w-full max-w-2xl px-4 py-12 sm:px-8">
+      <section className="mx-auto w-full max-w-2xl px-4 pb-12 pt-28 sm:px-8">
         <h1 className="text-2xl font-black text-foreground sm:text-3xl">
           Minha Assinatura
         </h1>
         <p className="mt-1 text-sm text-secondary">{user.email}</p>
 
         {assinatura ? (
-          <div className="mt-8 overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-[#2a1152] via-[#1a0836] to-[#0f0620] p-6 sm:p-8">
+          <div className="mt-8 overflow-hidden rounded-lg border border-border bg-surface p-6 sm:p-8">
             <div className="flex items-center gap-2">
-              <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
-              <span className="text-xs font-bold uppercase tracking-wide text-emerald-400">
+              <span className="h-2 w-2 rounded-full bg-emerald-400" />
+              <span className="text-xs font-semibold uppercase tracking-wide text-emerald-400">
                 Assinatura ativa
               </span>
             </div>
@@ -109,13 +109,13 @@ export default async function ContaAssinaturaPage() {
 
             <Link
               href="/assinaturas"
-              className="mt-8 inline-block rounded-lg border border-secondary/40 px-6 py-3 text-sm font-bold text-foreground transition-colors hover:border-primary hover:text-primary"
+              className="mt-8 inline-block rounded-md border border-secondary/40 px-6 py-3 text-sm font-bold text-foreground transition-colors hover:border-foreground"
             >
               Ver planos e trocar assinatura
             </Link>
           </div>
         ) : (
-          <div className="mt-8 rounded-2xl border border-secondary/20 bg-black/30 p-8 text-center">
+          <div className="mt-8 rounded-lg border border-border bg-surface p-8 text-center">
             <p className="text-lg font-bold text-foreground">
               Você ainda não tem uma assinatura ativa
             </p>
@@ -124,7 +124,7 @@ export default async function ContaAssinaturaPage() {
             </p>
             <Link
               href="/assinaturas"
-              className="mt-6 inline-block rounded-full bg-primary px-8 py-3 text-sm font-bold text-white shadow-[0_8px_30px_rgba(139,92,246,0.4)] transition-colors hover:bg-primary-dark"
+              className="mt-6 inline-block rounded-md bg-primary px-8 py-3 text-sm font-bold text-white transition-colors hover:bg-primary-dark"
             >
               Ver planos
             </Link>

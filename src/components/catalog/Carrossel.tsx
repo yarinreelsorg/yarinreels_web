@@ -31,18 +31,18 @@ export default function Carrossel({
   return (
     <section className="relative py-5">
       <div className="mb-3 flex items-center justify-between px-4 sm:px-8">
-        <h2 className="text-[20px] font-bold text-foreground">{titulo}</h2>
+        <h2 className="text-lg font-semibold text-foreground">{titulo}</h2>
         {verTudoHref && (
           <Link
             href={verTudoHref}
-            className="text-sm font-semibold text-secondary transition-colors hover:text-primary"
+            className="text-sm font-semibold text-accent transition-colors hover:text-foreground"
           >
-            Ver tudo →
+            Ver todos →
           </Link>
         )}
       </div>
 
-      <div className="group/carrossel relative">
+      <div className="group/carrossel relative overflow-hidden">
         <div
           ref={trilhoRef}
           className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-4 pb-2 [scrollbar-width:none] sm:px-8 [&::-webkit-scrollbar]:hidden"
@@ -58,7 +58,7 @@ export default function Carrossel({
           type="button"
           aria-label="Anterior"
           onClick={() => rolar("esquerda")}
-          className="absolute left-0 top-0 z-20 hidden h-full w-10 items-center justify-center bg-gradient-to-r from-background to-transparent text-2xl text-foreground opacity-0 transition-opacity group-hover/carrossel:opacity-100 sm:flex"
+          className="absolute left-0 top-0 z-20 hidden h-full w-12 items-center justify-center bg-[rgba(5,2,8,0.9)] text-2xl text-foreground opacity-0 transition-opacity group-hover/carrossel:opacity-100 sm:flex"
         >
           ‹
         </button>
@@ -66,7 +66,7 @@ export default function Carrossel({
           type="button"
           aria-label="Próximo"
           onClick={() => rolar("direita")}
-          className="absolute right-0 top-0 z-20 hidden h-full w-10 items-center justify-center bg-gradient-to-l from-background to-transparent text-2xl text-foreground opacity-0 transition-opacity group-hover/carrossel:opacity-100 sm:flex"
+          className="absolute right-0 top-0 z-20 hidden h-full w-12 items-center justify-center bg-[rgba(5,2,8,0.9)] text-2xl text-foreground opacity-0 transition-opacity group-hover/carrossel:opacity-100 sm:flex"
         >
           ›
         </button>

@@ -57,7 +57,7 @@ export default function CadastroPage() {
         titulo="Quase lá"
         subtitulo="Confirme seu e-mail para ativar a conta"
       >
-        <p className="rounded-lg border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground">
+        <p className="rounded-md border border-border bg-surface px-4 py-3 text-sm text-foreground">
           Enviamos um link de confirmação para <strong>{email}</strong>. Abra
           o e-mail para ativar sua conta.
         </p>
@@ -115,7 +115,7 @@ export default function CadastroPage() {
         <button
           type="submit"
           disabled={carregando}
-          className="mt-1 rounded-lg bg-primary py-3 text-sm font-bold text-white shadow-[0_8px_30px_rgba(139,92,246,0.4)] transition-colors hover:bg-primary-dark disabled:opacity-60"
+          className="mt-1 rounded-md bg-primary py-3 text-sm font-bold text-white transition-colors hover:bg-primary-dark disabled:opacity-60"
         >
           {carregando ? "Criando conta..." : "Criar conta"}
         </button>

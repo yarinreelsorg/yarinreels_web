@@ -72,11 +72,11 @@ export default function LoginPage() {
       titulo="Entrar"
       subtitulo="Acesse sua conta para continuar assistindo"
     >
-      <div className="mb-6 flex rounded-full border border-secondary/20 bg-black/20 p-1 text-sm font-semibold">
+      <div className="mb-6 flex rounded-md border border-border bg-background p-1 text-sm font-medium">
         <button
           type="button"
           onClick={() => trocarModo("senha")}
-          className={`flex-1 rounded-full py-2 transition-colors ${
+          className={`flex-1 rounded-md py-2 transition-colors ${
             modo === "senha"
               ? "bg-primary text-white"
               : "text-secondary hover:text-foreground"
@@ -87,7 +87,7 @@ export default function LoginPage() {
         <button
           type="button"
           onClick={() => trocarModo("magico")}
-          className={`flex-1 rounded-full py-2 transition-colors ${
+          className={`flex-1 rounded-md py-2 transition-colors ${
             modo === "magico"
               ? "bg-primary text-white"
               : "text-secondary hover:text-foreground"
@@ -119,13 +119,13 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={carregando}
-            className="mt-1 rounded-lg bg-primary py-3 text-sm font-bold text-white shadow-[0_8px_30px_rgba(139,92,246,0.4)] transition-colors hover:bg-primary-dark disabled:opacity-60"
+            className="mt-1 rounded-md bg-primary py-3 text-sm font-bold text-white transition-colors hover:bg-primary-dark disabled:opacity-60"
           >
             {carregando ? "Entrando..." : "Entrar"}
           </button>
         </form>
       ) : linkEnviado ? (
-        <p className="rounded-lg border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground">
+        <p className="rounded-md border border-border bg-surface px-4 py-3 text-sm text-foreground">
           Enviamos um link de acesso para <strong>{email}</strong>. Confira
           sua caixa de entrada.
         </p>
@@ -143,7 +143,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={carregando}
-            className="mt-1 rounded-lg bg-primary py-3 text-sm font-bold text-white shadow-[0_8px_30px_rgba(139,92,246,0.4)] transition-colors hover:bg-primary-dark disabled:opacity-60"
+            className="mt-1 rounded-md bg-primary py-3 text-sm font-bold text-white transition-colors hover:bg-primary-dark disabled:opacity-60"
           >
             {carregando ? "Enviando..." : "Enviar link mágico"}
           </button>

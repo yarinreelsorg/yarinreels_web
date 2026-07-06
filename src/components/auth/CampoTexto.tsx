@@ -22,7 +22,7 @@ export default function CampoTexto({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         required={required}
-        className="rounded-lg border border-secondary/30 bg-black/30 px-4 py-2.5 text-sm text-foreground outline-none transition-colors placeholder:text-secondary/40 focus:border-primary"
+        className="rounded-md border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none transition-colors placeholder:text-secondary/40 focus:border-foreground/40"
       />
     </label>
   );

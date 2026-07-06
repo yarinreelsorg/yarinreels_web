@@ -1,13 +1,19 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import type { Conteudo } from "@/types/database";
+import { useMemo, useState, useTransition } from "react";
+import type { Conteudo, Universo } from "@/types/database";
 import Navbar from "@/components/layout/Navbar";
 import UpsellSection from "@/components/layout/UpsellSection";
 import HeroBanner from "@/components/catalog/HeroBanner";
+import UniversosBar from "@/components/catalog/UniversosBar";
 import Carrossel from "@/components/catalog/Carrossel";
 import CardFilme from "@/components/catalog/CardFilme";
 import Top12 from "@/components/catalog/Top12";
+import {
+  UNIVERSOS_CONFIG,
+  categoriaParaSlug,
+  COR_UNIVERSO_PADRAO,
+} from "@/lib/universos-config";
 
 export default function HomeContent({
   conteudos,
@@ -21,19 +27,13 @@ export default function HomeContent({
   top12: Conteudo[];
 }) {
   const [busca, setBusca] = useState("");
-  const [categoriaAtiva, setCategoriaAtiva] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
   function aoMudarBusca(valor: string) {
     startTransition(() => setBusca(valor));
   }
 
-  function aoMudarCategoria(categoria: string | null) {
-    startTransition(() => setCategoriaAtiva(categoria));
-  }
-
   const buscando = busca.trim().length > 0;
-  const filtrandoCategoria = categoriaAtiva !== null;
 
   const termo = busca.trim().toLowerCase();
   const resultadosBusca = buscando
@@ -47,58 +47,64 @@ export default function HomeContent({
     porCategoria.set(conteudo.nm_categoria, lista);
   }
 
-  const categoriasVisiveis = filtrandoCategoria
-    ? categorias.filter((c) => c === categoriaAtiva)
-    : categorias;
+  const universos: Universo[] = useMemo(() => {
+    return categorias.map((nm_categoria) => {
+      const slug = categoriaParaSlug(nm_categoria);
+      const config = UNIVERSOS_CONFIG[slug];
+      const itensCategoria = porCategoria.get(nm_categoria) ?? [];
+      return {
+        nm_categoria,
+        slug,
+        label: config?.label ?? nm_categoria,
+        cor: config?.cor ?? COR_UNIVERSO_PADRAO,
+        ds_url_imagem: config?.imagemUrl ?? itensCategoria[0]?.ds_url_poster ?? undefined,
+        nr_total_conteudos: itensCategoria.length,
+      };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conteudos, categorias]);
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Navbar
-        categorias={categorias}
-        categoriaAtiva={categoriaAtiva}
-        busca={busca}
-        onBuscaChange={aoMudarBusca}
-        onCategoriaChange={aoMudarCategoria}
-      />
+      <Navbar busca={busca} onBuscaChange={aoMudarBusca} />
 
       {buscando ? (
-        <section className="px-4 py-8 sm:px-8">
+        <section className="px-4 pb-16 pt-24 sm:px-8">
           <h2 className="mb-4 text-lg font-bold text-foreground">
             {resultadosBusca.length > 0
               ? `${resultadosBusca.length} resultado(s)`
               : "Nenhum resultado encontrado"}
           </h2>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {resultadosBusca.map((conteudo) => (
-              <CardFilme
+            {resultadosBusca.map((conteudo, i) => (
+              <div
                 key={conteudo.cd_conteudo}
-                conteudo={conteudo}
-                variant="grid"
-              />
+                className="animate-fade-in-up"
+                style={{ animationDelay: `${Math.min(i, 20) * 50}ms` }}
+              >
+                <CardFilme conteudo={conteudo} variant="grid" />
+              </div>
             ))}
           </div>
         </section>
       ) : (
         <>
           {destaques.length > 0 && <HeroBanner destaques={destaques} />}
+
+          <UniversosBar universos={universos} />
+
           <UpsellSection />
-          {!filtrandoCategoria && top12.length > 0 && <Top12 itens={top12} />}
+
+          {top12.length > 0 && <Top12 itens={top12} />}
+
           <div className="flex flex-col">
             {categorias.map((categoria) => (
-              <div
+              <Carrossel
                 key={categoria}
-                className={`transition-opacity duration-300 ${
-                  categoriasVisiveis.includes(categoria)
-                    ? "opacity-100"
-                    : "pointer-events-none h-0 overflow-hidden opacity-0"
-                }`}
-              >
-                <Carrossel
-                  titulo={categoria}
-                  itens={porCategoria.get(categoria) ?? []}
-                  verTudoHref={`/catalogo?categoria=${encodeURIComponent(categoria)}`}
-                />
-              </div>
+                titulo={categoria}
+                itens={porCategoria.get(categoria) ?? []}
+                verTudoHref={`/catalogo?categoria=${encodeURIComponent(categoria)}`}
+              />
             ))}
           </div>
         </>

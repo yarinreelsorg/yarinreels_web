@@ -1,39 +1,42 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import type { User } from "@supabase/supabase-js";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import type { User } from "@supabase/supabase-js";
+import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useRef, useState } from "react";
 
-const LINKS_DESLOGADO = [
+const LINKS = [
   { label: "Início", href: "/" },
+  { label: "Séries", href: "/catalogo?formato=SERIE" },
+  { label: "Filmes", href: "/catalogo?formato=FILME" },
   { label: "Catálogo", href: "/catalogo" },
-  { label: "Assinaturas", href: "/assinaturas" },
-  { label: "Suporte", href: "/suporte" },
-];
-
-const LINKS_LOGADO = [
-  { label: "Início", href: "/" },
-  { label: "Catálogo", href: "/catalogo" },
-  { label: "Minha Assinatura", href: "/conta/assinatura" },
   { label: "Minha Lista", href: "/minha-lista" },
 ];
 
-export default function Navbar({
-  categorias,
-  categoriaAtiva = null,
-  busca,
-  onBuscaChange,
-  onCategoriaChange,
-}: {
-  categorias: string[];
-  categoriaAtiva?: string | null;
+export default function Navbar(props: {
+  categorias?: string[];
   busca?: string;
   onBuscaChange?: (valor: string) => void;
-  onCategoriaChange?: (categoria: string | null) => void;
+}) {
+  return (
+    <Suspense fallback={<div className="fixed inset-x-0 top-0 z-[100] h-16" />}>
+      <NavbarInner {...props} />
+    </Suspense>
+  );
+}
+
+function NavbarInner({
+  busca,
+  onBuscaChange,
+}: {
+  categorias?: string[];
+  busca?: string;
+  onBuscaChange?: (valor: string) => void;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [rolado, setRolado] = useState(false);
   const [buscaAberta, setBuscaAberta] = useState(false);
   const [buscaLocal, setBuscaLocal] = useState("");
@@ -89,8 +92,6 @@ export default function Navbar({
     .charAt(0)
     .toUpperCase();
 
-  const links = user ? LINKS_LOGADO : LINKS_DESLOGADO;
-
   function aoDigitarBusca(valor: string) {
     if (onBuscaChange) {
       onBuscaChange(valor);
@@ -103,35 +104,54 @@ export default function Navbar({
     if (!onBuscaChange && e.key === "Enter" && buscaLocal.trim()) {
       router.push(`/catalogo?busca=${encodeURIComponent(buscaLocal.trim())}`);
       setMenuMobileAberto(false);
+      setBuscaAberta(false);
     }
+  }
+
+  function linkAtivo(href: string) {
+    const [base, query] = href.split("?");
+    if (pathname !== base) return false;
+    if (!query) return base === "/catalogo" ? !searchParams.get("formato") : true;
+    const params = new URLSearchParams(query);
+    return params.get("formato") === searchParams.get("formato");
   }
 
   return (
     <header
-      className={`sticky top-0 z-50 transition-colors duration-300 ${
+      className={`fixed inset-x-0 top-0 z-[100] h-16 transition-colors duration-300 ${
         rolado
-          ? "bg-[rgba(8,4,16,0.95)] shadow-[0_2px_20px_rgba(0,0,0,0.4)] backdrop-blur-md"
-          : "bg-transparent"
+          ? "bg-[var(--navbar-bg)] backdrop-blur-md border-b border-border"
+          : "bg-gradient-to-b from-black/50 to-transparent border-b border-transparent"
       }`}
     >
-      <div className="flex items-center gap-4 px-4 py-3 sm:px-8">
+      <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-6 px-4 sm:px-8">
         <Link
           href="/"
-          className="mr-2 shrink-0 bg-gradient-to-r from-primary to-[#c084fc] bg-clip-text text-xl font-black tracking-tight text-transparent"
+          className="mr-2 shrink-0 text-xl font-black tracking-tight text-white"
         >
-          Yarinreels
+          YarinReels
         </Link>
 
-        <nav className="hidden items-center gap-6 md:flex">
-          {links.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="text-sm font-semibold text-secondary transition-colors hover:text-foreground"
-            >
-              {link.label}
-            </Link>
-          ))}
+        <nav className="hidden items-center gap-7 md:flex">
+          {LINKS.map((link) => {
+            const ativo = linkAtivo(link.href);
+            return (
+              <Link
+                key={link.label}
+                href={link.href}
+                className={`group relative py-2 text-sm font-medium transition-colors ${
+                  ativo ? "text-foreground" : "text-secondary hover:text-foreground"
+                }`}
+              >
+                {link.label}
+                <span
+                  className={`absolute -bottom-0.5 left-0 h-[2px] rounded-full bg-accent transition-all duration-300 ${
+                    ativo ? "w-full" : "w-0 group-hover:w-full"
+                  }`}
+                />
+              </Link>
+            );
+          })}
         </nav>
 
         <div className="ml-auto hidden items-center gap-3 md:flex">
@@ -142,9 +162,9 @@ export default function Navbar({
               onChange={(e) => aoDigitarBusca(e.target.value)}
               onKeyDown={aoPressionarBusca}
               placeholder="Buscar título..."
-              className={`rounded-full border border-secondary/30 bg-black/30 px-3.5 py-1.5 text-sm text-foreground outline-none transition-all duration-300 placeholder:text-secondary/50 focus:border-primary ${
+              className={`rounded-md border border-border bg-surface px-3.5 py-1.5 text-sm text-foreground outline-none transition-all duration-300 placeholder:text-secondary/60 focus:border-accent/50 ${
                 buscaAberta
-                  ? "w-48 opacity-100"
+                  ? "w-52 opacity-100"
                   : "w-0 border-transparent px-0 opacity-0"
               }`}
             />
@@ -152,7 +172,7 @@ export default function Navbar({
               type="button"
               aria-label="Buscar"
               onClick={() => setBuscaAberta((v) => !v)}
-              className="flex h-9 w-9 items-center justify-center rounded-full text-secondary transition-colors hover:text-primary"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-secondary transition-colors hover:text-foreground"
             >
               🔍
             </button>
@@ -163,22 +183,28 @@ export default function Navbar({
               <button
                 type="button"
                 onClick={() => setMenuAberto((v) => !v)}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-[#6d28d9] text-sm font-bold text-white shadow-[0_0_0_2px_rgba(139,92,246,0.4)]"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-bold text-white"
               >
                 {inicial}
               </button>
               {menuAberto && (
-                <div className="absolute right-0 top-11 w-48 overflow-hidden rounded-lg border border-primary/30 bg-[rgba(8,4,16,0.98)] py-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.5)]">
+                <div className="absolute right-0 top-11 w-48 overflow-hidden rounded-md border border-border bg-surface py-1.5 shadow-[0_12px_30px_rgba(0,0,0,0.6)]">
                   <Link
                     href="/conta"
-                    className="block px-4 py-2 text-sm text-foreground hover:bg-primary/15"
+                    className="block px-4 py-2 text-sm text-foreground hover:bg-white/5"
                   >
                     Minha Conta
+                  </Link>
+                  <Link
+                    href="/minha-lista"
+                    className="block px-4 py-2 text-sm text-foreground hover:bg-white/5"
+                  >
+                    Minha Lista
                   </Link>
                   <button
                     type="button"
                     onClick={sair}
-                    className="block w-full px-4 py-2 text-left text-sm text-foreground hover:bg-primary/15"
+                    className="block w-full px-4 py-2 text-left text-sm text-foreground hover:bg-white/5"
                   >
                     Sair
                   </button>
@@ -189,13 +215,13 @@ export default function Navbar({
             <div className="flex items-center gap-2">
               <Link
                 href="/login"
-                className="rounded-full border border-secondary/40 px-4 py-1.5 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary"
+                className="rounded-full border border-white/25 px-4 py-1.5 text-sm font-medium text-foreground transition-colors hover:border-white/50"
               >
                 Entrar
               </Link>
               <Link
                 href="/cadastro"
-                className="rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-white shadow-[0_4px_16px_rgba(139,92,246,0.4)] transition-colors hover:bg-primary-dark"
+                className="rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-primary-dark"
               >
                 Assinar
               </Link>
@@ -206,7 +232,7 @@ export default function Navbar({
         {user && (
           <Link
             href="/conta"
-            className="ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-[#6d28d9] text-sm font-bold text-white shadow-[0_0_0_2px_rgba(139,92,246,0.4)] md:hidden"
+            className="ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-white md:hidden"
           >
             {inicial}
           </Link>
@@ -227,7 +253,7 @@ export default function Navbar({
       {menuMobileAberto && (
         <div
           ref={menuMobileRef}
-          className="border-t border-secondary/10 px-4 pb-5 pt-3 sm:px-8 md:hidden"
+          className="border-t border-border bg-[var(--navbar-bg)] px-4 pb-5 pt-3 sm:px-8 md:hidden"
         >
           <input
             type="search"
@@ -235,23 +261,23 @@ export default function Navbar({
             onChange={(e) => aoDigitarBusca(e.target.value)}
             onKeyDown={aoPressionarBusca}
             placeholder="Buscar título..."
-            className="w-full rounded-full border border-secondary/30 bg-black/30 px-4 py-2.5 text-sm text-foreground outline-none placeholder:text-secondary/50 focus:border-primary"
+            className="w-full rounded-md border border-border bg-surface px-4 py-2.5 text-sm text-foreground outline-none placeholder:text-secondary/60 focus:border-accent/50"
           />
 
           <nav className="mt-4 flex flex-col gap-1">
-            {links.map((link) => (
+            {LINKS.map((link) => (
               <Link
-                key={link.href}
+                key={link.label}
                 href={link.href}
                 onClick={() => setMenuMobileAberto(false)}
-                className="rounded-lg px-2 py-2.5 text-sm font-semibold text-secondary transition-colors hover:bg-primary/10 hover:text-foreground"
+                className="rounded-md px-2 py-2.5 text-sm font-medium text-secondary transition-colors hover:bg-white/5 hover:text-foreground"
               >
                 {link.label}
               </Link>
             ))}
           </nav>
 
-          <div className="mt-3 border-t border-secondary/10 pt-3">
+          <div className="mt-3 border-t border-border pt-3">
             {user ? (
               <div className="flex flex-col gap-1">
                 <p className="truncate px-2 py-1 text-xs text-secondary">
@@ -260,14 +286,14 @@ export default function Navbar({
                 <Link
                   href="/conta"
                   onClick={() => setMenuMobileAberto(false)}
-                  className="rounded-lg px-2 py-2.5 text-sm font-semibold text-secondary transition-colors hover:bg-primary/10 hover:text-foreground"
+                  className="rounded-md px-2 py-2.5 text-sm font-medium text-secondary transition-colors hover:bg-white/5 hover:text-foreground"
                 >
                   Minha Conta
                 </Link>
                 <button
                   type="button"
                   onClick={sair}
-                  className="rounded-lg px-2 py-2.5 text-left text-sm font-semibold text-secondary transition-colors hover:bg-primary/10 hover:text-foreground"
+                  className="rounded-md px-2 py-2.5 text-left text-sm font-medium text-secondary transition-colors hover:bg-white/5 hover:text-foreground"
                 >
                   Sair
                 </button>
@@ -277,64 +303,20 @@ export default function Navbar({
                 <Link
                   href="/login"
                   onClick={() => setMenuMobileAberto(false)}
-                  className="flex-1 rounded-full border border-secondary/40 px-4 py-2.5 text-center text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary"
+                  className="flex-1 rounded-full border border-white/25 px-4 py-2.5 text-center text-sm font-medium text-foreground transition-colors hover:border-white/50"
                 >
                   Entrar
                 </Link>
                 <Link
                   href="/cadastro"
                   onClick={() => setMenuMobileAberto(false)}
-                  className="flex-1 rounded-full bg-primary px-4 py-2.5 text-center text-sm font-semibold text-white shadow-[0_4px_16px_rgba(139,92,246,0.4)] transition-colors hover:bg-primary-dark"
+                  className="flex-1 rounded-full bg-primary px-4 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-primary-dark"
                 >
                   Assinar
                 </Link>
               </div>
             )}
           </div>
-        </div>
-      )}
-
-      {categorias.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto px-4 pb-3 [scrollbar-width:none] sm:px-8 [&::-webkit-scrollbar]:hidden">
-          {onCategoriaChange ? (
-            <>
-              <button
-                type="button"
-                onClick={() => onCategoriaChange(null)}
-                className={`shrink-0 rounded-full border px-3.5 py-1 text-xs font-semibold transition-colors ${
-                  categoriaAtiva === null
-                    ? "border-primary bg-[rgba(139,92,246,0.2)] text-foreground"
-                    : "border-secondary/30 text-secondary hover:border-primary/60 hover:text-foreground"
-                }`}
-              >
-                Todas
-              </button>
-              {categorias.map((categoria) => (
-                <button
-                  key={categoria}
-                  type="button"
-                  onClick={() => onCategoriaChange(categoria)}
-                  className={`shrink-0 rounded-full border px-3.5 py-1 text-xs font-semibold capitalize transition-colors ${
-                    categoriaAtiva === categoria
-                      ? "border-primary bg-[rgba(139,92,246,0.2)] text-foreground"
-                      : "border-secondary/30 text-secondary hover:border-primary/60 hover:text-foreground"
-                  }`}
-                >
-                  {categoria}
-                </button>
-              ))}
-            </>
-          ) : (
-            categorias.map((categoria) => (
-              <Link
-                key={categoria}
-                href={`/catalogo?categoria=${encodeURIComponent(categoria)}`}
-                className="shrink-0 rounded-full border border-secondary/30 px-3.5 py-1 text-xs font-semibold capitalize text-secondary transition-colors hover:border-primary/60 hover:text-foreground"
-              >
-                {categoria}
-              </Link>
-            ))
-          )}
         </div>
       )}
     </header>

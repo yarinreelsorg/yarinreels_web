@@ -64,10 +64,10 @@ export default function FilmeContent({
             <img
               src={conteudo.ds_url_poster}
               alt={conteudo.nm_titulo}
-              className="h-full w-full scale-105 object-cover object-top blur-[2px]"
+              className="h-full w-full object-cover object-top"
             />
           ) : (
-            <div className="h-full w-full bg-primary-dark/40" />
+            <div className="h-full w-full bg-surface" />
           )}
           <div className="absolute inset-0 bg-gradient-to-r from-background via-background/75 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/50" />
@@ -85,18 +85,18 @@ export default function FilmeContent({
                 className="h-[390px] w-[260px] object-cover"
               />
             ) : (
-              <div className="flex h-[390px] w-[260px] items-center justify-center bg-primary-dark/40 px-3 text-center text-sm text-secondary">
+              <div className="flex h-[390px] w-[260px] items-center justify-center bg-surface px-3 text-center text-sm text-secondary">
                 {conteudo.nm_titulo}
               </div>
             )}
           </div>
 
           <div className="max-w-2xl">
-            <span className="mb-4 inline-block rounded border border-[rgba(139,92,246,0.5)] bg-[rgba(139,92,246,0.2)] px-3 py-1 text-xs font-bold uppercase tracking-wide text-foreground">
+            <span className="mb-4 inline-block text-xs font-semibold uppercase tracking-[0.08em] text-secondary">
               {conteudo.nm_categoria}
             </span>
 
-            <h1 className="text-[34px] font-black leading-[1.05] text-foreground sm:text-[46px]">
+            <h1 className="text-[34px] font-bold leading-[1.1] tracking-tight text-foreground sm:text-[46px]">
               {conteudo.nm_titulo}
             </h1>
 
@@ -105,21 +105,21 @@ export default function FilmeContent({
               <span>{rating.toFixed(1)}</span>
               {ano && (
                 <>
-                  <span className="text-primary">•</span>
+                  <span>·</span>
                   <span>{ano}</span>
                 </>
               )}
               {duracao && (
                 <>
-                  <span className="text-primary">•</span>
+                  <span>·</span>
                   <span>{duracao}</span>
                 </>
               )}
-              <span className="text-primary">•</span>
+              <span>·</span>
               <span>{ROTULO_FORMATO[conteudo.tp_formato] ?? conteudo.tp_formato}</span>
               {conteudo.nm_idioma && (
                 <>
-                  <span className="text-primary">•</span>
+                  <span>·</span>
                   <span>{conteudo.nm_idioma}</span>
                 </>
               )}
@@ -147,13 +147,13 @@ export default function FilmeContent({
             <div className="mt-6 flex flex-wrap items-center gap-3">
               <Link
                 href={`/assistir/${conteudo.cd_conteudo}`}
-                className="rounded-lg bg-primary px-7 py-3.5 text-sm font-bold text-white shadow-[0_8px_30px_rgba(139,92,246,0.4)] transition-colors hover:bg-primary-dark sm:text-base"
+                className="rounded-md bg-primary px-7 py-3.5 text-sm font-bold text-white transition-colors hover:bg-primary-dark sm:text-base"
               >
                 ▶ Assistir
               </Link>
               <button
                 type="button"
-                className="rounded-lg border border-secondary/40 px-7 py-3.5 text-sm font-bold text-foreground backdrop-blur-sm transition-colors hover:border-primary hover:text-primary sm:text-base"
+                className="rounded-md border border-secondary/40 px-7 py-3.5 text-sm font-bold text-foreground transition-colors hover:border-foreground sm:text-base"
               >
                 + Minha Lista
               </button>
@@ -161,7 +161,7 @@ export default function FilmeContent({
                 <button
                   type="button"
                   onClick={() => setTrailerAberto(true)}
-                  className="rounded-lg border border-secondary/40 px-7 py-3.5 text-sm font-bold text-foreground backdrop-blur-sm transition-colors hover:border-primary hover:text-primary sm:text-base"
+                  className="rounded-md border border-secondary/40 px-7 py-3.5 text-sm font-bold text-foreground transition-colors hover:border-foreground sm:text-base"
                 >
                   🎬 Trailer
                 </button>
@@ -171,7 +171,7 @@ export default function FilmeContent({
             {(precoAluguel || precoVitalicio) && (
               <div className="mt-6 flex flex-wrap gap-4">
                 {precoAluguel && (
-                  <div className="rounded-lg border border-secondary/20 bg-black/30 px-5 py-3">
+                  <div className="rounded-md border border-border bg-surface px-5 py-3">
                     <p className="text-xs uppercase tracking-wide text-secondary">
                       Aluguel · 7 dias
                     </p>
@@ -179,7 +179,7 @@ export default function FilmeContent({
                   </div>
                 )}
                 {precoVitalicio && (
-                  <div className="rounded-lg border border-secondary/20 bg-black/30 px-5 py-3">
+                  <div className="rounded-md border border-border bg-surface px-5 py-3">
                     <p className="text-xs uppercase tracking-wide text-secondary">
                       Vitalício
                     </p>
@@ -199,14 +199,14 @@ export default function FilmeContent({
           <h2 className="mb-4 text-[20px] font-bold text-foreground">
             Episódios
           </h2>
-          <div className="flex flex-col divide-y divide-secondary/10 overflow-hidden rounded-lg border border-secondary/10">
+          <div className="flex flex-col divide-y divide-border overflow-hidden rounded-md border border-border">
             {episodios.map((episodio) => (
               <Link
                 key={episodio.cd_episodio}
                 href={`/assistir/${conteudo.cd_conteudo}?ep=${episodio.nr_episodio}`}
-                className="flex items-center gap-4 px-4 py-3 transition-colors hover:bg-primary/10"
+                className="flex items-center gap-4 px-4 py-3 transition-colors hover:bg-white/5"
               >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[rgba(139,92,246,0.2)] text-sm font-bold text-primary">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface text-sm font-bold text-foreground">
                   {episodio.nr_episodio}
                 </span>
                 <span className="line-clamp-1 text-sm font-semibold text-foreground">
@@ -229,7 +229,7 @@ export default function FilmeContent({
 
       {trailerId && trailerAberto && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4"
+          className="fixed inset-0 z-[110] flex items-center justify-center bg-black/90 p-4"
           onClick={() => setTrailerAberto(false)}
         >
           <div
