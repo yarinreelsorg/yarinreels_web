@@ -35,6 +35,16 @@ export function estaExpirada(tsExpiracao: string) {
   return new Date(tsExpiracao).getTime() <= Date.now();
 }
 
+/**
+ * tp_fonte_prioritaria indica a origem preferida pelo BOT (Telegram), não se
+ * existe uma cópia tocável na CDN. Na web, o que importa é se ds_url_bunny
+ * é mesmo uma URL (vários itens "LOCAL" já têm cópia no Bunny; outros têm
+ * só o placeholder "LOCAL" ou nada).
+ */
+export function temVideoTocavel(urlBunny: string | null) {
+  return !!urlBunny && urlBunny.startsWith("http");
+}
+
 export function diasRestantes(tsExpiracao: string) {
   return Math.max(
     0,

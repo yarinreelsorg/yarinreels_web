@@ -10,6 +10,7 @@ import Estrelas from "@/components/catalog/Estrelas";
 import { formatarPreco, calcularRating } from "@/lib/catalogo";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Stagger";
 import { buttonTap } from "@/lib/motion";
+import BotaoMinhaLista from "@/components/catalog/BotaoMinhaLista";
 
 const ROTULO_FORMATO: Record<string, string> = {
   FILME: "Filme",
@@ -31,11 +32,15 @@ export default function FilmeContent({
   episodios,
   similares,
   categorias,
+  favoritado,
+  logado,
 }: {
   conteudo: Conteudo;
   episodios: Episodio[];
   similares: Conteudo[];
   categorias: string[];
+  favoritado: boolean;
+  logado: boolean;
 }) {
   const [trailerAberto, setTrailerAberto] = useState(false);
 
@@ -161,13 +166,12 @@ export default function FilmeContent({
                   ▶ Assistir
                 </Link>
               </motion.div>
-              <motion.button
-                type="button"
-                {...buttonTap}
+              <BotaoMinhaLista
+                cdConteudo={conteudo.cd_conteudo}
+                favoritadoInicial={favoritado}
+                logado={logado}
                 className="rounded-md border border-secondary/40 px-7 py-3.5 text-sm font-bold text-foreground transition-colors hover:border-foreground sm:text-base"
-              >
-                + Minha Lista
-              </motion.button>
+              />
               {trailerId && (
                 <motion.button
                   type="button"

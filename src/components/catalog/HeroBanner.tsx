@@ -6,10 +6,19 @@ import { AnimatePresence, motion } from "motion/react";
 import type { Conteudo } from "@/types/database";
 import { formatarPreco, formatarViews } from "@/lib/catalogo";
 import { buttonTap } from "@/lib/motion";
+import BotaoMinhaLista from "@/components/catalog/BotaoMinhaLista";
 
 const INTERVALO_MS = 6000;
 
-export default function HeroBanner({ destaques }: { destaques: Conteudo[] }) {
+export default function HeroBanner({
+  destaques,
+  favoritosIds,
+  logado,
+}: {
+  destaques: Conteudo[];
+  favoritosIds: string[];
+  logado: boolean;
+}) {
   const [index, setIndex] = useState(0);
   const [pausado, setPausado] = useState(false);
 
@@ -135,9 +144,11 @@ export default function HeroBanner({ destaques }: { destaques: Conteudo[] }) {
               ▶ Assistir
             </Link>
           </motion.div>
-          <motion.button
-            type="button"
-            {...buttonTap}
+          <BotaoMinhaLista
+            key={atual.cd_conteudo}
+            cdConteudo={atual.cd_conteudo}
+            favoritadoInicial={favoritosIds.includes(atual.cd_conteudo)}
+            logado={logado}
             className="bg-transparent text-white backdrop-blur-sm transition-colors hover:bg-white/10"
             style={{
               fontWeight: 700,
@@ -145,9 +156,7 @@ export default function HeroBanner({ destaques }: { destaques: Conteudo[] }) {
               border: "1px solid rgba(255,255,255,0.25)",
               padding: "14px 32px",
             }}
-          >
-            + Minha Lista
-          </motion.button>
+          />
         </div>
 
         {precoAluguel && (

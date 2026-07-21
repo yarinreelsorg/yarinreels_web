@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { type FormEvent, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, type FormEvent, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { traduzirErroAuth } from "@/lib/auth";
 import AuthCard from "@/components/auth/AuthCard";
@@ -11,7 +11,17 @@ import CampoTexto from "@/components/auth/CampoTexto";
 type Modo = "senha" | "magico";
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginPageInner />
+    </Suspense>
+  );
+}
+
+function LoginPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect_to") || "/";
   const [modo, setModo] = useState<Modo>("senha");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -42,7 +52,7 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/");
+    router.push(redirectTo);
     router.refresh();
   }
 
@@ -54,7 +64,7 @@ export default function LoginPage() {
     const supabase = createSupabaseBrowserClient();
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${window.location.origin}/` },
+      options: { emailRedirectTo: `${window.location.origin}${redirectTo}` },
     });
 
     setCarregando(false);

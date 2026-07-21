@@ -61,6 +61,12 @@ export default function CadastroPage() {
           Enviamos um link de confirmação para <strong>{email}</strong>. Abra
           o e-mail para ativar sua conta.
         </p>
+        <p className="mt-4 text-sm text-secondary">
+          Já comprou pelo nosso bot no Telegram? Depois de confirmar o e-mail
+          e entrar, vá em{" "}
+          <strong className="text-foreground">Minha Conta</strong> pra
+          vincular seu Telegram e ver tudo em um só lugar.
+        </p>
         <p className="mt-6 text-center text-sm text-secondary">
           <Link
             href="/login"

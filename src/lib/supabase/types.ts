@@ -7,12 +7,16 @@ import type {
   ConteudoInsert,
   ConteudoUpdate,
   Episodio,
+  Favorito,
+  FavoritoInsert,
   Plano,
   PlanoInsert,
   PlanoUpdate,
   RankingMensal,
   Venda,
   VendaInsert,
+  VinculacaoTelegram,
+  VinculacaoTelegramInsert,
 } from "@/types/database";
 
 export type Database = {
@@ -52,6 +56,18 @@ export type Database = {
         Row: Ban;
         Insert: Ban;
         Update: Ban;
+        Relationships: [];
+      };
+      VINCULACOES_TELEGRAM: {
+        Row: VinculacaoTelegram;
+        Insert: VinculacaoTelegramInsert;
+        Update: VinculacaoTelegram;
+        Relationships: [];
+      };
+      LISTA_FAVORITOS: {
+        Row: Favorito;
+        Insert: FavoritoInsert;
+        Update: Favorito;
         Relationships: [];
       };
     };

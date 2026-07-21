@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import FilmeContent from "@/components/filme/FilmeContent";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { obterIdsFavoritos } from "@/lib/favoritos";
 import type { Conteudo, Episodio } from "@/types/database";
 
 export default async function FilmePage({
@@ -40,12 +41,19 @@ export default async function FilmePage({
       .sort((a, b) => a.nr_episodio - b.nr_episodio);
   }
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const idsFavoritos = user ? await obterIdsFavoritos(supabase, user.id) : new Set<string>();
+
   return (
     <FilmeContent
       conteudo={conteudo}
       episodios={episodios}
       similares={similares}
       categorias={categorias}
+      favoritado={idsFavoritos.has(conteudo.cd_conteudo)}
+      logado={!!user}
     />
   );
 }

@@ -21,11 +21,15 @@ export default function HomeContent({
   categorias,
   destaques,
   top12,
+  favoritosIds,
+  logado,
 }: {
   conteudos: Conteudo[];
   categorias: string[];
   destaques: Conteudo[];
   top12: Conteudo[];
+  favoritosIds: string[];
+  logado: boolean;
 }) {
   const [busca, setBusca] = useState("");
   const [, startTransition] = useTransition();
@@ -89,7 +93,9 @@ export default function HomeContent({
         </section>
       ) : (
         <>
-          {destaques.length > 0 && <HeroBanner destaques={destaques} />}
+          {destaques.length > 0 && (
+            <HeroBanner destaques={destaques} favoritosIds={favoritosIds} logado={logado} />
+          )}
 
           <UniversosBar universos={universos} />
 

@@ -134,6 +134,37 @@ export type RankingMensal = {
   total_vendas: number;
 };
 
+export type TpStatusVinculacao = "PENDENTE" | "CONFIRMADO";
+
+export type VinculacaoTelegram = {
+  cd_vinculacao: string;
+  cd_usuario_auth: string;
+  cd_codigo: string;
+  nr_id_telegram: number | null;
+  tp_status: TpStatusVinculacao;
+  ts_criacao: string;
+  ts_confirmacao: string | null;
+  ts_expiracao: string;
+};
+
+export type VinculacaoTelegramInsert = {
+  cd_usuario_auth: string;
+  cd_codigo: string;
+  ts_expiracao: string;
+};
+
+export type Favorito = {
+  cd_favorito: string;
+  cd_usuario_auth: string;
+  cd_conteudo: string;
+  ts_criacao: string;
+};
+
+export type FavoritoInsert = {
+  cd_usuario_auth: string;
+  cd_conteudo: string;
+};
+
 export type TpPapelAdmin = "SUPER_ADMIN" | "ADMIN";
 
 export type Administrador = {

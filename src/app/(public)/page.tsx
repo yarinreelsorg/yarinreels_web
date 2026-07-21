@@ -1,5 +1,6 @@
 import HomeContent from "@/components/home/HomeContent";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { obterIdsFavoritos } from "@/lib/favoritos";
 import type { Conteudo } from "@/types/database";
 
 export default async function HomePage() {
@@ -7,6 +8,11 @@ export default async function HomePage() {
 
   const { data } = await supabase.from("CONTEUDOS").select("*");
   const conteudos: Conteudo[] = data ?? [];
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const idsFavoritos = user ? await obterIdsFavoritos(supabase, user.id) : new Set<string>();
 
   const categorias = Array.from(
     new Set(conteudos.map((c) => c.nm_categoria).filter(Boolean))
@@ -28,6 +34,8 @@ export default async function HomePage() {
       categorias={categorias}
       destaques={destaques}
       top12={top12}
+      favoritosIds={Array.from(idsFavoritos)}
+      logado={!!user}
     />
   );
 }
