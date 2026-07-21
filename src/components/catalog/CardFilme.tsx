@@ -2,14 +2,22 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { motion } from "motion/react";
 import type { Conteudo } from "@/types/database";
-import { formatarPreco, isNovo } from "@/lib/catalogo";
+import { formatarPreco, formatarViews } from "@/lib/catalogo";
+import { springExpressivo } from "@/lib/motion";
 
 type Variant = "carrossel" | "top12" | "grid";
 
 const TAMANHOS: Record<"carrossel" | "top12", { largura: number; altura: number }> = {
   carrossel: { largura: 160, altura: 240 },
   top12: { largura: 180, altura: 270 },
+};
+
+const subDays = (date: Date, days: number) => {
+  const result = new Date(date);
+  result.setDate(result.getDate() - days);
+  return result;
 };
 
 export default function CardFilme({
@@ -28,30 +36,42 @@ export default function CardFilme({
     .map((g) => g.trim())
     .filter(Boolean);
   const preco = formatarPreco(conteudo.vl_aluguel ?? conteudo.vl_vitalicio);
-  const novo = isNovo(conteudo.dt_lancamento);
+
+  // Badge NOVO vermelho para conteúdos com dt_lancamento dos últimos 30 dias
+  // verificar com new Date(c.dt_lancamento) > subDays(new Date(), 30)
+  const novo = conteudo.dt_lancamento
+    ? new Date(conteudo.dt_lancamento) > subDays(new Date(), 30)
+    : false;
 
   const fixo = variant !== "grid";
   const mostraRank = variant === "top12" && typeof rank === "number";
   const { largura, altura } = TAMANHOS[variant === "top12" ? "top12" : "carrossel"];
-  const escalaHover =
-    variant === "top12" ? "group-hover/card:scale-[1.06]" : "group-hover/card:scale-[1.08]";
 
   return (
-    <div
+    <motion.div
       className={`group/card relative flex items-end ${fixo ? "shrink-0" : "w-full"}`}
-      style={fixo ? { width: mostraRank ? largura + 56 : largura } : undefined}
+      style={fixo ? { width: largura } : undefined}
+      whileHover={{ scale: 1.08, zIndex: 20 }}
+      whileTap={{ scale: 0.97 }}
+      transition={springExpressivo}
     >
+      {/* Ranking numbers overlaid on bottom left */}
       {mostraRank && (
         <span
-          className="pointer-events-none relative z-0 -mr-8 shrink-0 select-none font-black leading-none text-white/[0.08]"
-          style={{ fontSize: 96 }}
+          className="pointer-events-none absolute bottom-[-10px] left-[-10px] z-30 select-none font-black leading-none text-white/[0.07]"
+          style={{
+            fontSize: "80px",
+            fontWeight: 900,
+            WebkitTextStroke: "1px rgba(139,92,246,0.3)",
+          }}
         >
           {rank}
         </span>
       )}
 
+      {/* Card Body */}
       <div
-        className={`relative z-10 origin-bottom-left overflow-hidden rounded-[6px] bg-surface ring-1 ring-white/[0.08] transition-all duration-300 ease-out group-hover/card:z-20 group-hover/card:ring-2 group-hover/card:ring-accent group-hover/card:shadow-[0_8px_32px_rgba(123,47,190,0.5)] ${escalaHover} ${
+        className={`relative z-10 origin-bottom-left overflow-hidden rounded-[8px] bg-surface transition-all duration-[250ms] ease-out border-2 border-transparent group-hover/card:border-[rgba(139,92,246,0.6)] group-hover/card:shadow-[0_8px_32px_rgba(123,47,190,0.4)] ${
           fixo ? "" : "aspect-[2/3] w-full"
         }`}
         style={fixo ? { width: largura, height: altura } : undefined}
@@ -77,24 +97,40 @@ export default function CardFilme({
           </div>
         )}
 
+        {/* Badge NOVO vermelho */}
         {novo && (
-          <span className="absolute left-1.5 top-1.5 rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+          <span className="absolute left-1.5 top-1.5 rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white z-10">
             Novo
           </span>
         )}
 
-        <span className="absolute right-1.5 top-1.5 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-foreground/90 backdrop-blur-sm">
+        {/* Badge de formato canto superior direito */}
+        <span
+          className="absolute right-1.5 top-1.5 rounded-full px-2 py-0.5 font-medium uppercase tracking-wide text-foreground/90 backdrop-blur-sm z-10"
+          style={{
+            background: "rgba(0,0,0,0.7)",
+            border: "1px solid rgba(139,92,246,0.4)",
+            fontSize: "9px",
+          }}
+        >
           {conteudo.tp_formato}
         </span>
 
-        <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/95 via-black/30 to-transparent p-3 opacity-0 transition-opacity duration-200 group-hover/card:opacity-100">
-          <button
-            type="button"
+        {/* Hover overlay bottom with gradient rgba(5,2,8,0) to rgba(5,2,8,0.95) */}
+        <div
+          className="absolute inset-0 flex flex-col justify-end p-3 opacity-0 transition-opacity duration-200 group-hover/card:opacity-100"
+          style={{
+            backgroundImage: "linear-gradient(to top, rgba(5,2,8,0.95) 0%, rgba(5,2,8,0) 100%)",
+          }}
+        >
+          {/* Botão play circular 40px roxo centralizado */}
+          <Link
+            href={`/filme/${conteudo.cd_conteudo}`}
             aria-label={`Assistir ${conteudo.nm_titulo}`}
-            className="absolute left-1/2 top-1/2 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-primary text-white shadow-[0_4px_20px_rgba(123,47,190,0.6)] transition-transform hover:scale-110"
+            className="absolute left-1/2 top-1/2 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-[#7B2FBE] text-white shadow-[0_4px_20px_rgba(123,47,190,0.6)] transition-transform hover:scale-110 cursor-pointer"
           >
             ▶
-          </button>
+          </Link>
 
           <Link
             href={`/filme/${conteudo.cd_conteudo}`}
@@ -103,13 +139,13 @@ export default function CardFilme({
             {conteudo.nm_titulo}
           </Link>
           {generos && generos.length > 0 && (
-            <p className="line-clamp-1 text-[11px] text-secondary">
+            <p className="line-clamp-1 text-[11px] text-[#A78BFA]">
               {generos.join(" • ")}
             </p>
           )}
-          {preco && <p className="mt-0.5 text-xs font-semibold text-accent">{preco}</p>}
+          {preco && <p className="mt-0.5 text-xs font-semibold text-[#9D4EDD]">{preco}</p>}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

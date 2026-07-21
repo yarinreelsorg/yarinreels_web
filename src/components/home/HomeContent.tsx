@@ -9,6 +9,7 @@ import UniversosBar from "@/components/catalog/UniversosBar";
 import Carrossel from "@/components/catalog/Carrossel";
 import CardFilme from "@/components/catalog/CardFilme";
 import Top12 from "@/components/catalog/Top12";
+import { StaggerGroup, StaggerItem } from "@/components/motion/Stagger";
 import {
   UNIVERSOS_CONFIG,
   categoriaParaSlug,
@@ -75,17 +76,16 @@ export default function HomeContent({
               ? `${resultadosBusca.length} resultado(s)`
               : "Nenhum resultado encontrado"}
           </h2>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {resultadosBusca.map((conteudo, i) => (
-              <div
-                key={conteudo.cd_conteudo}
-                className="animate-fade-in-up"
-                style={{ animationDelay: `${Math.min(i, 20) * 50}ms` }}
-              >
+          <StaggerGroup
+            className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+            staggerChildren={0.04}
+          >
+            {resultadosBusca.map((conteudo) => (
+              <StaggerItem key={conteudo.cd_conteudo}>
                 <CardFilme conteudo={conteudo} variant="grid" />
-              </div>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerGroup>
         </section>
       ) : (
         <>
@@ -93,7 +93,7 @@ export default function HomeContent({
 
           <UniversosBar universos={universos} />
 
-          <UpsellSection />
+          <UpsellSection destaques={destaques} />
 
           {top12.length > 0 && <Top12 itens={top12} />}
 

@@ -26,7 +26,9 @@ export default async function ContaAssinaturaPage() {
       ? (user.user_metadata.nr_id_telegram as number)
       : null;
 
-  let assinatura: (Venda & { plano: Plano | null }) | null = null;
+  let assinatura:
+    | (Venda & { ts_expiracao: string; plano: Plano | null })
+    | null = null;
 
   if (nrIdTelegram !== null) {
     const { data: vendasData } = await supabase.from("VENDAS").select("*");
@@ -36,10 +38,11 @@ export default async function ContaAssinaturaPage() {
 
     const ativa = vendas
       .filter(
-        (v) =>
+        (v): v is Venda & { ts_expiracao: string } =>
           v.nr_id_telegram === nrIdTelegram &&
           v.tp_compra === "ASSINATURA" &&
           v.tp_status === "APROVADA" &&
+          v.ts_expiracao !== null &&
           !estaExpirada(v.ts_expiracao)
       )
       .sort(

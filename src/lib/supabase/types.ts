@@ -1,33 +1,68 @@
-import type { Ban, Conteudo, Episodio, Plano, Venda } from "@/types/database";
+import type {
+  Administrador,
+  AdministradorInsert,
+  AdministradorUpdate,
+  Ban,
+  Conteudo,
+  ConteudoInsert,
+  ConteudoUpdate,
+  Episodio,
+  Plano,
+  PlanoInsert,
+  PlanoUpdate,
+  RankingMensal,
+  Venda,
+  VendaInsert,
+} from "@/types/database";
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
+      ADMINISTRADORES: {
+        Row: Administrador;
+        Insert: AdministradorInsert;
+        Update: AdministradorUpdate;
+        Relationships: [];
+      };
       CONTEUDOS: {
         Row: Conteudo;
-        Insert: Partial<Conteudo>;
-        Update: Partial<Conteudo>;
+        Insert: ConteudoInsert;
+        Update: ConteudoUpdate;
+        Relationships: [];
       };
       EPISODIOS: {
         Row: Episodio;
-        Insert: Partial<Episodio>;
-        Update: Partial<Episodio>;
+        Insert: Episodio;
+        Update: Episodio;
+        Relationships: [];
       };
       VENDAS: {
         Row: Venda;
-        Insert: Partial<Venda>;
-        Update: Partial<Venda>;
+        Insert: VendaInsert;
+        Update: Venda;
+        Relationships: [];
       };
       PLANOS: {
         Row: Plano;
-        Insert: Partial<Plano>;
-        Update: Partial<Plano>;
+        Insert: PlanoInsert;
+        Update: PlanoUpdate;
+        Relationships: [];
       };
       BANS: {
         Row: Ban;
-        Insert: Partial<Ban>;
-        Update: Partial<Ban>;
+        Insert: Ban;
+        Update: Ban;
+        Relationships: [];
       };
     };
+    Views: {
+      vw_ranking_mensal: {
+        Row: RankingMensal;
+        Relationships: [];
+      };
+    };
+    Functions: Record<string, never>;
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
   };
 }

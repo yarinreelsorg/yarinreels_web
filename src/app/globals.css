@@ -2,14 +2,14 @@
 
 :root {
   --background: #050208;
-  --surface: #0d0a1a;
-  --foreground: #ffffff;
-  --primary: #7b2fbe;
-  --primary-dark: #5f2394;
-  --accent: #9d4edd;
-  --secondary: #b0b0c3;
-  --border: rgba(255, 255, 255, 0.08);
-  --navbar-bg: rgba(5, 2, 8, 0.98);
+  --surface: #0D0A1A;
+  --primary: #7B2FBE;
+  --primary-dark: #6D28D9;
+  --accent: #9D4EDD;
+  --foreground: #F1F0FF;
+  --secondary: #A78BFA;
+  --border: rgba(139,92,246,0.15);
+  --navbar-bg: rgba(5,2,8,0.96);
 }
 
 @theme inline {
@@ -43,6 +43,19 @@ body {
 .animate-shimmer {
   background-size: 200% 100%;
   animation: shimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse-roxo {
+  0% {
+    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.7);
+  }
+  100% {
+    box-shadow: 0 0 0 14px rgba(139, 92, 246, 0);
+  }
+}
+
+.animate-pulse-roxo {
+  animation: pulse-roxo 2s infinite;
 }
 
 @keyframes pulse-soft {

@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import type { Conteudo } from "@/types/database";
 import CardFilme from "@/components/catalog/CardFilme";
+import { StaggerGroup, StaggerItem } from "@/components/motion/Stagger";
 
 export default function UniversoPage({
   label,
@@ -25,7 +27,12 @@ export default function UniversoPage({
 
   return (
     <div className="flex min-h-screen flex-col">
-      <section className="relative flex h-[300px] w-full items-end overflow-hidden">
+      <motion.section
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="relative flex h-[300px] w-full items-end overflow-hidden"
+      >
         <div className="absolute inset-0">
           {bannerUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -48,7 +55,12 @@ export default function UniversoPage({
           ←
         </Link>
 
-        <div className="relative z-10 px-6 pb-8 sm:px-10">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.15 }}
+          className="relative z-10 px-6 pb-8 sm:px-10"
+        >
           <h1
             className="text-4xl font-black leading-tight text-white sm:text-[48px]"
             style={{ textShadow: "0 2px 12px rgba(0,0,0,0.6)" }}
@@ -58,36 +70,49 @@ export default function UniversoPage({
           <p className="mt-2 text-sm font-medium text-secondary">
             {conteudos.length} título{conteudos.length === 1 ? "" : "s"}
           </p>
-        </div>
+        </motion.div>
 
         <div className="absolute inset-x-0 bottom-0 h-1" style={{ background: cor }} />
-      </section>
+      </motion.section>
 
       <section className="px-4 py-10 sm:px-8">
-        {carregando ? (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <div
-                key={i}
-                className="aspect-[2/3] w-full animate-shimmer rounded-[6px] bg-[linear-gradient(110deg,#0d0a1a_30%,#18101f_50%,#0d0a1a_70%)]"
-              />
-            ))}
-          </div>
-        ) : conteudos.length === 0 ? (
-          <p className="py-16 text-center text-secondary">
-            Nenhum título encontrado neste universo.
-          </p>
-        ) : (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-            {conteudos.map((conteudo) => (
-              <CardFilme
-                key={conteudo.cd_conteudo}
-                conteudo={conteudo}
-                variant="grid"
-              />
-            ))}
-          </div>
-        )}
+        <AnimatePresence mode="wait">
+          {carregando ? (
+            <motion.div
+              key="skeleton"
+              exit={{ opacity: 0 }}
+              className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5"
+            >
+              {Array.from({ length: 10 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="aspect-[2/3] w-full animate-shimmer rounded-[6px] bg-[linear-gradient(110deg,#0d0a1a_30%,#18101f_50%,#0d0a1a_70%)]"
+                />
+              ))}
+            </motion.div>
+          ) : conteudos.length === 0 ? (
+            <motion.p
+              key="vazio"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="py-16 text-center text-secondary"
+            >
+              Nenhum título encontrado neste universo.
+            </motion.p>
+          ) : (
+            <StaggerGroup
+              key="grid"
+              className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5"
+              staggerChildren={0.04}
+            >
+              {conteudos.map((conteudo) => (
+                <StaggerItem key={conteudo.cd_conteudo}>
+                  <CardFilme conteudo={conteudo} variant="grid" />
+                </StaggerItem>
+              ))}
+            </StaggerGroup>
+          )}
+        </AnimatePresence>
       </section>
     </div>
   );

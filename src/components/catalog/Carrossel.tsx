@@ -2,8 +2,11 @@
 
 import Link from "next/link";
 import { useRef } from "react";
+import { motion } from "motion/react";
 import type { Conteudo } from "@/types/database";
 import CardFilme from "./CardFilme";
+import { StaggerGroup, StaggerItem } from "@/components/motion/Stagger";
+import { buttonTap } from "@/lib/motion";
 
 export default function Carrossel({
   titulo,
@@ -31,11 +34,19 @@ export default function Carrossel({
   return (
     <section className="relative py-5">
       <div className="mb-3 flex items-center justify-between px-4 sm:px-8">
-        <h2 className="text-lg font-semibold text-foreground">{titulo}</h2>
+        <h2
+          className="text-foreground text-[18px] font-bold"
+          style={{
+            borderLeft: "3px solid #7B2FBE",
+            paddingLeft: "12px",
+          }}
+        >
+          {titulo}
+        </h2>
         {verTudoHref && (
           <Link
             href={verTudoHref}
-            className="text-sm font-semibold text-accent transition-colors hover:text-foreground"
+            className="text-sm font-semibold text-[#9D4EDD] transition-colors hover:text-white"
           >
             Ver todos →
           </Link>
@@ -43,33 +54,36 @@ export default function Carrossel({
       </div>
 
       <div className="group/carrossel relative overflow-hidden">
-        <div
+        <StaggerGroup
           ref={trilhoRef}
           className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-4 pb-2 [scrollbar-width:none] sm:px-8 [&::-webkit-scrollbar]:hidden"
+          staggerChildren={0.04}
         >
           {itens.map((item) => (
-            <div key={item.cd_conteudo} className="snap-start">
+            <StaggerItem key={item.cd_conteudo} className="snap-start">
               <CardFilme conteudo={item} variant="carrossel" />
-            </div>
+            </StaggerItem>
           ))}
-        </div>
+        </StaggerGroup>
 
-        <button
+        <motion.button
           type="button"
           aria-label="Anterior"
           onClick={() => rolar("esquerda")}
-          className="absolute left-0 top-0 z-20 hidden h-full w-12 items-center justify-center bg-[rgba(5,2,8,0.9)] text-2xl text-foreground opacity-0 transition-opacity group-hover/carrossel:opacity-100 sm:flex"
+          {...buttonTap}
+          className="absolute left-4 top-1/2 -translate-y-1/2 z-20 hidden h-10 w-10 items-center justify-center bg-[rgba(5,2,8,0.9)] border border-[rgba(139,92,246,0.3)] text-[#9D4EDD] rounded-[8px] text-2xl opacity-0 transition-opacity group-hover/carrossel:opacity-100 sm:flex cursor-pointer hover:bg-[#0D0A1A]"
         >
           ‹
-        </button>
-        <button
+        </motion.button>
+        <motion.button
           type="button"
           aria-label="Próximo"
           onClick={() => rolar("direita")}
-          className="absolute right-0 top-0 z-20 hidden h-full w-12 items-center justify-center bg-[rgba(5,2,8,0.9)] text-2xl text-foreground opacity-0 transition-opacity group-hover/carrossel:opacity-100 sm:flex"
+          {...buttonTap}
+          className="absolute right-4 top-1/2 -translate-y-1/2 z-20 hidden h-10 w-10 items-center justify-center bg-[rgba(5,2,8,0.9)] border border-[rgba(139,92,246,0.3)] text-[#9D4EDD] rounded-[8px] text-2xl opacity-0 transition-opacity group-hover/carrossel:opacity-100 sm:flex cursor-pointer hover:bg-[#0D0A1A]"
         >
           ›
-        </button>
+        </motion.button>
       </div>
     </section>
   );

@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { motion } from "motion/react";
 import type { ReactNode } from "react";
 
 export default function AuthCard({
@@ -12,7 +15,12 @@ export default function AuthCard({
 }) {
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md">
+      <motion.div
+        initial={{ opacity: 0, y: 24, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ type: "spring", stiffness: 280, damping: 26 }}
+        className="w-full max-w-md"
+      >
         <Link
           href="/"
           className="mb-8 block text-center text-xl font-bold tracking-tight text-foreground"
@@ -26,9 +34,17 @@ export default function AuthCard({
           </h1>
           <p className="mt-1 text-sm text-secondary">{subtitulo}</p>
 
-          <div className="mt-6">{children}</div>
+          <motion.div
+            key={titulo}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.1, duration: 0.3 }}
+            className="mt-6"
+          >
+            {children}
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

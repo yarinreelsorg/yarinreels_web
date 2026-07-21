@@ -5,6 +5,7 @@ import type { User } from "@supabase/supabase-js";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 
 const LINKS = [
   { label: "Início", href: "/" },
@@ -187,29 +188,37 @@ function NavbarInner({
               >
                 {inicial}
               </button>
-              {menuAberto && (
-                <div className="absolute right-0 top-11 w-48 overflow-hidden rounded-md border border-border bg-surface py-1.5 shadow-[0_12px_30px_rgba(0,0,0,0.6)]">
-                  <Link
-                    href="/conta"
-                    className="block px-4 py-2 text-sm text-foreground hover:bg-white/5"
+              <AnimatePresence>
+                {menuAberto && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-11 w-48 origin-top-right overflow-hidden rounded-md border border-border bg-surface py-1.5 shadow-[0_12px_30px_rgba(0,0,0,0.6)]"
                   >
-                    Minha Conta
-                  </Link>
-                  <Link
-                    href="/minha-lista"
-                    className="block px-4 py-2 text-sm text-foreground hover:bg-white/5"
-                  >
-                    Minha Lista
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={sair}
-                    className="block w-full px-4 py-2 text-left text-sm text-foreground hover:bg-white/5"
-                  >
-                    Sair
-                  </button>
-                </div>
-              )}
+                    <Link
+                      href="/conta"
+                      className="block px-4 py-2 text-sm text-foreground hover:bg-white/5"
+                    >
+                      Minha Conta
+                    </Link>
+                    <Link
+                      href="/minha-lista"
+                      className="block px-4 py-2 text-sm text-foreground hover:bg-white/5"
+                    >
+                      Minha Lista
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={sair}
+                      className="block w-full px-4 py-2 text-left text-sm text-foreground hover:bg-white/5"
+                    >
+                      Sair
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           ) : (
             <div className="flex items-center gap-2">
@@ -250,10 +259,15 @@ function NavbarInner({
         </button>
       </div>
 
+      <AnimatePresence>
       {menuMobileAberto && (
-        <div
+        <motion.div
           ref={menuMobileRef}
-          className="border-t border-border bg-[var(--navbar-bg)] px-4 pb-5 pt-3 sm:px-8 md:hidden"
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.25, ease: "easeInOut" }}
+          className="overflow-hidden border-t border-border bg-[var(--navbar-bg)] px-4 pb-5 pt-3 sm:px-8 md:hidden"
         >
           <input
             type="search"
@@ -317,8 +331,9 @@ function NavbarInner({
               </div>
             )}
           </div>
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </header>
   );
 }

@@ -1,9 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { motion } from "motion/react";
 import type { Conteudo, TpFormato } from "@/types/database";
 import Navbar from "@/components/layout/Navbar";
 import CardFilme from "@/components/catalog/CardFilme";
+import { StaggerGroup, StaggerItem } from "@/components/motion/Stagger";
+import { buttonTap } from "@/lib/motion";
 
 const FORMATOS: { label: string; value: TpFormato | null }[] = [
   { label: "Todos", value: null },
@@ -123,10 +126,11 @@ export default function CatalogoContent({
 
         <div className="mb-4 flex flex-wrap gap-2">
           {FORMATOS.map((formato) => (
-            <button
+            <motion.button
               key={formato.label}
               type="button"
               onClick={() => aoMudarFormato(formato.value)}
+              {...buttonTap}
               className={`rounded-md border px-4 py-1.5 text-sm font-medium transition-colors ${
                 formatoAtivo === formato.value
                   ? "border-accent bg-accent/15 text-foreground"
@@ -134,7 +138,7 @@ export default function CatalogoContent({
               }`}
             >
               {formato.label}
-            </button>
+            </motion.button>
           ))}
         </div>
 
@@ -174,25 +178,27 @@ export default function CatalogoContent({
           </p>
         ) : (
           <>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            <StaggerGroup
+              className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
+              staggerChildren={0.03}
+            >
               {resultados.map((conteudo) => (
-                <CardFilme
-                  key={conteudo.cd_conteudo}
-                  conteudo={conteudo}
-                  variant="grid"
-                />
+                <StaggerItem key={conteudo.cd_conteudo}>
+                  <CardFilme conteudo={conteudo} variant="grid" />
+                </StaggerItem>
               ))}
-            </div>
+            </StaggerGroup>
 
             {temMais && (
               <div className="mt-8 flex justify-center">
-                <button
+                <motion.button
                   type="button"
                   onClick={() => setVisiveis((v) => v + TAMANHO_PAGINA)}
+                  {...buttonTap}
                   className="rounded-md border border-border px-8 py-2.5 text-sm font-semibold text-foreground transition-colors hover:border-foreground/40"
                 >
                   Carregar mais
-                </button>
+                </motion.button>
               </div>
             )}
           </>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 
 export default function FaqItem({
   pergunta,
@@ -19,19 +20,29 @@ export default function FaqItem({
         className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left text-sm font-semibold text-foreground"
       >
         {pergunta}
-        <span
-          className={`shrink-0 text-lg text-primary transition-transform duration-200 ${
-            aberto ? "rotate-45" : ""
-          }`}
+        <motion.span
+          className="shrink-0 text-lg text-primary"
+          animate={{ rotate: aberto ? 45 : 0 }}
+          transition={{ duration: 0.2 }}
         >
           +
-        </span>
+        </motion.span>
       </button>
-      {aberto && (
-        <p className="px-5 pb-4 text-sm leading-relaxed text-secondary">
-          {resposta}
-        </p>
-      )}
+      <AnimatePresence initial={false}>
+        {aberto && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
+            className="overflow-hidden"
+          >
+            <p className="px-5 pb-4 text-sm leading-relaxed text-secondary">
+              {resposta}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

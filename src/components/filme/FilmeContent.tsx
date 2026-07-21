@@ -2,11 +2,14 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import type { Conteudo, Episodio } from "@/types/database";
 import Navbar from "@/components/layout/Navbar";
 import Carrossel from "@/components/catalog/Carrossel";
 import Estrelas from "@/components/catalog/Estrelas";
 import { formatarPreco, calcularRating } from "@/lib/catalogo";
+import { StaggerGroup, StaggerItem } from "@/components/motion/Stagger";
+import { buttonTap } from "@/lib/motion";
 
 const ROTULO_FORMATO: Record<string, string> = {
   FILME: "Filme",
@@ -73,7 +76,12 @@ export default function FilmeContent({
           <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/50" />
         </div>
 
-        <div className="relative z-10 flex w-full flex-col gap-6 px-4 pb-14 sm:px-8 lg:flex-row lg:items-end lg:gap-10">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="relative z-10 flex w-full flex-col gap-6 px-4 pb-14 sm:px-8 lg:flex-row lg:items-end lg:gap-10"
+        >
           <div className="hidden shrink-0 overflow-hidden rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.6)] lg:block">
             {conteudo.ds_url_poster ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -145,26 +153,30 @@ export default function FilmeContent({
             )}
 
             <div className="mt-6 flex flex-wrap items-center gap-3">
-              <Link
-                href={`/assistir/${conteudo.cd_conteudo}`}
-                className="rounded-md bg-primary px-7 py-3.5 text-sm font-bold text-white transition-colors hover:bg-primary-dark sm:text-base"
-              >
-                ▶ Assistir
-              </Link>
-              <button
+              <motion.div {...buttonTap}>
+                <Link
+                  href={`/assistir/${conteudo.cd_conteudo}`}
+                  className="rounded-md bg-primary px-7 py-3.5 text-sm font-bold text-white transition-colors hover:bg-primary-dark sm:text-base"
+                >
+                  ▶ Assistir
+                </Link>
+              </motion.div>
+              <motion.button
                 type="button"
+                {...buttonTap}
                 className="rounded-md border border-secondary/40 px-7 py-3.5 text-sm font-bold text-foreground transition-colors hover:border-foreground sm:text-base"
               >
                 + Minha Lista
-              </button>
+              </motion.button>
               {trailerId && (
-                <button
+                <motion.button
                   type="button"
                   onClick={() => setTrailerAberto(true)}
+                  {...buttonTap}
                   className="rounded-md border border-secondary/40 px-7 py-3.5 text-sm font-bold text-foreground transition-colors hover:border-foreground sm:text-base"
                 >
                   🎬 Trailer
-                </button>
+                </motion.button>
               )}
             </div>
 
@@ -191,7 +203,7 @@ export default function FilmeContent({
               </div>
             )}
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {episodios.length > 0 && (
@@ -199,23 +211,24 @@ export default function FilmeContent({
           <h2 className="mb-4 text-[20px] font-bold text-foreground">
             Episódios
           </h2>
-          <div className="flex flex-col divide-y divide-border overflow-hidden rounded-md border border-border">
+          <StaggerGroup className="flex flex-col divide-y divide-border overflow-hidden rounded-md border border-border">
             {episodios.map((episodio) => (
-              <Link
-                key={episodio.cd_episodio}
-                href={`/assistir/${conteudo.cd_conteudo}?ep=${episodio.nr_episodio}`}
-                className="flex items-center gap-4 px-4 py-3 transition-colors hover:bg-white/5"
-              >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface text-sm font-bold text-foreground">
-                  {episodio.nr_episodio}
-                </span>
-                <span className="line-clamp-1 text-sm font-semibold text-foreground">
-                  {episodio.nm_titulo}
-                </span>
-                <span className="ml-auto text-lg text-secondary">▶</span>
-              </Link>
+              <StaggerItem key={episodio.cd_episodio}>
+                <Link
+                  href={`/assistir/${conteudo.cd_conteudo}?ep=${episodio.nr_episodio}`}
+                  className="flex items-center gap-4 px-4 py-3 transition-colors hover:bg-white/5"
+                >
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface text-sm font-bold text-foreground">
+                    {episodio.nr_episodio}
+                  </span>
+                  <span className="line-clamp-1 text-sm font-semibold text-foreground">
+                    {episodio.nm_titulo}
+                  </span>
+                  <span className="ml-auto text-lg text-secondary">▶</span>
+                </Link>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerGroup>
         </section>
       )}
 
@@ -227,33 +240,43 @@ export default function FilmeContent({
         />
       )}
 
-      {trailerId && trailerAberto && (
-        <div
-          className="fixed inset-0 z-[110] flex items-center justify-center bg-black/90 p-4"
-          onClick={() => setTrailerAberto(false)}
-        >
-          <div
-            className="aspect-video w-full max-w-3xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <iframe
-              src={`https://www.youtube.com/embed/${trailerId}?autoplay=1`}
-              title="Trailer"
-              allow="autoplay; encrypted-media; picture-in-picture"
-              allowFullScreen
-              className="h-full w-full rounded-lg"
-            />
-          </div>
-          <button
-            type="button"
+      <AnimatePresence>
+        {trailerId && trailerAberto && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[110] flex items-center justify-center bg-black/90 p-4"
             onClick={() => setTrailerAberto(false)}
-            aria-label="Fechar trailer"
-            className="absolute right-6 top-6 text-3xl text-white"
           >
-            ×
-          </button>
-        </div>
-      )}
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 26 }}
+              className="aspect-video w-full max-w-3xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <iframe
+                src={`https://www.youtube.com/embed/${trailerId}?autoplay=1`}
+                title="Trailer"
+                allow="autoplay; encrypted-media; picture-in-picture"
+                allowFullScreen
+                className="h-full w-full rounded-lg"
+              />
+            </motion.div>
+            <button
+              type="button"
+              onClick={() => setTrailerAberto(false)}
+              aria-label="Fechar trailer"
+              className="absolute right-6 top-6 text-3xl text-white"
+            >
+              ×
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
