@@ -82,6 +82,38 @@ export async function alternarAtivoAdministrador(cd_administrador: string, ativo
   revalidatePath("/admin/configuracoes");
 }
 
+export async function atualizarTaxaCartao(formData: FormData) {
+  await exigirSuperAdmin();
+
+  const vl_taxa_cartao = Number(formData.get("vl_taxa_cartao"));
+  if (Number.isNaN(vl_taxa_cartao) || vl_taxa_cartao < 0) {
+    throw new Error("Informe um valor de taxa válido.");
+  }
+
+  const supabase = createSupabaseAdminClient();
+  const { data: existente } = await supabase
+    .from("CONFIGURACAO_PAGAMENTO")
+    .select("cd_configuracao")
+    .limit(1)
+    .maybeSingle();
+
+  const { error } = existente
+    ? await supabase
+        .from("CONFIGURACAO_PAGAMENTO")
+        .update({ vl_taxa_cartao })
+        .eq("cd_configuracao", existente.cd_configuracao)
+    : await supabase.from("CONFIGURACAO_PAGAMENTO").insert({
+        cd_configuracao: crypto.randomUUID(),
+        vl_taxa_cartao,
+        ts_atualizacao: new Date().toISOString(),
+      });
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/admin/configuracoes");
+  revalidatePath("/checkout");
+}
+
 export async function atualizarPapelAdministrador(
   cd_administrador: string,
   tp_papel: TpPapelAdmin

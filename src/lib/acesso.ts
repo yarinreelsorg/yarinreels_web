@@ -71,6 +71,26 @@ export async function obterIdsTelegramElegiveis(user: User): Promise<number[]> {
   return idTelegramReal ? [idWeb, idTelegramReal] : [idWeb];
 }
 
+/**
+ * Identidade a usar quando o cliente COMPRA algo agora: a conta real do
+ * Telegram, se já vinculada (consolida com o que ele compra pelo bot);
+ * senão a identidade web sintética.
+ */
+export async function obterIdentidadeParaCompra(user: User): Promise<number> {
+  const ids = await obterIdsTelegramElegiveis(user);
+  return ids[ids.length - 1];
+}
+
+/** Validade por tipo de compra — mesma regra usada na concessão manual pelo admin. */
+export const DIAS_ALUGUEL = 7;
+export const DIAS_VITALICIO = 18250;
+
+export function somarDias(dias: number) {
+  const data = new Date();
+  data.setDate(data.getDate() + dias);
+  return data.toISOString();
+}
+
 export type MotivoAcesso = "ALUGUEL" | "VITALICIO" | "ASSINATURA";
 
 export type StatusAcesso =

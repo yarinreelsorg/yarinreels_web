@@ -6,6 +6,7 @@ import type { Administrador, TpPapelAdmin } from "@/types/database";
 import {
   alternarAtivoAdministrador,
   atualizarPapelAdministrador,
+  atualizarTaxaCartao,
   criarAdministrador,
 } from "./actions";
 import { buttonTap } from "@/lib/motion";
@@ -14,10 +15,12 @@ export default function ConfiguracoesClient({
   administradores,
   cdAdministradorAtual,
   papelAtual,
+  taxaCartaoInicial,
 }: {
   administradores: Administrador[];
   cdAdministradorAtual: string | null;
   papelAtual: TpPapelAdmin;
+  taxaCartaoInicial: number;
 }) {
   const ehSuperAdmin = papelAtual === "SUPER_ADMIN";
 
@@ -25,6 +28,28 @@ export default function ConfiguracoesClient({
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [carregandoId, setCarregandoId] = useState<string | null>(null);
+
+  const [taxaCartao, setTaxaCartao] = useState(String(taxaCartaoInicial));
+  const [salvandoTaxa, setSalvandoTaxa] = useState(false);
+  const [erroTaxa, setErroTaxa] = useState<string | null>(null);
+  const [taxaSalva, setTaxaSalva] = useState(false);
+
+  const aoSalvarTaxa = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setSalvandoTaxa(true);
+    setErroTaxa(null);
+    setTaxaSalva(false);
+    try {
+      const formData = new FormData(e.currentTarget);
+      await atualizarTaxaCartao(formData);
+      setTaxaSalva(true);
+      setTimeout(() => setTaxaSalva(false), 2000);
+    } catch (err) {
+      setErroTaxa(err instanceof Error ? err.message : "Erro ao salvar a taxa.");
+    } finally {
+      setSalvandoTaxa(false);
+    }
+  };
 
   const aoSubmeter = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -89,6 +114,42 @@ export default function ConfiguracoesClient({
           administradores.
         </div>
       )}
+
+      <div className="rounded-lg border border-[rgba(139,92,246,0.15)] bg-[#0D0A1A] p-6 shadow-lg">
+        <h2 className="text-lg font-bold text-white">Pagamento com Cartão</h2>
+        <p className="mt-1 text-sm text-[#A78BFA]">
+          Taxa fixa adicional cobrada sobre o valor de qualquer compra paga com cartão.
+        </p>
+        <form onSubmit={aoSalvarTaxa} className="mt-4 flex flex-wrap items-end gap-3">
+          <div>
+            <label htmlFor="vl_taxa_cartao" className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">
+              Taxa (R$)
+            </label>
+            <input
+              type="number"
+              id="vl_taxa_cartao"
+              name="vl_taxa_cartao"
+              step="0.01"
+              min="0"
+              value={taxaCartao}
+              onChange={(e) => setTaxaCartao(e.target.value)}
+              disabled={!ehSuperAdmin}
+              className="w-40 bg-[#050208] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white disabled:opacity-50"
+            />
+          </div>
+          {ehSuperAdmin && (
+            <motion.button
+              type="submit"
+              disabled={salvandoTaxa}
+              {...buttonTap}
+              className="rounded-md bg-[#7B2FBE] hover:bg-[#6D28D9] disabled:opacity-50 px-5 py-2.5 text-sm font-bold text-white transition-colors cursor-pointer"
+            >
+              {salvandoTaxa ? "Salvando..." : taxaSalva ? "Salvo!" : "Salvar"}
+            </motion.button>
+          )}
+          {erroTaxa && <p className="w-full text-sm text-red-400">{erroTaxa}</p>}
+        </form>
+      </div>
 
       <div className="rounded-lg border border-[rgba(139,92,246,0.15)] bg-[#0D0A1A] overflow-hidden shadow-lg">
         <div className="overflow-x-auto">

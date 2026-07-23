@@ -187,22 +187,28 @@ export default function FilmeContent({
             {(precoAluguel || precoVitalicio) && (
               <div className="mt-6 flex flex-wrap gap-4">
                 {precoAluguel && (
-                  <div className="rounded-md border border-border bg-surface px-5 py-3">
+                  <Link
+                    href={`/checkout/conteudo/${conteudo.cd_conteudo}?tipo=ALUGUEL`}
+                    className="rounded-md border border-border bg-surface px-5 py-3 transition-colors hover:border-primary/60"
+                  >
                     <p className="text-xs uppercase tracking-wide text-secondary">
                       Aluguel · 7 dias
                     </p>
                     <p className="text-lg font-bold text-primary">{precoAluguel}</p>
-                  </div>
+                  </Link>
                 )}
                 {precoVitalicio && (
-                  <div className="rounded-md border border-border bg-surface px-5 py-3">
+                  <Link
+                    href={`/checkout/conteudo/${conteudo.cd_conteudo}?tipo=VITALICIO`}
+                    className="rounded-md border border-border bg-surface px-5 py-3 transition-colors hover:border-primary/60"
+                  >
                     <p className="text-xs uppercase tracking-wide text-secondary">
                       Vitalício
                     </p>
                     <p className="text-lg font-bold text-primary">
                       {precoVitalicio}
                     </p>
-                  </div>
+                  </Link>
                 )}
               </div>
             )}

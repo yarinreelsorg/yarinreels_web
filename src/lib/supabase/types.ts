@@ -3,6 +3,8 @@ import type {
   AdministradorInsert,
   AdministradorUpdate,
   Ban,
+  ConfiguracaoPagamento,
+  ConfiguracaoPagamentoUpdate,
   Conteudo,
   ConteudoInsert,
   ConteudoUpdate,
@@ -13,8 +15,11 @@ import type {
   PlanoInsert,
   PlanoUpdate,
   RankingMensal,
+  TentativaCartaoRecusada,
+  TentativaCartaoRecusadaInsert,
   Venda,
   VendaInsert,
+  VendaUpdate,
   VinculacaoTelegram,
   VinculacaoTelegramInsert,
 } from "@/types/database";
@@ -43,7 +48,7 @@ export type Database = {
       VENDAS: {
         Row: Venda;
         Insert: VendaInsert;
-        Update: Venda;
+        Update: VendaUpdate;
         Relationships: [];
       };
       PLANOS: {
@@ -68,6 +73,18 @@ export type Database = {
         Row: Favorito;
         Insert: FavoritoInsert;
         Update: Favorito;
+        Relationships: [];
+      };
+      CONFIGURACAO_PAGAMENTO: {
+        Row: ConfiguracaoPagamento;
+        Insert: ConfiguracaoPagamento;
+        Update: ConfiguracaoPagamentoUpdate;
+        Relationships: [];
+      };
+      TENTATIVAS_CARTAO_RECUSADAS: {
+        Row: TentativaCartaoRecusada;
+        Insert: TentativaCartaoRecusadaInsert;
+        Update: TentativaCartaoRecusadaInsert;
         Relationships: [];
       };
     };

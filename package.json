@@ -16,8 +16,10 @@
     "jose": "^6.2.3",
     "motion": "^12.42.2",
     "next": "16.2.10",
+    "payment-token-efi": "^3.4.1",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "sdk-node-apis-efi": "^2.0.0",
     "server-only": "^0.0.1"
   },
   "devDependencies": {

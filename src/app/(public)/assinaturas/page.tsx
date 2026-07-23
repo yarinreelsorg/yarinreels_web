@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import Navbar from "@/components/layout/Navbar";
+import { formatarPreco } from "@/lib/catalogo";
 import type { Plano } from "@/types/database";
 
 function formatarDuracao(dias: number) {
@@ -52,6 +53,9 @@ export default async function AssinaturasPage() {
                 <p className="mt-1 text-sm text-secondary">
                   {formatarDuracao(plano.nr_dias_validade)} de acesso
                 </p>
+                <p className="mt-2 text-2xl font-black text-primary">
+                  {formatarPreco(plano.vl_plano)}
+                </p>
 
                 <ul className="mt-5 flex flex-col gap-2 text-sm text-secondary">
                   <li className="flex items-center gap-2">
@@ -67,7 +71,7 @@ export default async function AssinaturasPage() {
                 </ul>
 
                 <Link
-                  href="/cadastro"
+                  href={`/checkout/plano/${plano.cd_plano}`}
                   className="mt-6 rounded-md bg-primary px-6 py-3 text-center text-sm font-bold text-white transition-colors hover:bg-primary-dark"
                 >
                   Assinar agora

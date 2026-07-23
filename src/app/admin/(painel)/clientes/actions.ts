@@ -2,16 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { DIAS_ALUGUEL, DIAS_VITALICIO, somarDias } from "@/lib/acesso";
 import type { TpCompra } from "@/types/database";
-
-const DIAS_ALUGUEL = 7;
-const DIAS_VITALICIO = 18250;
-
-function somarDias(dias: number) {
-  const data = new Date();
-  data.setDate(data.getDate() + dias);
-  return data.toISOString();
-}
 
 export async function concederAcesso(formData: FormData) {
   const nr_id_telegram = Number(formData.get("nr_id_telegram"));

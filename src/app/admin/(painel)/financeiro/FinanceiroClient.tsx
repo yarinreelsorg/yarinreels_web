@@ -23,6 +23,7 @@ const MESES_ABREV = [
 ];
 
 function getValorAproximado(v: Venda, conteudosMap: Map<string, Conteudo>) {
+  if (v.vl_pago != null) return v.vl_pago;
   if (v.tp_compra === "ASSINATURA") return 20;
   if (v.tp_compra === "ALUGUEL") {
     return (v.cd_conteudo ? conteudosMap.get(v.cd_conteudo)?.vl_aluguel : null) ?? 10;

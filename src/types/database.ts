@@ -88,6 +88,9 @@ export type Venda = {
   ts_criacao: string;
   ts_atualizacao: string;
   ts_expiracao: string | null;
+  /** Valor efetivamente cobrado pelo site (Pix ou cartão + taxa). Nulo em
+   * vendas antigas/feitas pelo bot — nesse caso usar valor estimado. */
+  vl_pago: number | null;
 };
 
 export type VendaInsert = {
@@ -99,6 +102,35 @@ export type VendaInsert = {
   tp_status?: TpStatusVenda;
   ds_txid?: string | null;
   ts_expiracao?: string | null;
+  vl_pago?: number | null;
+};
+
+export type VendaUpdate = {
+  tp_status?: TpStatusVenda;
+  ds_txid?: string | null;
+  ts_expiracao?: string | null;
+  vl_pago?: number | null;
+};
+
+export type TentativaCartaoRecusada = {
+  cd_tentativa: string;
+  nr_id_telegram: number;
+  cd_conteudo: string | null;
+  cd_plano: string | null;
+  tp_compra: TpCompra;
+  vl_tentativa: number;
+  ds_motivo: string | null;
+  ts_criacao: string;
+};
+
+export type TentativaCartaoRecusadaInsert = {
+  cd_tentativa?: string;
+  nr_id_telegram: number;
+  cd_conteudo?: string | null;
+  cd_plano?: string | null;
+  tp_compra: TpCompra;
+  vl_tentativa: number;
+  ds_motivo?: string | null;
 };
 
 export type Plano = {
@@ -163,6 +195,16 @@ export type Favorito = {
 export type FavoritoInsert = {
   cd_usuario_auth: string;
   cd_conteudo: string;
+};
+
+export type ConfiguracaoPagamento = {
+  cd_configuracao: string;
+  vl_taxa_cartao: number;
+  ts_atualizacao: string;
+};
+
+export type ConfiguracaoPagamentoUpdate = {
+  vl_taxa_cartao?: number;
 };
 
 export type TpPapelAdmin = "SUPER_ADMIN" | "ADMIN";
