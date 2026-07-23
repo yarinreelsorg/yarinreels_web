@@ -84,8 +84,7 @@ export default function HeroBanner({
       <AnimatePresence mode="wait">
       <motion.div
         key={atual.cd_conteudo}
-        className="relative z-20 max-w-3xl select-none"
-        style={{ paddingBottom: "80px", paddingLeft: "64px" }}
+        className="relative z-20 max-w-3xl select-none px-4 pb-14 sm:px-8 sm:pb-16 lg:pl-16 lg:pb-20"
         initial={{ opacity: 0, y: 28 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -16 }}
@@ -102,20 +101,13 @@ export default function HeroBanner({
           {atual.nm_categoria || "Destaque"}
         </span>
 
-        <h1
-          className="text-white"
-          style={{
-            fontSize: "60px",
-            fontWeight: 900,
-            lineHeight: 1.1,
-          }}
-        >
+        <h1 className="text-[32px] font-black leading-[1.1] text-white sm:text-[44px] lg:text-[60px]">
           {atual.nm_titulo}
         </h1>
 
         {atual.ds_descricao && (
           <p
-            className="mt-4 line-clamp-2 max-w-xl text-[16px] leading-relaxed"
+            className="mt-4 line-clamp-2 max-w-xl text-sm leading-relaxed sm:text-[16px]"
             style={{ color: "#A78BFA" }}
           >
             {atual.ds_descricao}
@@ -134,12 +126,7 @@ export default function HeroBanner({
           <motion.div {...buttonTap}>
             <Link
               href={`/assistir/${atual.cd_conteudo}`}
-              className="bg-white text-black transition-colors hover:bg-white/90 inline-block text-center"
-              style={{
-                fontWeight: 700,
-                borderRadius: "6px",
-                padding: "14px 32px",
-              }}
+              className="inline-block rounded-md bg-white px-5 py-3 text-center font-bold text-black transition-colors hover:bg-white/90 sm:px-8 sm:py-3.5"
             >
               ▶ Assistir
             </Link>
@@ -149,13 +136,7 @@ export default function HeroBanner({
             cdConteudo={atual.cd_conteudo}
             favoritadoInicial={favoritosIds.includes(atual.cd_conteudo)}
             logado={logado}
-            className="bg-transparent text-white backdrop-blur-sm transition-colors hover:bg-white/10"
-            style={{
-              fontWeight: 700,
-              borderRadius: "6px",
-              border: "1px solid rgba(255,255,255,0.25)",
-              padding: "14px 32px",
-            }}
+            className="rounded-md border border-white/25 bg-transparent px-5 py-3 font-bold text-white backdrop-blur-sm transition-colors hover:bg-white/10 sm:px-8 sm:py-3.5"
           />
         </div>
 
@@ -168,7 +149,7 @@ export default function HeroBanner({
       </AnimatePresence>
 
       {destaques.length > 1 && (
-        <div className="absolute bottom-[80px] right-[64px] z-20 flex gap-2">
+        <div className="absolute bottom-14 right-4 z-20 flex gap-2 sm:bottom-16 sm:right-8 lg:bottom-20 lg:right-16">
           {destaques.map((item, i) => (
             <motion.button
               key={item.cd_conteudo}

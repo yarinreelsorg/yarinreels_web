@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion } from "motion/react";
+import { useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import LogoutButton from "@/components/admin/LogoutButton";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Stagger";
 
@@ -17,15 +18,43 @@ const LINKS = [
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const [menuAberto, setMenuAberto] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#050208] text-[#F1F0FF]">
-      {/* Sidebar fixa 240px */}
-      <motion.aside
-        initial={{ x: -240, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ type: "spring", stiffness: 280, damping: 30 }}
-        className="fixed left-0 top-0 bottom-0 z-40 w-[240px] bg-[#0D0A1A] border-r border-[rgba(139,92,246,0.15)] flex flex-col"
+    <div className="min-h-screen bg-[#050208] text-[#F1F0FF] lg:flex">
+      {/* Barra superior mobile */}
+      <div className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-[rgba(139,92,246,0.15)] bg-[#0D0A1A] px-4 lg:hidden">
+        <Link href="/" className="text-lg font-black tracking-wider text-white hover:opacity-90">
+          Yarin<span className="text-[#9D4EDD]">Reels</span> <span className="text-xs bg-[#7B2FBE] px-1.5 py-0.5 rounded text-white font-bold ml-1 uppercase">Admin</span>
+        </Link>
+        <button
+          type="button"
+          onClick={() => setMenuAberto(true)}
+          aria-label="Abrir menu"
+          className="flex h-9 w-9 items-center justify-center rounded-md text-xl text-white hover:bg-white/5"
+        >
+          ☰
+        </button>
+      </div>
+
+      {/* Overlay mobile */}
+      <AnimatePresence>
+        {menuAberto && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setMenuAberto(false)}
+            className="fixed inset-0 z-40 bg-black/60 lg:hidden"
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Sidebar: drawer no mobile, fixa 240px no desktop */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-[#0D0A1A] border-r border-[rgba(139,92,246,0.15)] transition-transform duration-300 ease-out lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:w-[240px] lg:shrink-0 lg:translate-x-0 ${
+          menuAberto ? "translate-x-0" : "-translate-x-full"
+        }`}
       >
         {/* Logo YarinReels no topo */}
         <div className="h-20 px-6 flex items-center border-b border-[rgba(139,92,246,0.15)]">
@@ -42,6 +71,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <StaggerItem key={link.href}>
                 <Link
                   href={link.href}
+                  onClick={() => setMenuAberto(false)}
                   className={`group relative flex items-center gap-3 px-4 py-3 rounded-md text-sm font-semibold transition-colors ${
                     isAtivo ? "" : "hover:bg-white/5"
                   }`}
@@ -74,10 +104,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </Link>
           <LogoutButton />
         </div>
-      </motion.aside>
+      </aside>
 
-      {/* Conteúdo principal com margin-left 240px padding 32px fundo #050208 */}
-      <main className="ml-[240px] p-8 min-h-screen bg-[#050208]">
+      {/* Conteúdo principal */}
+      <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8 min-h-screen bg-[#050208]">
         {children}
       </main>
     </div>
