@@ -77,6 +77,15 @@ export type Episodio = {
   ds_url_bunny: string | null;
 };
 
+export type EpisodioUpdate = {
+  nr_episodio?: number;
+  nm_titulo?: string;
+  ds_file_id_telegram?: string | null;
+  ds_url_bunny?: string | null;
+};
+
+export type TpMetodoPagamento = "PIX" | "CARTAO";
+
 export type Venda = {
   cd_venda: string;
   nr_id_telegram: number;
@@ -91,6 +100,9 @@ export type Venda = {
   /** Valor efetivamente cobrado pelo site (Pix ou cartão + taxa). Nulo em
    * vendas antigas/feitas pelo bot — nesse caso usar valor estimado. */
   vl_pago: number | null;
+  /** Nulo em vendas feitas pelo bot/manualmente pelo admin — só o
+   * checkout do site preenche essa coluna. */
+  tp_metodo_pagamento: TpMetodoPagamento | null;
 };
 
 export type VendaInsert = {
@@ -103,6 +115,7 @@ export type VendaInsert = {
   ds_txid?: string | null;
   ts_expiracao?: string | null;
   vl_pago?: number | null;
+  tp_metodo_pagamento?: TpMetodoPagamento | null;
 };
 
 export type VendaUpdate = {
@@ -238,6 +251,108 @@ export type AdministradorUpdate = {
   tp_papel?: TpPapelAdmin;
   sn_ativo?: boolean;
   ts_ultimo_login?: string | null;
+};
+
+export type LogAuditoria = {
+  cd_log: string;
+  cd_administrador: string | null;
+  nm_administrador: string;
+  tp_acao: string;
+  nm_entidade: string;
+  cd_entidade: string | null;
+  ds_detalhes: Record<string, unknown> | null;
+  ts_criacao: string;
+};
+
+export type LogAuditoriaInsert = {
+  cd_administrador: string | null;
+  nm_administrador: string;
+  tp_acao: string;
+  nm_entidade: string;
+  cd_entidade?: string | null;
+  ds_detalhes?: Record<string, unknown> | null;
+};
+
+export type ClienteResumo = {
+  nr_id_telegram: number;
+  id_telegram_texto: string;
+  total_compras: number;
+  ultima_compra: string;
+  tipos_acesso: TpCompra[];
+};
+
+export type Visita = {
+  cd_visita: string;
+  cd_sessao: string;
+  nr_id_telegram: number | null;
+  ds_pagina: string | null;
+  ds_ip: string | null;
+  ds_dispositivo: string | null;
+  ts_criacao: string;
+};
+
+export type VisitaInsert = {
+  cd_sessao: string;
+  nr_id_telegram?: number | null;
+  ds_pagina?: string | null;
+  ds_ip?: string | null;
+  ds_dispositivo?: string | null;
+};
+
+export type TpDesconto = "PERCENTUAL" | "FIXO";
+
+export type Cupom = {
+  cd_cupom: string;
+  cd_codigo: string;
+  tp_desconto: TpDesconto;
+  vl_desconto: number;
+  nr_usos_maximo: number | null;
+  nr_usos_atual: number;
+  dt_validade: string | null;
+  sn_ativo: boolean;
+  ts_criacao: string;
+};
+
+export type CupomInsert = {
+  cd_codigo: string;
+  tp_desconto: TpDesconto;
+  vl_desconto: number;
+  nr_usos_maximo?: number | null;
+  dt_validade?: string | null;
+  sn_ativo?: boolean;
+};
+
+export type CupomUpdate = {
+  cd_codigo?: string;
+  tp_desconto?: TpDesconto;
+  vl_desconto?: number;
+  nr_usos_maximo?: number | null;
+  nr_usos_atual?: number;
+  dt_validade?: string | null;
+  sn_ativo?: boolean;
+};
+
+export type ComboPromocional = {
+  cd_combo: string;
+  nm_combo: string;
+  cd_conteudos: string[];
+  vl_combo: number;
+  sn_ativo: boolean;
+  ts_criacao: string;
+};
+
+export type ComboPromocionalInsert = {
+  nm_combo: string;
+  cd_conteudos: string[];
+  vl_combo: number;
+  sn_ativo?: boolean;
+};
+
+export type ComboPromocionalUpdate = {
+  nm_combo?: string;
+  cd_conteudos?: string[];
+  vl_combo?: number;
+  sn_ativo?: boolean;
 };
 
 export type Universo = {

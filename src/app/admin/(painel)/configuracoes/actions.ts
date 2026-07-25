@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getSessaoAdmin } from "@/lib/admin-auth";
+import { registrarLog } from "@/lib/auditoria";
 import type { TpPapelAdmin } from "@/types/database";
 
 async function exigirSuperAdmin() {
@@ -29,18 +30,24 @@ export async function criarAdministrador(formData: FormData) {
   const supabase = createSupabaseAdminClient();
   const ds_senha_hash = await bcrypt.hash(senha, 10);
 
-  const { error } = await supabase.from("ADMINISTRADORES").insert({
-    nm_nome,
-    nm_email,
-    ds_senha_hash,
-    tp_papel,
-  });
+  const { data, error } = await supabase
+    .from("ADMINISTRADORES")
+    .insert({ nm_nome, nm_email, ds_senha_hash, tp_papel })
+    .select("cd_administrador")
+    .single();
 
   if (error) {
     throw new Error(
       error.code === "23505" ? "Já existe um administrador com esse e-mail." : error.message
     );
   }
+
+  await registrarLog({
+    tp_acao: "CRIACAO",
+    nm_entidade: "ADMINISTRADORES",
+    cd_entidade: data.cd_administrador,
+    ds_detalhes: { nome: nm_nome, email: nm_email, papel: tp_papel },
+  });
 
   revalidatePath("/admin/configuracoes");
 }
@@ -79,6 +86,13 @@ export async function alternarAtivoAdministrador(cd_administrador: string, ativo
 
   if (error) throw new Error(error.message);
 
+  await registrarLog({
+    tp_acao: "ALTERACAO_STATUS",
+    nm_entidade: "ADMINISTRADORES",
+    cd_entidade: cd_administrador,
+    ds_detalhes: { sn_ativo: ativo },
+  });
+
   revalidatePath("/admin/configuracoes");
 }
 
@@ -109,6 +123,12 @@ export async function atualizarTaxaCartao(formData: FormData) {
       });
 
   if (error) throw new Error(error.message);
+
+  await registrarLog({
+    tp_acao: "ALTERACAO_CONFIGURACAO",
+    nm_entidade: "CONFIGURACAO_PAGAMENTO",
+    ds_detalhes: { vl_taxa_cartao },
+  });
 
   revalidatePath("/admin/configuracoes");
   revalidatePath("/checkout");
@@ -150,6 +170,13 @@ export async function atualizarPapelAdministrador(
     .eq("cd_administrador", cd_administrador);
 
   if (error) throw new Error(error.message);
+
+  await registrarLog({
+    tp_acao: "ALTERACAO_PAPEL",
+    nm_entidade: "ADMINISTRADORES",
+    cd_entidade: cd_administrador,
+    ds_detalhes: { tp_papel },
+  });
 
   revalidatePath("/admin/configuracoes");
 }

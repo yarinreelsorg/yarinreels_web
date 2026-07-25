@@ -1,9 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import type { Conteudo, TpCompra, Venda } from "@/types/database";
 import { formatarPreco } from "@/lib/catalogo";
 import Reveal from "@/components/motion/Reveal";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Stagger";
+
+const OPCOES_PERIODO = [3, 6, 12] as const;
 
 const COR_TIPO: Record<TpCompra, string> = {
   ALUGUEL: "#3987e5",
@@ -41,6 +44,8 @@ export default function FinanceiroClient({
   vendas: Venda[];
   conteudos: Conteudo[];
 }) {
+  const [meses, setMeses] = useState<(typeof OPCOES_PERIODO)[number]>(6);
+
   const conteudosMap = new Map<string, Conteudo>();
   for (const c of conteudos) conteudosMap.set(c.cd_conteudo, c);
 
@@ -80,13 +85,13 @@ export default function FinanceiroClient({
           ? `${(tempoMedioMs / 3_600_000).toFixed(1)} h`
           : `${(tempoMedioMs / 86_400_000).toFixed(1)} dias`;
 
-  // Gráfico: faturamento dos últimos 6 meses (aprovada vs pendente)
-  const meses = Array.from({ length: 6 }, (_, i) => {
-    const d = new Date(agora.getFullYear(), agora.getMonth() - (5 - i), 1);
+  // Gráfico: faturamento dos últimos N meses (aprovada vs pendente)
+  const janelaMeses = Array.from({ length: meses }, (_, i) => {
+    const d = new Date(agora.getFullYear(), agora.getMonth() - (meses - 1 - i), 1);
     return { ano: d.getFullYear(), mes: d.getMonth(), label: MESES_ABREV[d.getMonth()] };
   });
 
-  const dadosMensais = meses.map(({ ano, mes, label }) => {
+  const dadosMensais = janelaMeses.map(({ ano, mes, label }) => {
     const doMes = (lista: Venda[]) =>
       lista
         .filter((v) => {
@@ -107,6 +112,18 @@ export default function FinanceiroClient({
     total: aprovadas.filter((v) => v.tp_compra === tipo).reduce((s, v) => s + valor(v), 0),
   }));
   const maxTipo = Math.max(1, ...porTipo.map((t) => t.total));
+
+  // Pix vs. Cartão — só vendas feitas pelo site preenchem tp_metodo_pagamento
+  const porMetodo = (["PIX", "CARTAO"] as const).map((metodo) => ({
+    metodo,
+    aprovadas: aprovadas.filter((v) => v.tp_metodo_pagamento === metodo),
+    pendentes: pendentes.filter((v) => v.tp_metodo_pagamento === metodo),
+  }));
+  const totalPorMetodo = (metodo: "PIX" | "CARTAO") =>
+    aprovadas
+      .filter((v) => v.tp_metodo_pagamento === metodo)
+      .reduce((s, v) => s + valor(v), 0);
+  const maxMetodo = Math.max(1, ...porMetodo.map((m) => totalPorMetodo(m.metodo)));
 
   // Gráfico: ranking de conteúdos por receita (aluguel + vitalício, aprovadas)
   const receitaPorConteudo = new Map<string, number>();
@@ -174,18 +191,34 @@ export default function FinanceiroClient({
 
       {/* Faturamento mensal: aprovado vs pendente */}
       <Reveal className="rounded-lg border border-[rgba(139,92,246,0.15)] bg-[#0D0A1A] p-6 shadow-lg">
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-bold text-white">Faturamento Mensal</h2>
-            <p className="text-xs text-[#A78BFA]">Últimos 6 meses · aprovado vs. pendente</p>
+            <p className="text-xs text-[#A78BFA]">Últimos {meses} meses · aprovado vs. pendente</p>
           </div>
-          <div className="flex items-center gap-4 text-xs text-[#A78BFA]">
-            <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-emerald-400" /> Aprovada
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-amber-400" /> Pendente
-            </span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1 rounded-md border border-[rgba(139,92,246,0.2)] p-1">
+              {OPCOES_PERIODO.map((opcao) => (
+                <button
+                  key={opcao}
+                  type="button"
+                  onClick={() => setMeses(opcao)}
+                  className={`rounded px-2.5 py-1 text-xs font-semibold transition-colors cursor-pointer ${
+                    meses === opcao ? "bg-[#7B2FBE] text-white" : "text-[#A78BFA] hover:bg-white/5"
+                  }`}
+                >
+                  {opcao}m
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-4 text-xs text-[#A78BFA]">
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-emerald-400" /> Aprovada
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-amber-400" /> Pendente
+              </span>
+            </div>
           </div>
         </div>
 
@@ -218,7 +251,7 @@ export default function FinanceiroClient({
         </div>
       </Reveal>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-3">
         {/* Faturamento por tipo de compra */}
         <Reveal className="rounded-lg border border-[rgba(139,92,246,0.15)] bg-[#0D0A1A] p-6 shadow-lg">
           <h2 className="mb-1 text-lg font-bold text-white">Por Tipo de Compra</h2>
@@ -242,6 +275,37 @@ export default function FinanceiroClient({
                 </div>
               </div>
             ))}
+          </div>
+        </Reveal>
+
+        {/* Pix vs. Cartão */}
+        <Reveal delay={0.05} className="rounded-lg border border-[rgba(139,92,246,0.15)] bg-[#0D0A1A] p-6 shadow-lg">
+          <h2 className="mb-1 text-lg font-bold text-white">Pix vs. Cartão</h2>
+          <p className="mb-6 text-xs text-[#A78BFA]">Vendas feitas pelo site (aprovadas)</p>
+
+          <div className="space-y-4">
+            {porMetodo.map(({ metodo, aprovadas: aprov, pendentes: pend }) => {
+              const total = totalPorMetodo(metodo);
+              return (
+                <div key={metodo} className="group/row">
+                  <div className="mb-1 flex items-center justify-between text-xs">
+                    <span className="font-medium text-white">
+                      {metodo === "PIX" ? "Pix" : "Cartão"}
+                    </span>
+                    <span className="font-mono text-[#A78BFA]">{formatarPreco(total)}</span>
+                  </div>
+                  <div className="h-2.5 w-full overflow-hidden rounded-full bg-[#050208]">
+                    <div
+                      className="h-full rounded-full bg-[#9D4EDD] transition-[width] duration-500"
+                      style={{ width: `${(total / maxMetodo) * 100}%` }}
+                    />
+                  </div>
+                  <p className="mt-1 text-[10px] text-[#A78BFA]/60">
+                    {aprov.length} aprovada(s) · {pend.length} pendente(s)
+                  </p>
+                </div>
+              );
+            })}
           </div>
         </Reveal>
 

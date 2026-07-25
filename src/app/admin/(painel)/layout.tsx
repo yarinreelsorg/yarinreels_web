@@ -6,13 +6,18 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import LogoutButton from "@/components/admin/LogoutButton";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Stagger";
+import { ToastProvider } from "@/components/admin/ToastProvider";
 
 const LINKS = [
   { href: "/admin/dashboard", label: "Dashboard", icon: "🏠" },
   { href: "/admin/catalogo", label: "Catálogo", icon: "🎬" },
   { href: "/admin/planos", label: "Planos", icon: "🗂️" },
+  { href: "/admin/cupons", label: "Cupons", icon: "🏷️" },
+  { href: "/admin/combos", label: "Combos", icon: "📦" },
   { href: "/admin/clientes", label: "Clientes", icon: "👥" },
   { href: "/admin/financeiro", label: "Financeiro", icon: "📊" },
+  { href: "/admin/recusados", label: "Cartão Recusado", icon: "💳" },
+  { href: "/admin/auditoria", label: "Auditoria", icon: "📜" },
   { href: "/admin/configuracoes", label: "Configurações", icon: "⚙️" },
 ];
 
@@ -21,6 +26,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [menuAberto, setMenuAberto] = useState(false);
 
   return (
+    <ToastProvider>
     <div className="min-h-screen bg-[#050208] text-[#F1F0FF] lg:flex">
       {/* Barra superior mobile */}
       <div className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-[rgba(139,92,246,0.15)] bg-[#0D0A1A] px-4 lg:hidden">
@@ -111,5 +117,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {children}
       </main>
     </div>
+    </ToastProvider>
   );
 }

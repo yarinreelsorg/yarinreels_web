@@ -1,28 +1,68 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
-import type { TpCompra, Venda, Conteudo, Plano } from "@/types/database";
+import type { ClienteResumo, TpCompra, Venda, Conteudo, Plano } from "@/types/database";
 import { formatarPreco } from "@/lib/catalogo";
 import Pagination from "@/components/admin/Pagination";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Stagger";
 import { buttonTap } from "@/lib/motion";
-import { concederAcesso } from "./actions";
+import { useFocoModal } from "@/components/admin/useFocoModal";
+import { useToast } from "@/components/admin/ToastProvider";
+import { baixarCsv } from "@/lib/csv";
+import {
+  banirCliente,
+  buscarUltimaVisita,
+  buscarVendasCliente,
+  concederAcesso,
+  desbanirCliente,
+  exportarClientesCsv,
+  revogarAcesso,
+  verificarBanido,
+} from "./actions";
 
-const ITENS_POR_PAGINA = 15;
+interface Filtros {
+  busca: string;
+  ordenarPor: "nr_id_telegram" | "total_compras" | "ultima_compra";
+  direcao: "asc" | "desc";
+  pagina: number;
+}
 
 export default function ClientesAdminClient({
-  vendas,
+  clientes,
+  totalRegistros,
+  itensPorPagina,
+  filtrosAtuais,
   conteudos,
   planos,
 }: {
-  vendas: Venda[];
+  clientes: ClienteResumo[];
+  totalRegistros: number;
+  itensPorPagina: number;
+  filtrosAtuais: Filtros;
   conteudos: Conteudo[];
   planos: Plano[];
 }) {
-  const [busca, setBusca] = useState("");
-  const [paginaAtual, setPaginaAtual] = useState(1);
+  const router = useRouter();
+  const pathname = usePathname();
+  const toast = useToast();
+
+  const [buscaLocal, setBuscaLocal] = useState(filtrosAtuais.busca);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const [selectedTelegramId, setSelectedTelegramId] = useState<number | null>(null);
+  const [vendasCliente, setVendasCliente] = useState<Venda[]>([]);
+  const [carregandoVendas, setCarregandoVendas] = useState(false);
+  const [exportando, setExportando] = useState(false);
+  const [banido, setBanido] = useState(false);
+  const [alterandoBan, setAlterandoBan] = useState(false);
+  const [revogandoId, setRevogandoId] = useState<string | null>(null);
+  const [ultimaVisita, setUltimaVisita] = useState<{
+    ds_dispositivo: string | null;
+    ds_ip: string | null;
+    ts_criacao: string;
+  } | null>(null);
 
   // Conceder acesso (modal)
   const [concederAberto, setConcederAberto] = useState(false);
@@ -31,19 +71,22 @@ export default function ClientesAdminClient({
   const [buscaConteudo, setBuscaConteudo] = useState("");
   const [salvandoAcesso, setSalvandoAcesso] = useState(false);
   const [erroAcesso, setErroAcesso] = useState<string | null>(null);
+  const [duplicidadeDetectada, setDuplicidadeDetectada] = useState(false);
+  const ultimoFormDataRef = useRef<FormData | null>(null);
 
-  // Quick lookup maps
+  const drawerRef = useFocoModal<HTMLDivElement>(selectedTelegramId !== null, () =>
+    setSelectedTelegramId(null)
+  );
+  const modalRef = useFocoModal<HTMLDivElement>(concederAberto, () => setConcederAberto(false));
+
   const conteudosMap = new Map<string, Conteudo>();
-  for (const c of conteudos) {
-    conteudosMap.set(c.cd_conteudo, c);
-  }
+  for (const c of conteudos) conteudosMap.set(c.cd_conteudo, c);
 
   const planosMap = new Map<string, Plano>();
-  for (const p of planos) {
-    planosMap.set(p.cd_plano, p);
-  }
+  for (const p of planos) planosMap.set(p.cd_plano, p);
 
   const getValorAproximado = (v: Venda) => {
+    if (v.vl_pago != null) return v.vl_pago;
     if (v.tp_compra === "ASSINATURA") return 20;
     if (v.tp_compra === "ALUGUEL") {
       return (v.cd_conteudo ? conteudosMap.get(v.cd_conteudo)?.vl_aluguel : null) ?? 10;
@@ -54,58 +97,35 @@ export default function ClientesAdminClient({
     return 0;
   };
 
-  // Group sales by Telegram ID
-  const clientesMap = new Map<
-    number,
-    {
-      nr_id_telegram: number;
-      total_compras: number;
-      ultima_compra: string;
-      tipos_acesso: string[];
-      vendas: Venda[];
-    }
-  >();
+  const totalPaginas = Math.max(1, Math.ceil(totalRegistros / itensPorPagina));
 
-  for (const v of vendas) {
-    const client = clientesMap.get(v.nr_id_telegram) ?? {
-      nr_id_telegram: v.nr_id_telegram,
-      total_compras: 0,
-      ultima_compra: v.ts_criacao,
-      tipos_acesso: [],
-      vendas: [],
-    };
-
-    client.total_compras += 1;
-    if (new Date(v.ts_criacao) > new Date(client.ultima_compra)) {
-      client.ultima_compra = v.ts_criacao;
-    }
-    if (!client.tipos_acesso.includes(v.tp_compra)) {
-      client.tipos_acesso.push(v.tp_compra);
-    }
-    client.vendas.push(v);
-    clientesMap.set(v.nr_id_telegram, client);
+  function atualizarUrl(mudancas: Partial<Filtros>) {
+    const proximo: Filtros = { ...filtrosAtuais, ...mudancas };
+    const params = new URLSearchParams();
+    if (proximo.busca) params.set("busca", proximo.busca);
+    if (proximo.ordenarPor !== "ultima_compra") params.set("sort", proximo.ordenarPor);
+    if (proximo.direcao !== "desc") params.set("dir", proximo.direcao);
+    if (proximo.pagina > 1) params.set("page", String(proximo.pagina));
+    const query = params.toString();
+    router.push(query ? `${pathname}?${query}` : pathname);
   }
 
-  const clientesList = Array.from(clientesMap.values()).sort(
-    (a, b) => new Date(b.ultima_compra).getTime() - new Date(a.ultima_compra).getTime()
-  );
-
-  const clientesFiltrados = clientesList.filter((c) =>
-    String(c.nr_id_telegram).includes(busca)
-  );
-
-  const totalPaginas = Math.max(1, Math.ceil(clientesFiltrados.length / ITENS_POR_PAGINA));
-  const clientesPaginados = clientesFiltrados.slice(
-    (paginaAtual - 1) * ITENS_POR_PAGINA,
-    paginaAtual * ITENS_POR_PAGINA
-  );
-
   const aoBuscar = (valor: string) => {
-    setBusca(valor);
-    setPaginaAtual(1);
+    setBuscaLocal(valor);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => atualizarUrl({ busca: valor, pagina: 1 }), 400);
   };
 
-  const selectedClient = selectedTelegramId !== null ? clientesMap.get(selectedTelegramId) : null;
+  const aoOrdenar = (campo: Filtros["ordenarPor"]) => {
+    if (filtrosAtuais.ordenarPor === campo) {
+      atualizarUrl({ direcao: filtrosAtuais.direcao === "asc" ? "desc" : "asc" });
+    } else {
+      atualizarUrl({ ordenarPor: campo, direcao: "desc" });
+    }
+  };
+
+  const indicadorOrdenacao = (campo: Filtros["ordenarPor"]) =>
+    filtrosAtuais.ordenarPor === campo ? (filtrosAtuais.direcao === "asc" ? " ↑" : " ↓") : "";
 
   const conteudosFiltradosModal = conteudos
     .filter((c) => c.nm_titulo.toLowerCase().includes(buscaConteudo.toLowerCase()))
@@ -116,21 +136,103 @@ export default function ClientesAdminClient({
     setTipoConceder("ALUGUEL");
     setBuscaConteudo("");
     setErroAcesso(null);
+    setDuplicidadeDetectada(false);
     setConcederAberto(true);
   };
 
-  const aoSubmeterAcesso = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const abrirDetalhes = async (nrIdTelegram: number) => {
+    setSelectedTelegramId(nrIdTelegram);
+    setCarregandoVendas(true);
+    try {
+      const [vendas, estaBanido, visita] = await Promise.all([
+        buscarVendasCliente(nrIdTelegram),
+        verificarBanido(nrIdTelegram),
+        buscarUltimaVisita(nrIdTelegram),
+      ]);
+      setVendasCliente(vendas);
+      setBanido(estaBanido);
+      setUltimaVisita(visita);
+    } catch {
+      toast.erro("Erro ao carregar histórico do cliente.");
+    } finally {
+      setCarregandoVendas(false);
+    }
+  };
+
+  const aoAlternarBan = async () => {
+    if (selectedTelegramId === null) return;
+    setAlterandoBan(true);
+    try {
+      if (banido) {
+        await desbanirCliente(selectedTelegramId);
+        setBanido(false);
+        toast.sucesso("Cliente desbanido.");
+      } else {
+        await banirCliente(selectedTelegramId);
+        setBanido(true);
+        toast.sucesso("Cliente banido — acesso bloqueado imediatamente.");
+      }
+    } catch (err) {
+      toast.erro(err instanceof Error ? err.message : "Erro ao atualizar banimento.");
+    } finally {
+      setAlterandoBan(false);
+    }
+  };
+
+  const aoRevogar = async (cdVenda: string) => {
+    setRevogandoId(cdVenda);
+    try {
+      await revogarAcesso(cdVenda);
+      toast.sucesso("Acesso revogado.");
+      if (selectedTelegramId !== null) abrirDetalhes(selectedTelegramId);
+    } catch (err) {
+      toast.erro(err instanceof Error ? err.message : "Erro ao revogar acesso.");
+    } finally {
+      setRevogandoId(null);
+    }
+  };
+
+  const enviarConcessao = async (formData: FormData, forcar: boolean) => {
     setSalvandoAcesso(true);
     setErroAcesso(null);
     try {
-      const formData = new FormData(e.currentTarget);
-      await concederAcesso(formData);
+      await concederAcesso(formData, forcar);
+      toast.sucesso("Acesso concedido.");
       setConcederAberto(false);
+      if (selectedTelegramId !== null) abrirDetalhes(selectedTelegramId);
     } catch (err) {
-      setErroAcesso(err instanceof Error ? err.message : "Erro ao conceder acesso.");
+      const mensagem = err instanceof Error ? err.message : "Erro ao conceder acesso.";
+      if (mensagem.startsWith("DUPLICADO:")) {
+        setDuplicidadeDetectada(true);
+        setErroAcesso(mensagem.replace("DUPLICADO:", "").trim());
+      } else {
+        setErroAcesso(mensagem);
+      }
     } finally {
       setSalvandoAcesso(false);
+    }
+  };
+
+  const aoSubmeterAcesso = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    ultimoFormDataRef.current = formData;
+    enviarConcessao(formData, false);
+  };
+
+  const aoForcarConcessao = () => {
+    if (ultimoFormDataRef.current) enviarConcessao(ultimoFormDataRef.current, true);
+  };
+
+  const aoExportar = async () => {
+    setExportando(true);
+    try {
+      const csv = await exportarClientesCsv(filtrosAtuais.busca || undefined);
+      baixarCsv(csv, "clientes.csv");
+    } catch {
+      toast.erro("Erro ao exportar CSV.");
+    } finally {
+      setExportando(false);
     }
   };
 
@@ -142,14 +244,25 @@ export default function ClientesAdminClient({
           <h1 className="text-3xl font-black text-white">Clientes</h1>
           <p className="text-sm text-[#A78BFA]">Controle de acessos e histórico de compradores.</p>
         </div>
-        <motion.button
-          type="button"
-          onClick={() => abrirConceder()}
-          {...buttonTap}
-          className="rounded-md bg-[#7B2FBE] hover:bg-[#6D28D9] px-5 py-2.5 text-sm font-bold text-white transition-colors cursor-pointer flex items-center justify-center"
-        >
-          ＋ Conceder Acesso
-        </motion.button>
+        <div className="flex items-center gap-3">
+          <motion.button
+            type="button"
+            onClick={aoExportar}
+            disabled={exportando}
+            {...buttonTap}
+            className="rounded-md border border-[rgba(139,92,246,0.3)] px-4 py-2.5 text-sm font-bold text-[#A78BFA] transition-colors hover:bg-white/5 disabled:opacity-50 cursor-pointer"
+          >
+            {exportando ? "Exportando..." : "⇩ CSV"}
+          </motion.button>
+          <motion.button
+            type="button"
+            onClick={() => abrirConceder()}
+            {...buttonTap}
+            className="rounded-md bg-[#7B2FBE] hover:bg-[#6D28D9] px-5 py-2.5 text-sm font-bold text-white transition-colors cursor-pointer flex items-center justify-center"
+          >
+            ＋ Conceder Acesso
+          </motion.button>
+        </div>
       </div>
 
       {/* Search Input */}
@@ -157,7 +270,7 @@ export default function ClientesAdminClient({
         <input
           type="text"
           placeholder="Buscar por ID Telegram..."
-          value={busca}
+          value={buscaLocal}
           onChange={(e) => aoBuscar(e.target.value)}
           className="w-full bg-[#0D0A1A] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] py-2 px-4 text-white text-sm"
         />
@@ -169,28 +282,40 @@ export default function ClientesAdminClient({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-[rgba(139,92,246,0.15)] bg-[#050208]/50 text-xs font-semibold text-[#A78BFA] uppercase tracking-wider">
-                <th className="px-6 py-3">ID Telegram</th>
-                <th className="px-6 py-3">Total de Compras</th>
-                <th className="px-6 py-3">Última Compra</th>
+                <th className="px-6 py-3">
+                  <button type="button" onClick={() => aoOrdenar("nr_id_telegram")} className="cursor-pointer hover:text-white">
+                    ID Telegram{indicadorOrdenacao("nr_id_telegram")}
+                  </button>
+                </th>
+                <th className="px-6 py-3">
+                  <button type="button" onClick={() => aoOrdenar("total_compras")} className="cursor-pointer hover:text-white">
+                    Total de Compras{indicadorOrdenacao("total_compras")}
+                  </button>
+                </th>
+                <th className="px-6 py-3">
+                  <button type="button" onClick={() => aoOrdenar("ultima_compra")} className="cursor-pointer hover:text-white">
+                    Última Compra{indicadorOrdenacao("ultima_compra")}
+                  </button>
+                </th>
                 <th className="px-6 py-3">Tipos de Acesso</th>
                 <th className="px-6 py-3 text-right">Ações</th>
               </tr>
             </thead>
             <motion.tbody
-              key={paginaAtual}
+              key={filtrosAtuais.pagina}
               initial="hidden"
               animate="show"
               variants={{ show: { transition: { staggerChildren: 0.03 } } }}
               className="divide-y divide-[rgba(139,92,246,0.15)] text-sm text-white"
             >
-              {clientesPaginados.length === 0 ? (
+              {clientes.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-8 text-center text-[#A78BFA]/70">
                     Nenhum cliente encontrado.
                   </td>
                 </tr>
               ) : (
-                clientesPaginados.map((cliente) => {
+                clientes.map((cliente) => {
                   const dataUltima = new Intl.DateTimeFormat("pt-BR", {
                     day: "2-digit",
                     month: "2-digit",
@@ -226,7 +351,7 @@ export default function ClientesAdminClient({
                       <td className="px-6 py-4 text-right">
                         <button
                           type="button"
-                          onClick={() => setSelectedTelegramId(cliente.nr_id_telegram)}
+                          onClick={() => abrirDetalhes(cliente.nr_id_telegram)}
                           className="rounded bg-[#7B2FBE]/20 border border-[#7B2FBE]/30 text-white font-bold text-xs px-3.5 py-1.5 hover:bg-[#7B2FBE]/40 transition-colors cursor-pointer"
                         >
                           👁️ Ver Detalhes
@@ -240,15 +365,15 @@ export default function ClientesAdminClient({
           </table>
         </div>
         <Pagination
-          paginaAtual={paginaAtual}
+          paginaAtual={filtrosAtuais.pagina}
           totalPaginas={totalPaginas}
-          onChange={setPaginaAtual}
+          onChange={(p) => atualizarUrl({ pagina: p })}
         />
       </div>
 
       {/* Side Panel (Drawer) for details */}
       <AnimatePresence>
-      {selectedClient && (
+      {selectedTelegramId !== null && (
         <>
           {/* Backdrop */}
           <motion.div
@@ -262,6 +387,10 @@ export default function ClientesAdminClient({
 
           {/* Drawer Container */}
           <motion.div
+            ref={drawerRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="drawer-cliente-titulo"
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
@@ -272,10 +401,17 @@ export default function ClientesAdminClient({
               {/* Drawer Header */}
               <div className="mb-6 flex items-center justify-between border-b border-[rgba(139,92,246,0.15)] pb-4">
                 <div>
-                  <h2 className="text-xl font-bold text-white">Histórico do Cliente</h2>
+                  <h2 id="drawer-cliente-titulo" className="text-xl font-bold text-white">
+                    Histórico do Cliente
+                  </h2>
                   <p className="text-xs font-mono text-[#A78BFA] mt-0.5">
-                    Telegram ID: {selectedClient.nr_id_telegram}
+                    Telegram ID: {selectedTelegramId}
                   </p>
+                  {banido && (
+                    <span className="mt-1.5 inline-flex items-center rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] font-bold text-red-400 border border-red-500/20">
+                      🚫 BANIDO
+                    </span>
+                  )}
                 </div>
                 <button
                   type="button"
@@ -286,19 +422,55 @@ export default function ClientesAdminClient({
                 </button>
               </div>
 
+              <button
+                type="button"
+                disabled={alterandoBan || carregandoVendas}
+                onClick={aoAlternarBan}
+                className={`mb-6 w-full rounded-md border px-4 py-2 text-sm font-bold transition-colors cursor-pointer disabled:opacity-50 ${
+                  banido
+                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
+                    : "border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                }`}
+              >
+                {alterandoBan ? "Atualizando..." : banido ? "✓ Desbanir Cliente" : "🚫 Banir Cliente"}
+              </button>
+
+              {ultimaVisita && (
+                <div className="mb-6 rounded-lg border border-[rgba(139,92,246,0.1)] bg-[#050208]/60 p-3 text-xs">
+                  <p className="mb-1 font-semibold uppercase tracking-wider text-[#A78BFA]">
+                    Último acesso ao site
+                  </p>
+                  <p className="text-white">
+                    {ultimaVisita.ds_dispositivo ?? "Dispositivo desconhecido"} · IP{" "}
+                    {ultimaVisita.ds_ip ?? "—"}
+                  </p>
+                  <p className="text-[#A78BFA]/60">
+                    {new Intl.DateTimeFormat("pt-BR", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }).format(new Date(ultimaVisita.ts_criacao))}
+                  </p>
+                </div>
+              )}
+
               {/* Purchase History */}
               <div className="space-y-4">
                 <h3 className="text-sm font-semibold uppercase tracking-wider text-[#A78BFA] mb-2">
-                  Transações ({selectedClient.vendas.length})
+                  Transações {carregandoVendas ? "" : `(${vendasCliente.length})`}
                 </h3>
 
-                <StaggerGroup className="space-y-3" staggerChildren={0.05} once={false}>
-                  {selectedClient.vendas
-                    .sort(
-                      (a, b) =>
-                        new Date(b.ts_criacao).getTime() - new Date(a.ts_criacao).getTime()
-                    )
-                    .map((v) => {
+                {carregandoVendas ? (
+                  <div className="space-y-3">
+                    {[0, 1, 2].map((i) => (
+                      <div key={i} className="h-20 animate-pulse rounded-lg bg-[#050208]/60" />
+                    ))}
+                  </div>
+                ) : (
+                  <StaggerGroup className="space-y-3" staggerChildren={0.05} once={false}>
+                    {vendasCliente.map((v) => {
                       const valor = getValorAproximado(v);
                       let itemNome = "-";
                       if (v.tp_compra === "ASSINATURA") {
@@ -358,7 +530,7 @@ export default function ClientesAdminClient({
                             )}
                           </div>
 
-                          <div className="flex justify-end pt-1">
+                          <div className="flex items-center justify-between pt-1">
                             {v.tp_status === "APROVADA" ? (
                               <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400 border border-emerald-500/20">
                                 APROVADA
@@ -368,11 +540,24 @@ export default function ClientesAdminClient({
                                 PENDENTE
                               </span>
                             )}
+                            {v.tp_status === "APROVADA" &&
+                              v.ts_expiracao &&
+                              v.ts_expiracao > new Date().toISOString() && (
+                                <button
+                                  type="button"
+                                  disabled={revogandoId === v.cd_venda}
+                                  onClick={() => aoRevogar(v.cd_venda)}
+                                  className="text-[10px] font-bold text-red-400 hover:text-red-300 cursor-pointer disabled:opacity-50"
+                                >
+                                  {revogandoId === v.cd_venda ? "Revogando..." : "Revogar acesso"}
+                                </button>
+                              )}
                           </div>
                         </StaggerItem>
                       );
                     })}
-                </StaggerGroup>
+                  </StaggerGroup>
+                )}
               </div>
             </div>
 
@@ -387,7 +572,7 @@ export default function ClientesAdminClient({
               </button>
               <button
                 type="button"
-                onClick={() => abrirConceder(selectedClient.nr_id_telegram)}
+                onClick={() => abrirConceder(selectedTelegramId)}
                 className="rounded-md bg-[#7B2FBE] hover:bg-[#6D28D9] px-5 py-2 text-sm font-bold text-white transition-colors cursor-pointer"
               >
                 ＋ Conceder Acesso
@@ -409,6 +594,10 @@ export default function ClientesAdminClient({
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-[8px] p-4"
           >
             <motion.div
+              ref={modalRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="conceder-acesso-titulo"
               initial={{ opacity: 0, scale: 0.94, y: 16 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.94, y: 16 }}
@@ -416,7 +605,9 @@ export default function ClientesAdminClient({
               className="relative w-full max-w-lg rounded-lg border border-[rgba(139,92,246,0.2)] bg-[#0D0A1A] p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
             >
               <div className="mb-6 flex items-center justify-between border-b border-[rgba(139,92,246,0.15)] pb-4">
-                <h2 className="text-xl font-bold text-white">Conceder Acesso</h2>
+                <h2 id="conceder-acesso-titulo" className="text-xl font-bold text-white">
+                  Conceder Acesso
+                </h2>
                 <button
                   type="button"
                   onClick={() => setConcederAberto(false)}
@@ -437,7 +628,11 @@ export default function ClientesAdminClient({
                     name="nr_id_telegram"
                     required
                     value={telegramIdConceder}
-                    onChange={(e) => setTelegramIdConceder(e.target.value)}
+                    onChange={(e) => {
+                      setTelegramIdConceder(e.target.value);
+                      setDuplicidadeDetectada(false);
+                      setErroAcesso(null);
+                    }}
                     placeholder="Ex: 123456789"
                     className="w-full bg-[#050208] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white"
                   />
@@ -451,7 +646,11 @@ export default function ClientesAdminClient({
                     id="tp_compra"
                     name="tp_compra"
                     value={tipoConceder}
-                    onChange={(e) => setTipoConceder(e.target.value as TpCompra)}
+                    onChange={(e) => {
+                      setTipoConceder(e.target.value as TpCompra);
+                      setDuplicidadeDetectada(false);
+                      setErroAcesso(null);
+                    }}
                     className="w-full bg-[#050208] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white"
                   >
                     <option value="ALUGUEL">Aluguel de conteúdo (7 dias)</option>
@@ -495,6 +694,10 @@ export default function ClientesAdminClient({
                       name="cd_conteudo"
                       required
                       size={6}
+                      onChange={() => {
+                        setDuplicidadeDetectada(false);
+                        setErroAcesso(null);
+                      }}
                       className="w-full bg-[#050208] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white"
                     >
                       {conteudosFiltradosModal.map((c) => (
@@ -506,7 +709,21 @@ export default function ClientesAdminClient({
                   </div>
                 )}
 
-                {erroAcesso && <p className="text-sm text-red-400">{erroAcesso}</p>}
+                {erroAcesso && (
+                  <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3">
+                    <p className="text-sm text-amber-400">{erroAcesso}</p>
+                    {duplicidadeDetectada && (
+                      <button
+                        type="button"
+                        disabled={salvandoAcesso}
+                        onClick={aoForcarConcessao}
+                        className="mt-2 rounded-md border border-amber-500/40 px-4 py-1.5 text-xs font-bold text-amber-300 hover:bg-amber-500/10 cursor-pointer disabled:opacity-50"
+                      >
+                        Conceder mesmo assim
+                      </button>
+                    )}
+                  </div>
+                )}
 
                 <div className="flex items-center justify-end gap-3 pt-4 border-t border-[rgba(139,92,246,0.15)] mt-2">
                   <button

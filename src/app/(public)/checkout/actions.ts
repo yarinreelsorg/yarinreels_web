@@ -129,6 +129,7 @@ export async function iniciarCheckoutPixConteudo(
       cd_plano: null,
       ds_txid: cobranca.txid,
       vl_pago: valor,
+      tp_metodo_pagamento: "PIX",
     })
     .select("cd_venda")
     .single();
@@ -171,6 +172,7 @@ export async function iniciarCheckoutPixPlano(cd_plano: string): Promise<Checkou
       cd_plano,
       ds_txid: cobranca.txid,
       vl_pago: plano.vl_plano,
+      tp_metodo_pagamento: "PIX",
     })
     .select("cd_venda")
     .single();
@@ -274,6 +276,7 @@ async function finalizarCompraCartao(
     ds_txid: resultado.chargeId,
     ts_expiracao: tp_status === "APROVADA" ? somarDias(dias) : null,
     vl_pago: total,
+    tp_metodo_pagamento: "CARTAO",
   });
 
   return { status: resultado.status };

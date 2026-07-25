@@ -3,6 +3,7 @@ import { formatarPreco } from "@/lib/catalogo";
 import type { Conteudo, Venda, Plano } from "@/types/database";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Stagger";
 import Reveal from "@/components/motion/Reveal";
+import MetricasOnlineCard from "./MetricasOnlineCard";
 
 export const revalidate = 0; // force dynamic rendering
 
@@ -81,12 +82,41 @@ export default async function DashboardPage() {
     .sort((a, b) => new Date(b.ts_criacao).getTime() - new Date(a.ts_criacao).getTime())
     .slice(0, 10);
 
+  // Faturamento aprovado dos últimos 14 dias
+  const DIAS_GRAFICO = 14;
+  const diasGrafico = Array.from({ length: DIAS_GRAFICO }, (_, i) => {
+    const d = new Date(agora);
+    d.setDate(d.getDate() - (DIAS_GRAFICO - 1 - i));
+    return d;
+  });
+
+  const faturamentoPorDia = diasGrafico.map((dia) => {
+    const total = vendas
+      .filter((v) => {
+        if (v.tp_status !== "APROVADA") return false;
+        const d = new Date(v.ts_criacao);
+        return (
+          d.getFullYear() === dia.getFullYear() &&
+          d.getMonth() === dia.getMonth() &&
+          d.getDate() === dia.getDate()
+        );
+      })
+      .reduce((s, v) => s + getValorAproximado(v), 0);
+    return {
+      label: new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit" }).format(dia),
+      total,
+    };
+  });
+  const maxFaturamentoDia = Math.max(1, ...faturamentoPorDia.map((d) => d.total));
+
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-black text-white">Dashboard</h1>
         <p className="text-sm text-[#A78BFA]">Visão geral da plataforma YarinReels.</p>
       </div>
+
+      <MetricasOnlineCard />
 
       {/* 4 Cards de Métrica */}
       <StaggerGroup className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4" staggerChildren={0.08}>
@@ -140,6 +170,28 @@ export default async function DashboardPage() {
           </div>
         </StaggerItem>
       </StaggerGroup>
+
+      {/* Gráfico: faturamento aprovado dos últimos 14 dias */}
+      <Reveal delay={0.1} className="rounded-lg border border-[rgba(139,92,246,0.15)] bg-[#0D0A1A] p-6 shadow-lg">
+        <h2 className="mb-1 text-lg font-bold text-white">Faturamento Diário</h2>
+        <p className="mb-6 text-xs text-[#A78BFA]">Vendas aprovadas nos últimos {DIAS_GRAFICO} dias</p>
+        <div className="flex h-40 items-end gap-1.5 sm:gap-2">
+          {faturamentoPorDia.map((d) => (
+            <div key={d.label} className="group/bar relative flex flex-1 flex-col items-center gap-2">
+              <div className="flex h-32 w-full items-end">
+                <div
+                  className="w-full rounded-t-[3px] bg-[#9D4EDD] transition-[height] duration-500"
+                  style={{ height: `${(d.total / maxFaturamentoDia) * 100}%`, minHeight: d.total > 0 ? 2 : 0 }}
+                />
+              </div>
+              <div className="pointer-events-none absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-black px-2 py-1 text-[10px] font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover/bar:opacity-100">
+                {formatarPreco(d.total)}
+              </div>
+              <span className="text-[10px] text-[#A78BFA]/70">{d.label}</span>
+            </div>
+          ))}
+        </div>
+      </Reveal>
 
       {/* Tabela com as 10 últimas vendas */}
       <Reveal delay={0.2} className="rounded-lg border border-[rgba(139,92,246,0.15)] bg-[#0D0A1A] overflow-hidden shadow-lg">

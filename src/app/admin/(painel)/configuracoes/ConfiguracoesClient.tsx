@@ -10,6 +10,8 @@ import {
   criarAdministrador,
 } from "./actions";
 import { buttonTap } from "@/lib/motion";
+import { useFocoModal } from "@/components/admin/useFocoModal";
+import { useToast } from "@/components/admin/ToastProvider";
 
 export default function ConfiguracoesClient({
   administradores,
@@ -23,11 +25,13 @@ export default function ConfiguracoesClient({
   taxaCartaoInicial: number;
 }) {
   const ehSuperAdmin = papelAtual === "SUPER_ADMIN";
+  const toast = useToast();
 
   const [modalAberto, setModalAberto] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [carregandoId, setCarregandoId] = useState<string | null>(null);
+  const modalRef = useFocoModal<HTMLDivElement>(modalAberto, () => setModalAberto(false));
 
   const [taxaCartao, setTaxaCartao] = useState(String(taxaCartaoInicial));
   const [salvandoTaxa, setSalvandoTaxa] = useState(false);
@@ -42,6 +46,7 @@ export default function ConfiguracoesClient({
     try {
       const formData = new FormData(e.currentTarget);
       await atualizarTaxaCartao(formData);
+      toast.sucesso("Taxa de cartão atualizada.");
       setTaxaSalva(true);
       setTimeout(() => setTaxaSalva(false), 2000);
     } catch (err) {
@@ -58,6 +63,7 @@ export default function ConfiguracoesClient({
     try {
       const formData = new FormData(e.currentTarget);
       await criarAdministrador(formData);
+      toast.sucesso("Administrador criado.");
       setModalAberto(false);
       (e.target as HTMLFormElement).reset();
     } catch (err) {
@@ -71,8 +77,9 @@ export default function ConfiguracoesClient({
     setCarregandoId(cd);
     try {
       await alternarAtivoAdministrador(cd, ativo);
+      toast.sucesso(ativo ? "Administrador ativado." : "Administrador desativado.");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Erro ao atualizar status.");
+      toast.erro(err instanceof Error ? err.message : "Erro ao atualizar status.");
     } finally {
       setCarregandoId(null);
     }
@@ -82,8 +89,9 @@ export default function ConfiguracoesClient({
     setCarregandoId(cd);
     try {
       await atualizarPapelAdministrador(cd, papel);
+      toast.sucesso("Papel atualizado.");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Erro ao atualizar papel.");
+      toast.erro(err instanceof Error ? err.message : "Erro ao atualizar papel.");
     } finally {
       setCarregandoId(null);
     }
@@ -272,6 +280,10 @@ export default function ConfiguracoesClient({
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-[8px] p-4"
           >
             <motion.div
+              ref={modalRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="novo-admin-titulo"
               initial={{ opacity: 0, scale: 0.94, y: 16 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.94, y: 16 }}
@@ -279,7 +291,7 @@ export default function ConfiguracoesClient({
               className="relative w-full max-w-md rounded-lg border border-[rgba(139,92,246,0.2)] bg-[#0D0A1A] p-6 shadow-2xl"
             >
               <div className="mb-6 flex items-center justify-between border-b border-[rgba(139,92,246,0.15)] pb-4">
-                <h2 className="text-xl font-bold text-white">Novo Administrador</h2>
+                <h2 id="novo-admin-titulo" className="text-xl font-bold text-white">Novo Administrador</h2>
                 <button
                   type="button"
                   onClick={() => setModalAberto(false)}

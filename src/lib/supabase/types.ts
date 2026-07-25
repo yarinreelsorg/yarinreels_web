@@ -3,14 +3,24 @@ import type {
   AdministradorInsert,
   AdministradorUpdate,
   Ban,
+  ClienteResumo,
+  ComboPromocional,
+  ComboPromocionalInsert,
+  ComboPromocionalUpdate,
   ConfiguracaoPagamento,
   ConfiguracaoPagamentoUpdate,
   Conteudo,
   ConteudoInsert,
   ConteudoUpdate,
+  Cupom,
+  CupomInsert,
+  CupomUpdate,
   Episodio,
+  EpisodioUpdate,
   Favorito,
   FavoritoInsert,
+  LogAuditoria,
+  LogAuditoriaInsert,
   Plano,
   PlanoInsert,
   PlanoUpdate,
@@ -22,6 +32,8 @@ import type {
   VendaUpdate,
   VinculacaoTelegram,
   VinculacaoTelegramInsert,
+  Visita,
+  VisitaInsert,
 } from "@/types/database";
 
 export type Database = {
@@ -42,7 +54,7 @@ export type Database = {
       EPISODIOS: {
         Row: Episodio;
         Insert: Episodio;
-        Update: Episodio;
+        Update: EpisodioUpdate;
         Relationships: [];
       };
       VENDAS: {
@@ -87,10 +99,38 @@ export type Database = {
         Update: TentativaCartaoRecusadaInsert;
         Relationships: [];
       };
+      LOGS_AUDITORIA: {
+        Row: LogAuditoria;
+        Insert: LogAuditoriaInsert;
+        Update: LogAuditoriaInsert;
+        Relationships: [];
+      };
+      VISITAS: {
+        Row: Visita;
+        Insert: VisitaInsert;
+        Update: VisitaInsert;
+        Relationships: [];
+      };
+      CUPONS: {
+        Row: Cupom;
+        Insert: CupomInsert;
+        Update: CupomUpdate;
+        Relationships: [];
+      };
+      COMBOS_PROMOCIONAIS: {
+        Row: ComboPromocional;
+        Insert: ComboPromocionalInsert;
+        Update: ComboPromocionalUpdate;
+        Relationships: [];
+      };
     };
     Views: {
       vw_ranking_mensal: {
         Row: RankingMensal;
+        Relationships: [];
+      };
+      vw_clientes: {
+        Row: ClienteResumo;
         Relationships: [];
       };
     };

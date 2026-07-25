@@ -108,6 +108,12 @@ export async function verificarAcessoConteudo(
   nrIdsTelegram: number[],
   conteudo: { cd_conteudo: string; nm_categoria: string }
 ): Promise<StatusAcesso> {
+  const { count: banido } = await supabase
+    .from("BANS")
+    .select("*", { count: "exact", head: true })
+    .in("nr_id_telegram", nrIdsTelegram);
+  if ((banido ?? 0) > 0) return { liberado: false };
+
   const agora = new Date().toISOString();
 
   const { data: vendas } = await supabase
