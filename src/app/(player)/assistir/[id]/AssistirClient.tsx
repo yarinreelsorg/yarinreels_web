@@ -4,7 +4,7 @@ import Link from "next/link";
 import { motion } from "motion/react";
 import type { Conteudo, Episodio } from "@/types/database";
 import VideoPlayer from "@/components/player/VideoPlayer";
-import { formatarPreco, temVideoTocavel } from "@/lib/catalogo";
+import { formatarPreco, resolverUrlVideo } from "@/lib/catalogo";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Stagger";
 
 const ROTULO_FORMATO: Record<string, string> = {
@@ -29,8 +29,15 @@ export default function AssistirClient({
   statusAcesso: StatusAcessoPagina;
   expiraEm: string | null;
 }) {
-  const urlVideo = episodioAtual ? episodioAtual.ds_url_bunny : conteudo.ds_url_bunny;
-  const tocavel = temVideoTocavel(urlVideo);
+  const urlVideo = episodioAtual
+    ? resolverUrlVideo({
+        tp_fonte_prioritaria: conteudo.tp_fonte_prioritaria,
+        ds_url_bunny: episodioAtual.ds_url_bunny,
+        ds_file_id_telegram: episodioAtual.ds_file_id_telegram,
+        nm_titulo: episodioAtual.nm_titulo,
+      })
+    : resolverUrlVideo(conteudo);
+  const tocavel = !!urlVideo;
   const idProgresso = episodioAtual ? episodioAtual.cd_episodio : conteudo.cd_conteudo;
 
   const dataExpiracao = expiraEm

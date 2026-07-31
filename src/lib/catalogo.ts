@@ -35,14 +35,36 @@ export function estaExpirada(tsExpiracao: string) {
   return new Date(tsExpiracao).getTime() <= Date.now();
 }
 
+const BASE_URL_MEDIA_LOCAL = "https://media.melreels.com.br/filmes/";
+
 /**
- * tp_fonte_prioritaria indica a origem preferida pelo BOT (Telegram), não se
- * existe uma cópia tocável na CDN. Na web, o que importa é se ds_url_bunny
- * é mesmo uma URL (vários itens "LOCAL" já têm cópia no Bunny; outros têm
- * só o placeholder "LOCAL" ou nada).
+ * Resolve a URL de vídeo pra web a partir de tp_fonte_prioritaria:
+ * - LOCAL: monta a URL no servidor de mídia próprio, usando o file_id do
+ *   Telegram (ou o título, se não houver file_id) como nome do arquivo —
+ *   adiciona ".mp4" quando o valor salvo ainda não tem extensão.
+ * - BUNNY: usa ds_url_bunny direto (CDN).
+ * - TELEGRAM: não existe cópia tocável na web (só o bot consegue entregar
+ *   pelo file_id) — retorna null, o que faz o player cair no aviso de
+ *   "disponível só pelo bot".
  */
-export function temVideoTocavel(urlBunny: string | null) {
-  return !!urlBunny && urlBunny.startsWith("http");
+export function resolverUrlVideo(item: {
+  tp_fonte_prioritaria: "LOCAL" | "BUNNY" | "TELEGRAM";
+  ds_url_bunny: string | null;
+  ds_file_id_telegram: string | null;
+  nm_titulo: string;
+}): string | null {
+  if (item.tp_fonte_prioritaria === "BUNNY") {
+    return item.ds_url_bunny && item.ds_url_bunny.startsWith("http") ? item.ds_url_bunny : null;
+  }
+
+  if (item.tp_fonte_prioritaria === "LOCAL") {
+    const nomeBase = (item.ds_file_id_telegram || item.nm_titulo || "").trim();
+    if (!nomeBase) return null;
+    const arquivo = nomeBase.toLowerCase().endsWith(".mp4") ? nomeBase : `${nomeBase}.mp4`;
+    return `${BASE_URL_MEDIA_LOCAL}${encodeURIComponent(arquivo)}`;
+  }
+
+  return null;
 }
 
 export function diasRestantes(tsExpiracao: string) {
