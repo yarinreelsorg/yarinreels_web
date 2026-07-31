@@ -1,22 +1,17 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { pool } from "@/lib/db";
 import type { Conteudo, Plano, Venda } from "@/types/database";
 import PlanosAdminClient from "./PlanosAdminClient";
 
 export const revalidate = 0;
 
 export default async function PlanosAdminPage() {
-  const supabase = await createSupabaseServerClient();
-
-  const [{ data: planosData }, { data: conteudosData }, { data: vendasData }] =
-    await Promise.all([
-      supabase.from("PLANOS").select("*").order("nm_plano", { ascending: true }),
-      supabase.from("CONTEUDOS").select("*"),
-      supabase.from("VENDAS").select("cd_plano, tp_status, ts_expiracao").eq("tp_compra", "ASSINATURA"),
-    ]);
-
-  const planos: Plano[] = planosData ?? [];
-  const conteudos: Conteudo[] = conteudosData ?? [];
-  const vendas = (vendasData ?? []) as Pick<Venda, "cd_plano" | "tp_status" | "ts_expiracao">[];
+  const [{ rows: planos }, { rows: conteudos }, { rows: vendas }] = await Promise.all([
+    pool.query<Plano>('SELECT * FROM "PLANOS" ORDER BY nm_plano ASC'),
+    pool.query<Conteudo>('SELECT * FROM "CONTEUDOS"'),
+    pool.query<Pick<Venda, "cd_plano" | "tp_status" | "ts_expiracao">>(
+      `SELECT cd_plano, tp_status, ts_expiracao FROM "VENDAS" WHERE tp_compra = 'ASSINATURA'`
+    ),
+  ]);
 
   const categorias = Array.from(
     new Set(conteudos.map((c) => c.nm_categoria).filter(Boolean))

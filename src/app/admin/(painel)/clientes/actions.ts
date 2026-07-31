@@ -1,21 +1,17 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { pool } from "@/lib/db";
 import { DIAS_ALUGUEL, DIAS_VITALICIO, somarDias } from "@/lib/acesso";
 import { registrarLog } from "@/lib/auditoria";
-import type { TpCompra, Venda } from "@/types/database";
+import type { ClienteResumo, TpCompra, Venda } from "@/types/database";
 
 export async function buscarVendasCliente(nrIdTelegram: number): Promise<Venda[]> {
-  const supabase = createSupabaseAdminClient();
-  const { data, error } = await supabase
-    .from("VENDAS")
-    .select("*")
-    .eq("nr_id_telegram", nrIdTelegram)
-    .order("ts_criacao", { ascending: false });
-
-  if (error) throw new Error(error.message);
-  return data ?? [];
+  const { rows } = await pool.query<Venda>(
+    'SELECT * FROM "VENDAS" WHERE nr_id_telegram = $1 ORDER BY ts_criacao DESC',
+    [nrIdTelegram]
+  );
+  return rows;
 }
 
 export async function concederAcesso(formData: FormData, forcar = false) {
@@ -31,8 +27,6 @@ export async function concederAcesso(formData: FormData, forcar = false) {
     throw new Error("Selecione o tipo de acesso.");
   }
 
-  const supabase = createSupabaseAdminClient();
-
   let ts_expiracao: string;
 
   if (tp_compra === "ALUGUEL") {
@@ -43,58 +37,52 @@ export async function concederAcesso(formData: FormData, forcar = false) {
     ts_expiracao = somarDias(DIAS_VITALICIO);
   } else if (tp_compra === "ASSINATURA") {
     if (!cd_plano) throw new Error("Selecione o plano de assinatura.");
-    const { data: plano, error: erroPlano } = await supabase
-      .from("PLANOS")
-      .select("nr_dias_validade")
-      .eq("cd_plano", cd_plano)
-      .maybeSingle();
-    if (erroPlano || !plano) throw new Error("Plano não encontrado.");
-    ts_expiracao = somarDias(plano.nr_dias_validade);
+    const { rows: planos } = await pool.query<{ nr_dias_validade: number }>(
+      'SELECT nr_dias_validade FROM "PLANOS" WHERE cd_plano = $1 LIMIT 1',
+      [cd_plano]
+    );
+    if (!planos[0]) throw new Error("Plano não encontrado.");
+    ts_expiracao = somarDias(planos[0].nr_dias_validade);
   } else {
     throw new Error("Tipo de acesso inválido.");
   }
 
   if (!forcar) {
     const agoraIso = new Date().toISOString();
-    let queryDuplicidade = supabase
-      .from("VENDAS")
-      .select("ts_expiracao")
-      .eq("nr_id_telegram", nr_id_telegram)
-      .eq("tp_compra", tp_compra)
-      .eq("tp_status", "APROVADA")
-      .gt("ts_expiracao", agoraIso)
-      .order("ts_expiracao", { ascending: false })
-      .limit(1);
+    const colunaItem = tp_compra === "ASSINATURA" ? "cd_plano" : "cd_conteudo";
+    const valorItem = tp_compra === "ASSINATURA" ? cd_plano : cd_conteudo;
 
-    queryDuplicidade =
-      tp_compra === "ASSINATURA"
-        ? queryDuplicidade.eq("cd_plano", cd_plano as string)
-        : queryDuplicidade.eq("cd_conteudo", cd_conteudo as string);
+    const { rows: existentes } = await pool.query<{ ts_expiracao: string }>(
+      `SELECT ts_expiracao FROM "VENDAS"
+       WHERE nr_id_telegram = $1 AND tp_compra = $2 AND tp_status = 'APROVADA'
+         AND ts_expiracao > $3 AND ${colunaItem} = $4
+       ORDER BY ts_expiracao DESC LIMIT 1`,
+      [nr_id_telegram, tp_compra, agoraIso, valorItem]
+    );
 
-    const { data: existente } = await queryDuplicidade.maybeSingle();
-
-    if (existente?.ts_expiracao) {
+    if (existentes[0]?.ts_expiracao) {
       const dataFormatada = new Intl.DateTimeFormat("pt-BR", {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
-      }).format(new Date(existente.ts_expiracao));
+      }).format(new Date(existentes[0].ts_expiracao));
       throw new Error(
         `DUPLICADO: Este cliente já tem acesso ativo a isso até ${dataFormatada}.`
       );
     }
   }
 
-  const { error } = await supabase.from("VENDAS").insert({
-    nr_id_telegram,
-    tp_compra,
-    tp_status: "APROVADA",
-    cd_conteudo: tp_compra === "ASSINATURA" ? null : cd_conteudo,
-    cd_plano: tp_compra === "ASSINATURA" ? cd_plano : null,
-    ts_expiracao,
-  });
-
-  if (error) throw new Error(error.message);
+  await pool.query(
+    `INSERT INTO "VENDAS" (nr_id_telegram, tp_compra, tp_status, cd_conteudo, cd_plano, ts_expiracao)
+     VALUES ($1, $2, 'APROVADA', $3, $4, $5)`,
+    [
+      nr_id_telegram,
+      tp_compra,
+      tp_compra === "ASSINATURA" ? null : cd_conteudo,
+      tp_compra === "ASSINATURA" ? cd_plano : null,
+      ts_expiracao,
+    ]
+  );
 
   await registrarLog({
     tp_acao: "CONCESSAO_ACESSO",
@@ -108,30 +96,29 @@ export async function concederAcesso(formData: FormData, forcar = false) {
 }
 
 export async function buscarUltimaVisita(nrIdTelegram: number) {
-  const supabase = createSupabaseAdminClient();
-  const { data } = await supabase
-    .from("VISITAS")
-    .select("ds_dispositivo, ds_ip, ts_criacao")
-    .eq("nr_id_telegram", nrIdTelegram)
-    .order("ts_criacao", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  return data ?? null;
+  const { rows } = await pool.query<{ ds_dispositivo: string | null; ds_ip: string | null; ts_criacao: string }>(
+    'SELECT ds_dispositivo, ds_ip, ts_criacao FROM "VISITAS" WHERE nr_id_telegram = $1 ORDER BY ts_criacao DESC LIMIT 1',
+    [nrIdTelegram]
+  );
+  return rows[0] ?? null;
 }
 
 export async function verificarBanido(nrIdTelegram: number): Promise<boolean> {
-  const supabase = createSupabaseAdminClient();
-  const { count } = await supabase
-    .from("BANS")
-    .select("*", { count: "exact", head: true })
-    .eq("nr_id_telegram", nrIdTelegram);
-  return (count ?? 0) > 0;
+  const { rows } = await pool.query<{ total: string }>(
+    'SELECT COUNT(*) AS total FROM "BANS" WHERE nr_id_telegram = $1',
+    [nrIdTelegram]
+  );
+  return Number(rows[0]?.total ?? 0) > 0;
 }
 
 export async function banirCliente(nrIdTelegram: number) {
-  const supabase = createSupabaseAdminClient();
-  const { error } = await supabase.from("BANS").insert({ nr_id_telegram: nrIdTelegram });
-  if (error && error.code !== "23505") throw new Error(error.message);
+  try {
+    await pool.query('INSERT INTO "BANS" (nr_id_telegram) VALUES ($1)', [nrIdTelegram]);
+  } catch (err) {
+    if (!(err && typeof err === "object" && "code" in err && err.code === "23505")) {
+      throw err;
+    }
+  }
 
   await registrarLog({
     tp_acao: "BANIMENTO",
@@ -143,9 +130,7 @@ export async function banirCliente(nrIdTelegram: number) {
 }
 
 export async function desbanirCliente(nrIdTelegram: number) {
-  const supabase = createSupabaseAdminClient();
-  const { error } = await supabase.from("BANS").delete().eq("nr_id_telegram", nrIdTelegram);
-  if (error) throw new Error(error.message);
+  await pool.query('DELETE FROM "BANS" WHERE nr_id_telegram = $1', [nrIdTelegram]);
 
   await registrarLog({
     tp_acao: "DESBANIMENTO",
@@ -158,14 +143,7 @@ export async function desbanirCliente(nrIdTelegram: number) {
 
 /** Revoga uma venda aprovada antes do prazo — expira ela imediatamente. */
 export async function revogarAcesso(cdVenda: string) {
-  const supabase = createSupabaseAdminClient();
-
-  const { error } = await supabase
-    .from("VENDAS")
-    .update({ ts_expiracao: new Date().toISOString() })
-    .eq("cd_venda", cdVenda);
-
-  if (error) throw new Error(error.message);
+  await pool.query('UPDATE "VENDAS" SET ts_expiracao = now() WHERE cd_venda = $1', [cdVenda]);
 
   await registrarLog({
     tp_acao: "REVOGACAO_ACESSO",
@@ -178,17 +156,21 @@ export async function revogarAcesso(cdVenda: string) {
 }
 
 export async function exportarClientesCsv(busca?: string): Promise<string> {
-  const supabase = createSupabaseAdminClient();
+  const valores: unknown[] = [];
+  const whereSql = busca
+    ? (() => {
+        valores.push(`%${busca}%`);
+        return `WHERE id_telegram_texto ILIKE $${valores.length}`;
+      })()
+    : "";
 
-  let query = supabase.from("vw_clientes").select("*");
-  if (busca) query = query.ilike("id_telegram_texto", `%${busca}%`);
-  query = query.order("ultima_compra", { ascending: false });
-
-  const { data, error } = await query;
-  if (error) throw new Error(error.message);
+  const { rows } = await pool.query<ClienteResumo>(
+    `SELECT * FROM vw_clientes ${whereSql} ORDER BY ultima_compra DESC`,
+    valores
+  );
 
   const { paraCsv } = await import("@/lib/csv");
-  return paraCsv(data ?? [], [
+  return paraCsv(rows, [
     { chave: "nr_id_telegram", rotulo: "ID Telegram" },
     { chave: "total_compras", rotulo: "Total de Compras" },
     { chave: "ultima_compra", rotulo: "Última Compra" },

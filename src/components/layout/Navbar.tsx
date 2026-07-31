@@ -1,11 +1,15 @@
 "use client";
 
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import type { User } from "@supabase/supabase-js";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
+import { obterUsuarioAtual, sairUsuario } from "./navbar-actions";
+
+interface UsuarioNavbar {
+  nm_nome: string | null;
+  nm_email: string;
+}
 
 const LINKS = [
   { label: "Início", href: "/" },
@@ -43,7 +47,7 @@ function NavbarInner({
   const [buscaLocal, setBuscaLocal] = useState("");
   const [menuAberto, setMenuAberto] = useState(false);
   const [menuMobileAberto, setMenuMobileAberto] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UsuarioNavbar | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuMobileRef = useRef<HTMLDivElement>(null);
 
@@ -57,12 +61,7 @@ function NavbarInner({
   }, []);
 
   useEffect(() => {
-    const supabase = createSupabaseBrowserClient();
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_evento, sessao) => setUser(sessao?.user ?? null)
-    );
-    return () => listener.subscription.unsubscribe();
+    obterUsuarioAtual().then(setUser);
   }, []);
 
   useEffect(() => {
@@ -82,16 +81,13 @@ function NavbarInner({
   }, []);
 
   async function sair() {
-    const supabase = createSupabaseBrowserClient();
-    await supabase.auth.signOut();
+    await sairUsuario();
     setMenuAberto(false);
     setMenuMobileAberto(false);
     window.location.href = "/";
   }
 
-  const inicial = (user?.user_metadata?.nome ?? user?.email ?? "?")
-    .charAt(0)
-    .toUpperCase();
+  const inicial = (user?.nm_nome ?? user?.nm_email ?? "?").charAt(0).toUpperCase();
 
   function aoDigitarBusca(valor: string) {
     if (onBuscaChange) {
@@ -295,7 +291,7 @@ function NavbarInner({
             {user ? (
               <div className="flex flex-col gap-1">
                 <p className="truncate px-2 py-1 text-xs text-secondary">
-                  {user.email}
+                  {user.nm_email}
                 </p>
                 <Link
                   href="/conta"

@@ -9,14 +9,13 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@supabase/ssr": "^0.12.0",
-    "@supabase/supabase-js": "^2.110.0",
     "bcryptjs": "^3.0.3",
     "hls.js": "^1.6.16",
     "jose": "^6.2.3",
     "motion": "^12.42.2",
     "next": "16.2.10",
     "payment-token-efi": "^3.4.1",
+    "pg": "^8.22.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "sdk-node-apis-efi": "^2.0.0",
@@ -26,6 +25,7 @@
     "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
+    "@types/pg": "^8.20.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",

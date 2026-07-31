@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { pool } from "@/lib/db";
 import Navbar from "@/components/layout/Navbar";
 import { formatarPreco } from "@/lib/catalogo";
 import type { Plano } from "@/types/database";
@@ -15,9 +15,7 @@ function formatarDuracao(dias: number) {
 }
 
 export default async function AssinaturasPage() {
-  const supabase = await createSupabaseServerClient();
-  const { data } = await supabase.from("PLANOS").select("*");
-  const planos: Plano[] = data ?? [];
+  const { rows: planos } = await pool.query<Plano>('SELECT * FROM "PLANOS"');
 
   return (
     <div className="flex min-h-screen flex-col">

@@ -1,4 +1,4 @@
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { pool } from "@/lib/db";
 import RecusadosClient from "./RecusadosClient";
 import type { Conteudo, Plano, TentativaCartaoRecusada } from "@/types/database";
 
@@ -14,29 +14,25 @@ export default async function RecusadosPage({
   const params = await searchParams;
   const pagina = Math.max(1, Number(params.page) || 1);
 
-  const supabase = createSupabaseAdminClient();
+  const [tentativasResult, conteudosResult, planosResult] = await Promise.all([
+    pool.query<TentativaCartaoRecusada & { total_count: string }>(
+      `SELECT *, COUNT(*) OVER() AS total_count FROM "TENTATIVAS_CARTAO_RECUSADAS"
+       ORDER BY ts_criacao DESC LIMIT $1 OFFSET $2`,
+      [ITENS_POR_PAGINA, (pagina - 1) * ITENS_POR_PAGINA]
+    ),
+    pool.query<Conteudo>('SELECT * FROM "CONTEUDOS"'),
+    pool.query<Plano>('SELECT * FROM "PLANOS"'),
+  ]);
 
-  const [{ data: tentativasData, count }, { data: conteudosData }, { data: planosData }] =
-    await Promise.all([
-      supabase
-        .from("TENTATIVAS_CARTAO_RECUSADAS")
-        .select("*", { count: "exact" })
-        .order("ts_criacao", { ascending: false })
-        .range((pagina - 1) * ITENS_POR_PAGINA, pagina * ITENS_POR_PAGINA - 1),
-      supabase.from("CONTEUDOS").select("*"),
-      supabase.from("PLANOS").select("*"),
-    ]);
-
-  const tentativas: TentativaCartaoRecusada[] = tentativasData ?? [];
-  const conteudos: Conteudo[] = conteudosData ?? [];
-  const planos: Plano[] = planosData ?? [];
+  const tentativas: TentativaCartaoRecusada[] = tentativasResult.rows;
+  const totalRegistros = Number(tentativasResult.rows[0]?.total_count ?? 0);
 
   return (
     <RecusadosClient
       tentativas={tentativas}
-      conteudos={conteudos}
-      planos={planos}
-      totalRegistros={count ?? 0}
+      conteudos={conteudosResult.rows}
+      planos={planosResult.rows}
+      totalRegistros={totalRegistros}
       itensPorPagina={ITENS_POR_PAGINA}
       pagina={pagina}
     />

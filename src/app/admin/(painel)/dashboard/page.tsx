@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { pool } from "@/lib/db";
 import { formatarPreco } from "@/lib/catalogo";
 import type { Conteudo, Venda, Plano } from "@/types/database";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Stagger";
@@ -8,19 +8,11 @@ import MetricasOnlineCard from "./MetricasOnlineCard";
 export const revalidate = 0; // force dynamic rendering
 
 export default async function DashboardPage() {
-  const supabase = await createSupabaseServerClient();
-
-  // Fetch CONTEUDOS
-  const { data: conteudosData } = await supabase.from("CONTEUDOS").select("*");
-  const conteudos: Conteudo[] = conteudosData ?? [];
-
-  // Fetch VENDAS
-  const { data: vendasData } = await supabase.from("VENDAS").select("*");
-  const vendas: Venda[] = vendasData ?? [];
-
-  // Fetch PLANOS
-  const { data: planosData } = await supabase.from("PLANOS").select("*");
-  const planos: Plano[] = planosData ?? [];
+  const [{ rows: conteudos }, { rows: vendas }, { rows: planos }] = await Promise.all([
+    pool.query<Conteudo>('SELECT * FROM "CONTEUDOS"'),
+    pool.query<Venda>('SELECT * FROM "VENDAS"'),
+    pool.query<Plano>('SELECT * FROM "PLANOS"'),
+  ]);
 
   // Build maps for quick lookup
   const conteudosMap = new Map<string, Conteudo>();

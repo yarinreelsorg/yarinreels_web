@@ -1,7 +1,5 @@
 import "server-only";
-import type { SupabaseClient, User } from "@supabase/supabase-js";
-import type { Database } from "./supabase/types";
-import { createSupabaseAdminClient } from "./supabase/admin";
+import { pool } from "./db";
 
 /**
  * Sinônimos de categoria usados pelo bot legado: um plano de categoria X
@@ -47,28 +45,31 @@ function gerarIdWebSintetico() {
 
 /**
  * Garante que o usuário tenha uma identidade pra comprar pelo site
- * (cria e salva uma na primeira vez que for necessário) e devolve os
+ * (cria e salva uma na primeira vez que for necessário, direto no banco —
+ * não depende do cookie de sessão estar atualizado) e devolve os
  * nr_id_telegram que valem pra checar acesso: a identidade web sempre,
  * mais a conta real do Telegram se ele já tiver vinculado.
  */
-export async function obterIdsTelegramElegiveis(user: User): Promise<number[]> {
-  const metadata = user.user_metadata ?? {};
+export async function obterIdsTelegramElegiveis(cdUsuario: string): Promise<number[]> {
+  const { rows } = await pool.query<{
+    nr_id_telegram: number | null;
+    nr_id_telegram_web: number | null;
+  }>('SELECT nr_id_telegram, nr_id_telegram_web FROM "USUARIOS" WHERE cd_usuario = $1', [
+    cdUsuario,
+  ]);
+  const usuario = rows[0];
+  if (!usuario) return [];
 
-  let idWeb =
-    typeof metadata.nr_id_telegram_web === "number" ? metadata.nr_id_telegram_web : null;
-
+  let idWeb = usuario.nr_id_telegram_web;
   if (!idWeb) {
     idWeb = gerarIdWebSintetico();
-    const admin = createSupabaseAdminClient();
-    await admin.auth.admin.updateUserById(user.id, {
-      user_metadata: { ...metadata, nr_id_telegram_web: idWeb },
-    });
+    await pool.query('UPDATE "USUARIOS" SET nr_id_telegram_web = $1 WHERE cd_usuario = $2', [
+      idWeb,
+      cdUsuario,
+    ]);
   }
 
-  const idTelegramReal =
-    typeof metadata.nr_id_telegram === "number" ? metadata.nr_id_telegram : null;
-
-  return idTelegramReal ? [idWeb, idTelegramReal] : [idWeb];
+  return usuario.nr_id_telegram ? [idWeb, usuario.nr_id_telegram] : [idWeb];
 }
 
 /**
@@ -76,8 +77,8 @@ export async function obterIdsTelegramElegiveis(user: User): Promise<number[]> {
  * Telegram, se já vinculada (consolida com o que ele compra pelo bot);
  * senão a identidade web sintética.
  */
-export async function obterIdentidadeParaCompra(user: User): Promise<number> {
-  const ids = await obterIdsTelegramElegiveis(user);
+export async function obterIdentidadeParaCompra(cdUsuario: string): Promise<number> {
+  const ids = await obterIdsTelegramElegiveis(cdUsuario);
   return ids[ids.length - 1];
 }
 
@@ -104,26 +105,33 @@ export type StatusAcesso =
  * categoria compatível) que dê acesso a esse conteúdo.
  */
 export async function verificarAcessoConteudo(
-  supabase: SupabaseClient<Database>,
   nrIdsTelegram: number[],
   conteudo: { cd_conteudo: string; nm_categoria: string }
 ): Promise<StatusAcesso> {
-  const { count: banido } = await supabase
-    .from("BANS")
-    .select("*", { count: "exact", head: true })
-    .in("nr_id_telegram", nrIdsTelegram);
-  if ((banido ?? 0) > 0) return { liberado: false };
+  if (nrIdsTelegram.length === 0) return { liberado: false };
+
+  const { rows: banidos } = await pool.query(
+    'SELECT 1 FROM "BANS" WHERE nr_id_telegram = ANY($1::bigint[])',
+    [nrIdsTelegram]
+  );
+  if (banidos.length > 0) return { liberado: false };
 
   const agora = new Date().toISOString();
 
-  const { data: vendas } = await supabase
-    .from("VENDAS")
-    .select("*")
-    .in("nr_id_telegram", nrIdsTelegram)
-    .eq("tp_status", "APROVADA")
-    .gt("ts_expiracao", agora);
+  interface VendaAcesso {
+    tp_compra: MotivoAcesso;
+    cd_conteudo: string | null;
+    cd_plano: string | null;
+    ts_expiracao: string | null;
+  }
 
-  if (!vendas || vendas.length === 0) {
+  const { rows: vendas } = await pool.query<VendaAcesso>(
+    `SELECT tp_compra, cd_conteudo, cd_plano, ts_expiracao FROM "VENDAS"
+     WHERE nr_id_telegram = ANY($1::bigint[]) AND tp_status = 'APROVADA' AND ts_expiracao > $2`,
+    [nrIdsTelegram, agora]
+  );
+
+  if (vendas.length === 0) {
     return { liberado: false };
   }
 
@@ -135,27 +143,24 @@ export async function verificarAcessoConteudo(
   if (direta && direta.ts_expiracao) {
     return {
       liberado: true,
-      motivo: direta.tp_compra as MotivoAcesso,
+      motivo: direta.tp_compra,
       expiraEm: direta.ts_expiracao,
     };
   }
 
   const assinaturas = vendas.filter(
-    (v): v is typeof v & { cd_plano: string; ts_expiracao: string } =>
+    (v): v is VendaAcesso & { cd_plano: string; ts_expiracao: string } =>
       v.tp_compra === "ASSINATURA" && !!v.cd_plano && !!v.ts_expiracao
   );
 
   if (assinaturas.length > 0) {
-    const { data: planos } = await supabase
-      .from("PLANOS")
-      .select("cd_plano, nm_categoria")
-      .in(
-        "cd_plano",
-        assinaturas.map((v) => v.cd_plano)
-      );
+    const { rows: planos } = await pool.query<{ cd_plano: string; nm_categoria: string }>(
+      'SELECT cd_plano, nm_categoria FROM "PLANOS" WHERE cd_plano = ANY($1::uuid[])',
+      [assinaturas.map((v) => v.cd_plano)]
+    );
 
     for (const venda of assinaturas) {
-      const plano = planos?.find((p) => p.cd_plano === venda.cd_plano);
+      const plano = planos.find((p) => p.cd_plano === venda.cd_plano);
       if (plano && categoriasCompativeis(plano.nm_categoria, conteudo.nm_categoria)) {
         return { liberado: true, motivo: "ASSINATURA", expiraEm: venda.ts_expiracao };
       }

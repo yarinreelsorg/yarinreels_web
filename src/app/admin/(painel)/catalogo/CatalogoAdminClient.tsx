@@ -7,7 +7,6 @@ import type { Conteudo, TpFormato } from "@/types/database";
 import {
   adicionarConteudo,
   editarConteudo,
-  enviarPosterConteudo,
   exportarCatalogoCsv,
   removerConteudo,
   removerConteudosEmLote,
@@ -61,7 +60,6 @@ export default function CatalogoAdminClient({
   const [categoriaSelecionada, setCategoriaSelecionada] = useState("");
   const [novaCategoria, setNovaCategoria] = useState("");
   const [urlPoster, setUrlPoster] = useState("");
-  const [enviandoPoster, setEnviandoPoster] = useState(false);
   const [salvando, setSalvando] = useState(false);
 
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
@@ -132,33 +130,6 @@ export default function CatalogoAdminClient({
     setNovaCategoria("");
     setUrlPoster(conteudo.ds_url_poster || "");
     setModalAberto(true);
-  };
-
-  const aoEscolherArquivo = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const arquivo = e.target.files?.[0];
-    if (!arquivo) return;
-
-    if (!["image/jpeg", "image/png", "image/webp"].includes(arquivo.type)) {
-      toast.erro("Formato inválido. Use JPEG, PNG ou WebP.");
-      return;
-    }
-    if (arquivo.size > 5 * 1024 * 1024) {
-      toast.erro("Imagem muito grande. O limite é 5MB.");
-      return;
-    }
-
-    setEnviandoPoster(true);
-    try {
-      const formDataArquivo = new FormData();
-      formDataArquivo.set("arquivo", arquivo);
-      const url = await enviarPosterConteudo(cdEdicao, formDataArquivo);
-      setUrlPoster(url);
-      toast.sucesso("Imagem enviada.");
-    } catch (err) {
-      toast.erro(err instanceof Error ? err.message : "Erro ao enviar imagem.");
-    } finally {
-      setEnviandoPoster(false);
-    }
   };
 
   const aoRemover = (id: string, titulo: string) => {
@@ -724,24 +695,16 @@ export default function CatalogoAdminClient({
                   <div className="flex gap-4">
                     <div className="flex-1">
                       <label htmlFor="ds_url_poster" className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">
-                        Poster
+                        URL do Poster
                       </label>
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        onChange={aoEscolherArquivo}
-                        disabled={enviandoPoster}
-                        className="block w-full text-xs text-[#A78BFA] file:mr-3 file:rounded-md file:border-0 file:bg-[#7B2FBE] file:px-3 file:py-2 file:text-xs file:font-bold file:text-white hover:file:bg-[#6D28D9] disabled:opacity-50"
-                      />
                       <input
                         type="text"
                         id="ds_url_poster"
-                        placeholder="ou cole uma URL"
+                        placeholder="https://..."
                         value={urlPoster}
                         onChange={(e) => setUrlPoster(e.target.value)}
-                        className="mt-2 w-full bg-[#0D0A1A] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2 text-xs text-white"
+                        className="w-full bg-[#0D0A1A] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white"
                       />
-                      {enviandoPoster && <p className="mt-1 text-[10px] text-[#A78BFA]">Enviando...</p>}
                     </div>
 
                     <div className="shrink-0 flex items-end">
@@ -848,7 +811,7 @@ export default function CatalogoAdminClient({
                   </button>
                   <button
                     type="submit"
-                    disabled={salvando || enviandoPoster}
+                    disabled={salvando}
                     className="rounded-md bg-[#7B2FBE] hover:bg-[#6D28D9] disabled:opacity-50 px-6 py-2.5 text-sm font-bold text-white transition-colors cursor-pointer flex items-center justify-center"
                   >
                     {salvando ? "Salvando..." : "Salvar"}

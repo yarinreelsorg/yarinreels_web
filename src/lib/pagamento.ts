@@ -1,14 +1,10 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "./supabase/types";
+import { pool } from "./db";
 
 /** Taxa fixa adicional cobrada em pagamentos com cartão (config. pelo admin). */
-export async function obterTaxaCartao(supabase: SupabaseClient<Database>): Promise<number> {
-  const { data } = await supabase
-    .from("CONFIGURACAO_PAGAMENTO")
-    .select("vl_taxa_cartao")
-    .limit(1)
-    .maybeSingle();
-
-  return data?.vl_taxa_cartao ?? 0;
+export async function obterTaxaCartao(): Promise<number> {
+  const { rows } = await pool.query<{ vl_taxa_cartao: number }>(
+    'SELECT vl_taxa_cartao FROM "CONFIGURACAO_PAGAMENTO" LIMIT 1'
+  );
+  return rows[0]?.vl_taxa_cartao ?? 0;
 }

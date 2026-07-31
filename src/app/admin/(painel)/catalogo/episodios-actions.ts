@@ -1,20 +1,16 @@
 "use server";
 
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { pool } from "@/lib/db";
 import { registrarLog } from "@/lib/auditoria";
 import { revalidatePath } from "next/cache";
 import type { Episodio } from "@/types/database";
 
 export async function listarEpisodios(cdConteudo: string): Promise<Episodio[]> {
-  const supabase = createSupabaseAdminClient();
-  const { data, error } = await supabase
-    .from("EPISODIOS")
-    .select("*")
-    .eq("cd_conteudo", cdConteudo)
-    .order("nr_episodio", { ascending: true });
-
-  if (error) throw new Error(error.message);
-  return data ?? [];
+  const { rows } = await pool.query<Episodio>(
+    'SELECT * FROM "EPISODIOS" WHERE cd_conteudo = $1 ORDER BY nr_episodio ASC',
+    [cdConteudo]
+  );
+  return rows;
 }
 
 function parseString(val: unknown) {
@@ -29,19 +25,20 @@ export async function adicionarEpisodio(cdConteudo: string, formData: FormData) 
   if (!nm_titulo) throw new Error("Informe o título do episódio.");
   if (!nr_episodio || nr_episodio < 1) throw new Error("Informe um número de episódio válido.");
 
-  const supabase = createSupabaseAdminClient();
   const cd_episodio = crypto.randomUUID();
 
-  const { error } = await supabase.from("EPISODIOS").insert({
-    cd_episodio,
-    cd_conteudo: cdConteudo,
-    nr_episodio,
-    nm_titulo,
-    ds_url_bunny: parseString(formData.get("ds_url_bunny")),
-    ds_file_id_telegram: parseString(formData.get("ds_file_id_telegram")),
-  });
-
-  if (error) throw new Error(error.message);
+  await pool.query(
+    `INSERT INTO "EPISODIOS" (cd_episodio, cd_conteudo, nr_episodio, nm_titulo, ds_url_bunny, ds_file_id_telegram)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    [
+      cd_episodio,
+      cdConteudo,
+      nr_episodio,
+      nm_titulo,
+      parseString(formData.get("ds_url_bunny")),
+      parseString(formData.get("ds_file_id_telegram")),
+    ]
+  );
 
   await registrarLog({
     tp_acao: "CRIACAO",
@@ -61,19 +58,17 @@ export async function editarEpisodio(cdEpisodio: string, formData: FormData) {
   if (!nm_titulo) throw new Error("Informe o título do episódio.");
   if (!nr_episodio || nr_episodio < 1) throw new Error("Informe um número de episódio válido.");
 
-  const supabase = createSupabaseAdminClient();
-
-  const { error } = await supabase
-    .from("EPISODIOS")
-    .update({
+  await pool.query(
+    `UPDATE "EPISODIOS" SET nr_episodio = $1, nm_titulo = $2, ds_url_bunny = $3, ds_file_id_telegram = $4
+     WHERE cd_episodio = $5`,
+    [
       nr_episodio,
       nm_titulo,
-      ds_url_bunny: parseString(formData.get("ds_url_bunny")),
-      ds_file_id_telegram: parseString(formData.get("ds_file_id_telegram")),
-    })
-    .eq("cd_episodio", cdEpisodio);
-
-  if (error) throw new Error(error.message);
+      parseString(formData.get("ds_url_bunny")),
+      parseString(formData.get("ds_file_id_telegram")),
+      cdEpisodio,
+    ]
+  );
 
   await registrarLog({
     tp_acao: "EDICAO",
@@ -86,10 +81,7 @@ export async function editarEpisodio(cdEpisodio: string, formData: FormData) {
 }
 
 export async function removerEpisodio(cdEpisodio: string, cdConteudo: string) {
-  const supabase = createSupabaseAdminClient();
-
-  const { error } = await supabase.from("EPISODIOS").delete().eq("cd_episodio", cdEpisodio);
-  if (error) throw new Error(error.message);
+  await pool.query('DELETE FROM "EPISODIOS" WHERE cd_episodio = $1', [cdEpisodio]);
 
   await registrarLog({
     tp_acao: "EXCLUSAO",

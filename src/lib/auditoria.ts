@@ -1,5 +1,5 @@
 import "server-only";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { pool } from "@/lib/db";
 import { getSessaoAdmin } from "@/lib/admin-auth";
 
 export type AcaoAuditoria =
@@ -29,16 +29,20 @@ export async function registrarLog(params: {
 }) {
   try {
     const sessao = await getSessaoAdmin();
-    const supabase = createSupabaseAdminClient();
 
-    await supabase.from("LOGS_AUDITORIA").insert({
-      cd_administrador: sessao?.cd_administrador ?? null,
-      nm_administrador: sessao?.nm_nome ?? "Desconhecido",
-      tp_acao: params.tp_acao,
-      nm_entidade: params.nm_entidade,
-      cd_entidade: params.cd_entidade ?? null,
-      ds_detalhes: params.ds_detalhes ?? null,
-    });
+    await pool.query(
+      `INSERT INTO "LOGS_AUDITORIA"
+         (cd_administrador, nm_administrador, tp_acao, nm_entidade, cd_entidade, ds_detalhes)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [
+        sessao?.cd_administrador ?? null,
+        sessao?.nm_nome ?? "Desconhecido",
+        params.tp_acao,
+        params.nm_entidade,
+        params.cd_entidade ?? null,
+        params.ds_detalhes ? JSON.stringify(params.ds_detalhes) : null,
+      ]
+    );
   } catch {
     // auditoria é best-effort — nunca deve quebrar a ação principal
   }

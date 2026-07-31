@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { pool } from "@/lib/db";
 import { getSessaoAdmin } from "@/lib/admin-auth";
 import { registrarLog } from "@/lib/auditoria";
 import type { TpPapelAdmin } from "@/types/database";
@@ -27,25 +27,27 @@ export async function criarAdministrador(formData: FormData) {
     throw new Error("Preencha nome, e-mail e uma senha com pelo menos 8 caracteres.");
   }
 
-  const supabase = createSupabaseAdminClient();
   const ds_senha_hash = await bcrypt.hash(senha, 10);
 
-  const { data, error } = await supabase
-    .from("ADMINISTRADORES")
-    .insert({ nm_nome, nm_email, ds_senha_hash, tp_papel })
-    .select("cd_administrador")
-    .single();
-
-  if (error) {
-    throw new Error(
-      error.code === "23505" ? "Já existe um administrador com esse e-mail." : error.message
+  let cd_administrador: string;
+  try {
+    const { rows } = await pool.query<{ cd_administrador: string }>(
+      `INSERT INTO "ADMINISTRADORES" (nm_nome, nm_email, ds_senha_hash, tp_papel)
+       VALUES ($1, $2, $3, $4) RETURNING cd_administrador`,
+      [nm_nome, nm_email, ds_senha_hash, tp_papel]
     );
+    cd_administrador = rows[0].cd_administrador;
+  } catch (err) {
+    if (err && typeof err === "object" && "code" in err && err.code === "23505") {
+      throw new Error("Já existe um administrador com esse e-mail.");
+    }
+    throw err;
   }
 
   await registrarLog({
     tp_acao: "CRIACAO",
     nm_entidade: "ADMINISTRADORES",
-    cd_entidade: data.cd_administrador,
+    cd_entidade: cd_administrador,
     ds_detalhes: { nome: nm_nome, email: nm_email, papel: tp_papel },
   });
 
@@ -59,32 +61,26 @@ export async function alternarAtivoAdministrador(cd_administrador: string, ativo
     throw new Error("Você não pode desativar a própria conta.");
   }
 
-  const supabase = createSupabaseAdminClient();
-
   if (!ativo) {
-    const { count } = await supabase
-      .from("ADMINISTRADORES")
-      .select("*", { count: "exact", head: true })
-      .eq("tp_papel", "SUPER_ADMIN")
-      .eq("sn_ativo", true);
+    const [{ rows: contagem }, { rows: alvoRows }] = await Promise.all([
+      pool.query<{ total: string }>(
+        `SELECT COUNT(*) AS total FROM "ADMINISTRADORES" WHERE tp_papel = 'SUPER_ADMIN' AND sn_ativo = true`
+      ),
+      pool.query<{ tp_papel: TpPapelAdmin }>(
+        'SELECT tp_papel FROM "ADMINISTRADORES" WHERE cd_administrador = $1 LIMIT 1',
+        [cd_administrador]
+      ),
+    ]);
 
-    const { data: alvo } = await supabase
-      .from("ADMINISTRADORES")
-      .select("tp_papel")
-      .eq("cd_administrador", cd_administrador)
-      .maybeSingle();
-
-    if (alvo?.tp_papel === "SUPER_ADMIN" && (count ?? 0) <= 1) {
+    if (alvoRows[0]?.tp_papel === "SUPER_ADMIN" && Number(contagem[0]?.total ?? 0) <= 1) {
       throw new Error("Não é possível desativar o único super administrador ativo.");
     }
   }
 
-  const { error } = await supabase
-    .from("ADMINISTRADORES")
-    .update({ sn_ativo: ativo })
-    .eq("cd_administrador", cd_administrador);
-
-  if (error) throw new Error(error.message);
+  await pool.query('UPDATE "ADMINISTRADORES" SET sn_ativo = $1 WHERE cd_administrador = $2', [
+    ativo,
+    cd_administrador,
+  ]);
 
   await registrarLog({
     tp_acao: "ALTERACAO_STATUS",
@@ -104,25 +100,21 @@ export async function atualizarTaxaCartao(formData: FormData) {
     throw new Error("Informe um valor de taxa válido.");
   }
 
-  const supabase = createSupabaseAdminClient();
-  const { data: existente } = await supabase
-    .from("CONFIGURACAO_PAGAMENTO")
-    .select("cd_configuracao")
-    .limit(1)
-    .maybeSingle();
+  const { rows: existente } = await pool.query<{ cd_configuracao: string }>(
+    'SELECT cd_configuracao FROM "CONFIGURACAO_PAGAMENTO" LIMIT 1'
+  );
 
-  const { error } = existente
-    ? await supabase
-        .from("CONFIGURACAO_PAGAMENTO")
-        .update({ vl_taxa_cartao })
-        .eq("cd_configuracao", existente.cd_configuracao)
-    : await supabase.from("CONFIGURACAO_PAGAMENTO").insert({
-        cd_configuracao: crypto.randomUUID(),
-        vl_taxa_cartao,
-        ts_atualizacao: new Date().toISOString(),
-      });
-
-  if (error) throw new Error(error.message);
+  if (existente[0]) {
+    await pool.query(
+      'UPDATE "CONFIGURACAO_PAGAMENTO" SET vl_taxa_cartao = $1, ts_atualizacao = now() WHERE cd_configuracao = $2',
+      [vl_taxa_cartao, existente[0].cd_configuracao]
+    );
+  } else {
+    await pool.query(
+      'INSERT INTO "CONFIGURACAO_PAGAMENTO" (cd_configuracao, vl_taxa_cartao, ts_atualizacao) VALUES ($1, $2, now())',
+      [crypto.randomUUID(), vl_taxa_cartao]
+    );
+  }
 
   await registrarLog({
     tp_acao: "ALTERACAO_CONFIGURACAO",
@@ -144,32 +136,26 @@ export async function atualizarPapelAdministrador(
     throw new Error("Você não pode rebaixar a própria conta.");
   }
 
-  const supabase = createSupabaseAdminClient();
-
   if (tp_papel === "ADMIN") {
-    const { count } = await supabase
-      .from("ADMINISTRADORES")
-      .select("*", { count: "exact", head: true })
-      .eq("tp_papel", "SUPER_ADMIN")
-      .eq("sn_ativo", true);
+    const [{ rows: contagem }, { rows: alvoRows }] = await Promise.all([
+      pool.query<{ total: string }>(
+        `SELECT COUNT(*) AS total FROM "ADMINISTRADORES" WHERE tp_papel = 'SUPER_ADMIN' AND sn_ativo = true`
+      ),
+      pool.query<{ tp_papel: TpPapelAdmin }>(
+        'SELECT tp_papel FROM "ADMINISTRADORES" WHERE cd_administrador = $1 LIMIT 1',
+        [cd_administrador]
+      ),
+    ]);
 
-    const { data: alvo } = await supabase
-      .from("ADMINISTRADORES")
-      .select("tp_papel")
-      .eq("cd_administrador", cd_administrador)
-      .maybeSingle();
-
-    if (alvo?.tp_papel === "SUPER_ADMIN" && (count ?? 0) <= 1) {
+    if (alvoRows[0]?.tp_papel === "SUPER_ADMIN" && Number(contagem[0]?.total ?? 0) <= 1) {
       throw new Error("Não é possível rebaixar o único super administrador ativo.");
     }
   }
 
-  const { error } = await supabase
-    .from("ADMINISTRADORES")
-    .update({ tp_papel })
-    .eq("cd_administrador", cd_administrador);
-
-  if (error) throw new Error(error.message);
+  await pool.query('UPDATE "ADMINISTRADORES" SET tp_papel = $1 WHERE cd_administrador = $2', [
+    tp_papel,
+    cd_administrador,
+  ]);
 
   await registrarLog({
     tp_acao: "ALTERACAO_PAPEL",

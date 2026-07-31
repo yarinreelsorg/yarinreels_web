@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { pool } from "@/lib/db";
+import { getSessaoUsuario } from "@/lib/user-auth";
 import Navbar from "@/components/layout/Navbar";
 import { diasRestantes as calcularDiasRestantes, estaExpirada } from "@/lib/catalogo";
 import type { Plano, Venda } from "@/types/database";
@@ -14,27 +15,18 @@ function formatarData(iso: string) {
 }
 
 export default async function ContaAssinaturaPage() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const sessao = await getSessaoUsuario();
+  if (!sessao) redirect("/login");
 
-  if (!user) redirect("/login");
-
-  const nrIdTelegram =
-    typeof user.user_metadata?.nr_id_telegram === "number"
-      ? (user.user_metadata.nr_id_telegram as number)
-      : null;
+  const nrIdTelegram = sessao.nr_id_telegram;
 
   let assinatura:
     | (Venda & { ts_expiracao: string; plano: Plano | null })
     | null = null;
 
   if (nrIdTelegram !== null) {
-    const { data: vendasData } = await supabase.from("VENDAS").select("*");
-    const { data: planosData } = await supabase.from("PLANOS").select("*");
-    const vendas: Venda[] = vendasData ?? [];
-    const planos: Plano[] = planosData ?? [];
+    const { rows: vendas } = await pool.query<Venda>('SELECT * FROM "VENDAS"');
+    const { rows: planos } = await pool.query<Plano>('SELECT * FROM "PLANOS"');
 
     const ativa = vendas
       .filter(
@@ -71,7 +63,7 @@ export default async function ContaAssinaturaPage() {
         <h1 className="text-2xl font-black text-foreground sm:text-3xl">
           Minha Assinatura
         </h1>
-        <p className="mt-1 text-sm text-secondary">{user.email}</p>
+        <p className="mt-1 text-sm text-secondary">{sessao.nm_email}</p>
 
         {assinatura ? (
           <div className="mt-8 overflow-hidden rounded-lg border border-border bg-surface p-6 sm:p-8">

@@ -1,4 +1,4 @@
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { pool } from "@/lib/db";
 import CatalogoAdminClient from "./CatalogoAdminClient";
 import type { Conteudo, TpFormato } from "@/types/database";
 
@@ -23,31 +23,45 @@ export default async function CatalogoAdminPage({
   const direcao = params.dir === "desc" ? "desc" : "asc";
   const pagina = Math.max(1, Number(params.page) || 1);
 
-  const supabase = createSupabaseAdminClient();
+  const condicoes: string[] = [];
+  const valores: unknown[] = [];
+  if (busca) {
+    valores.push(`%${busca}%`);
+    condicoes.push(`nm_titulo ILIKE $${valores.length}`);
+  }
+  if (categoria) {
+    valores.push(categoria);
+    condicoes.push(`nm_categoria = $${valores.length}`);
+  }
+  if (formato) {
+    valores.push(formato);
+    condicoes.push(`tp_formato = $${valores.length}`);
+  }
+  const whereSql = condicoes.length > 0 ? `WHERE ${condicoes.join(" AND ")}` : "";
+  const direcaoSql = direcao === "asc" ? "ASC" : "DESC";
 
-  let query = supabase.from("CONTEUDOS").select("*", { count: "exact" });
-  if (busca) query = query.ilike("nm_titulo", `%${busca}%`);
-  if (categoria) query = query.eq("nm_categoria", categoria);
-  if (formato) query = query.eq("tp_formato", formato);
-  query = query
-    .order(ordenarPor, { ascending: direcao === "asc" })
-    .range((pagina - 1) * ITENS_POR_PAGINA, pagina * ITENS_POR_PAGINA - 1);
+  valores.push(ITENS_POR_PAGINA, (pagina - 1) * ITENS_POR_PAGINA);
+  const limitParam = valores.length - 1;
+  const offsetParam = valores.length;
 
-  const [{ data: conteudosData, count }, { data: rankingData }, { data: categoriasData }] =
-    await Promise.all([
-      query,
-      supabase.from("vw_ranking_mensal").select("*"),
-      supabase.from("CONTEUDOS").select("nm_categoria"),
-    ]);
+  const [conteudosResult, rankingResult, categoriasResult] = await Promise.all([
+    pool.query<Conteudo & { total_count: string }>(
+      `SELECT *, COUNT(*) OVER() AS total_count FROM "CONTEUDOS" ${whereSql}
+       ORDER BY ${ordenarPor} ${direcaoSql} LIMIT $${limitParam} OFFSET $${offsetParam}`,
+      valores
+    ),
+    pool.query<{ cd_conteudo: string; total_vendas: number }>("SELECT * FROM vw_ranking_mensal"),
+    pool.query<{ nm_categoria: string }>('SELECT nm_categoria FROM "CONTEUDOS"'),
+  ]);
 
-  const conteudos: Conteudo[] = conteudosData ?? [];
-  const totalRegistros = count ?? 0;
+  const conteudos: Conteudo[] = conteudosResult.rows;
+  const totalRegistros = Number(conteudosResult.rows[0]?.total_count ?? 0);
   const categorias = Array.from(
-    new Set((categoriasData ?? []).map((c) => c.nm_categoria).filter(Boolean))
+    new Set(categoriasResult.rows.map((c) => c.nm_categoria).filter(Boolean))
   ).sort();
 
   const vendasMensais: Record<string, number> = {};
-  for (const r of rankingData ?? []) {
+  for (const r of rankingResult.rows) {
     vendasMensais[String(r.cd_conteudo)] = r.total_vendas;
   }
 

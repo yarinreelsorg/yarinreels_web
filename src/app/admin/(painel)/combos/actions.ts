@@ -1,6 +1,6 @@
 "use server";
 
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { pool } from "@/lib/db";
 import { registrarLog } from "@/lib/auditoria";
 import { revalidatePath } from "next/cache";
 
@@ -17,20 +17,18 @@ function extrairCampos(formData: FormData) {
 }
 
 export async function criarCombo(formData: FormData) {
-  const supabase = createSupabaseAdminClient();
   const campos = extrairCampos(formData);
 
-  const { data, error } = await supabase
-    .from("COMBOS_PROMOCIONAIS")
-    .insert(campos)
-    .select("cd_combo")
-    .single();
-  if (error) throw new Error(error.message);
+  const { rows } = await pool.query<{ cd_combo: string }>(
+    `INSERT INTO "COMBOS_PROMOCIONAIS" (nm_combo, vl_combo, cd_conteudos)
+     VALUES ($1, $2, $3::uuid[]) RETURNING cd_combo`,
+    [campos.nm_combo, campos.vl_combo, campos.cd_conteudos]
+  );
 
   await registrarLog({
     tp_acao: "CRIACAO",
     nm_entidade: "COMBOS_PROMOCIONAIS",
-    cd_entidade: data.cd_combo,
+    cd_entidade: rows[0].cd_combo,
     ds_detalhes: { nome: campos.nm_combo },
   });
 
@@ -38,14 +36,13 @@ export async function criarCombo(formData: FormData) {
 }
 
 export async function editarCombo(id: string, formData: FormData) {
-  const supabase = createSupabaseAdminClient();
   const campos = extrairCampos(formData);
 
-  const { error } = await supabase
-    .from("COMBOS_PROMOCIONAIS")
-    .update(campos)
-    .eq("cd_combo", id);
-  if (error) throw new Error(error.message);
+  await pool.query(
+    `UPDATE "COMBOS_PROMOCIONAIS" SET nm_combo = $1, vl_combo = $2, cd_conteudos = $3::uuid[]
+     WHERE cd_combo = $4`,
+    [campos.nm_combo, campos.vl_combo, campos.cd_conteudos, id]
+  );
 
   await registrarLog({
     tp_acao: "EDICAO",
@@ -58,20 +55,13 @@ export async function editarCombo(id: string, formData: FormData) {
 }
 
 export async function alternarAtivoCombo(id: string, ativo: boolean) {
-  const supabase = createSupabaseAdminClient();
-  const { error } = await supabase
-    .from("COMBOS_PROMOCIONAIS")
-    .update({ sn_ativo: ativo })
-    .eq("cd_combo", id);
-  if (error) throw new Error(error.message);
+  await pool.query('UPDATE "COMBOS_PROMOCIONAIS" SET sn_ativo = $1 WHERE cd_combo = $2', [ativo, id]);
 
   revalidatePath("/admin/combos");
 }
 
 export async function removerCombo(id: string) {
-  const supabase = createSupabaseAdminClient();
-  const { error } = await supabase.from("COMBOS_PROMOCIONAIS").delete().eq("cd_combo", id);
-  if (error) throw new Error(error.message);
+  await pool.query('DELETE FROM "COMBOS_PROMOCIONAIS" WHERE cd_combo = $1', [id]);
 
   await registrarLog({ tp_acao: "EXCLUSAO", nm_entidade: "COMBOS_PROMOCIONAIS", cd_entidade: id });
 

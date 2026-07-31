@@ -1,6 +1,7 @@
 "use server";
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { pool } from "@/lib/db";
+import { getSessaoUsuario } from "@/lib/user-auth";
 import {
   DIAS_ALUGUEL,
   DIAS_VITALICIO,
@@ -15,32 +16,22 @@ import {
   criarCobrancaPix,
   obterCobrancaPixAtiva,
 } from "@/lib/efi/client";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/lib/supabase/types";
 import type { TpCompra } from "@/types/database";
 
 async function usuarioAutenticado() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Você precisa estar logado.");
-  return { supabase, user };
+  const sessao = await getSessaoUsuario();
+  if (!sessao) throw new Error("Você precisa estar logado.");
+  return sessao;
 }
 
-async function calcularDiasValidade(
-  supabase: SupabaseClient<Database>,
-  tp_compra: TpCompra,
-  cd_plano: string | null
-) {
+async function calcularDiasValidade(tp_compra: TpCompra, cd_plano: string | null) {
   if (tp_compra === "VITALICIO") return DIAS_VITALICIO;
   if (tp_compra === "ASSINATURA" && cd_plano) {
-    const { data: plano } = await supabase
-      .from("PLANOS")
-      .select("nr_dias_validade")
-      .eq("cd_plano", cd_plano)
-      .maybeSingle();
-    return plano?.nr_dias_validade ?? 30;
+    const { rows } = await pool.query<{ nr_dias_validade: number }>(
+      'SELECT nr_dias_validade FROM "PLANOS" WHERE cd_plano = $1 LIMIT 1',
+      [cd_plano]
+    );
+    return rows[0]?.nr_dias_validade ?? 30;
   }
   return DIAS_ALUGUEL;
 }
@@ -60,25 +51,23 @@ export interface CheckoutPixResultado {
  * cobranças órfãs quando o usuário recarrega a página de checkout.
  */
 async function reaproveitarVendaPixPendente(
-  supabase: SupabaseClient<Database>,
   nr_id_telegram: number,
   tp_compra: TpCompra,
   cd_conteudo: string | null,
   cd_plano: string | null
 ): Promise<CheckoutPixResultado | null> {
-  let query = supabase
-    .from("VENDAS")
-    .select("cd_venda, ds_txid")
-    .eq("nr_id_telegram", nr_id_telegram)
-    .eq("tp_compra", tp_compra)
-    .eq("tp_status", "PENDENTE")
-    .not("ds_txid", "is", null)
-    .order("ts_criacao", { ascending: false })
-    .limit(1);
+  const filtroItem = cd_conteudo
+    ? { coluna: "cd_conteudo", valor: cd_conteudo }
+    : { coluna: "cd_plano", valor: cd_plano as string };
 
-  query = cd_conteudo ? query.eq("cd_conteudo", cd_conteudo) : query.eq("cd_plano", cd_plano as string);
-
-  const { data: venda } = await query.maybeSingle();
+  const { rows } = await pool.query<{ cd_venda: string; ds_txid: string | null }>(
+    `SELECT cd_venda, ds_txid FROM "VENDAS"
+     WHERE nr_id_telegram = $1 AND tp_compra = $2 AND tp_status = 'PENDENTE'
+       AND ds_txid IS NOT NULL AND ${filtroItem.coluna} = $3
+     ORDER BY ts_criacao DESC LIMIT 1`,
+    [nr_id_telegram, tp_compra, filtroItem.valor]
+  );
+  const venda = rows[0];
   if (!venda || !venda.ds_txid) return null;
 
   const cobranca = await obterCobrancaPixAtiva(venda.ds_txid);
@@ -91,27 +80,24 @@ export async function iniciarCheckoutPixConteudo(
   cd_conteudo: string,
   tp_compra: "ALUGUEL" | "VITALICIO"
 ): Promise<CheckoutPixResultado> {
-  const { supabase, user } = await usuarioAutenticado();
+  const sessao = await usuarioAutenticado();
 
-  const { data: conteudo } = await supabase
-    .from("CONTEUDOS")
-    .select("nm_titulo, vl_aluguel, vl_vitalicio")
-    .eq("cd_conteudo", cd_conteudo)
-    .maybeSingle();
+  const { rows: conteudos } = await pool.query<{
+    nm_titulo: string;
+    vl_aluguel: number | null;
+    vl_vitalicio: number | null;
+  }>('SELECT nm_titulo, vl_aluguel, vl_vitalicio FROM "CONTEUDOS" WHERE cd_conteudo = $1 LIMIT 1', [
+    cd_conteudo,
+  ]);
+  const conteudo = conteudos[0];
   if (!conteudo) throw new Error("Conteúdo não encontrado.");
 
   const valor = tp_compra === "ALUGUEL" ? conteudo.vl_aluguel : conteudo.vl_vitalicio;
   if (!valor) throw new Error("Este conteúdo não está disponível para compra.");
 
-  const nr_id_telegram = await obterIdentidadeParaCompra(user);
+  const nr_id_telegram = await obterIdentidadeParaCompra(sessao.cd_usuario);
 
-  const existente = await reaproveitarVendaPixPendente(
-    supabase,
-    nr_id_telegram,
-    tp_compra,
-    cd_conteudo,
-    null
-  );
+  const existente = await reaproveitarVendaPixPendente(nr_id_telegram, tp_compra, cd_conteudo, null);
   if (existente) return existente;
 
   const cobranca = await criarCobrancaPix(
@@ -119,65 +105,45 @@ export async function iniciarCheckoutPixConteudo(
     `${tp_compra === "ALUGUEL" ? "Aluguel" : "Vitalício"}: ${conteudo.nm_titulo}`
   );
 
-  const { data: venda, error } = await supabase
-    .from("VENDAS")
-    .insert({
-      nr_id_telegram,
-      tp_compra,
-      tp_status: "PENDENTE",
-      cd_conteudo,
-      cd_plano: null,
-      ds_txid: cobranca.txid,
-      vl_pago: valor,
-      tp_metodo_pagamento: "PIX",
-    })
-    .select("cd_venda")
-    .single();
-
-  if (error || !venda) throw new Error(error?.message ?? "Erro ao criar a compra.");
+  const { rows: vendas } = await pool.query<{ cd_venda: string }>(
+    `INSERT INTO "VENDAS"
+       (nr_id_telegram, tp_compra, tp_status, cd_conteudo, cd_plano, ds_txid, vl_pago, tp_metodo_pagamento)
+     VALUES ($1, $2, 'PENDENTE', $3, NULL, $4, $5, 'PIX')
+     RETURNING cd_venda`,
+    [nr_id_telegram, tp_compra, cd_conteudo, cobranca.txid, valor]
+  );
+  const venda = vendas[0];
+  if (!venda) throw new Error("Erro ao criar a compra.");
 
   return { cd_venda: venda.cd_venda, qrcodeImage: cobranca.qrcodeImage, copiaECola: cobranca.copiaECola };
 }
 
 export async function iniciarCheckoutPixPlano(cd_plano: string): Promise<CheckoutPixResultado> {
-  const { supabase, user } = await usuarioAutenticado();
+  const sessao = await usuarioAutenticado();
 
-  const { data: plano } = await supabase
-    .from("PLANOS")
-    .select("nm_plano, vl_plano")
-    .eq("cd_plano", cd_plano)
-    .maybeSingle();
+  const { rows: planos } = await pool.query<{ nm_plano: string; vl_plano: number }>(
+    'SELECT nm_plano, vl_plano FROM "PLANOS" WHERE cd_plano = $1 LIMIT 1',
+    [cd_plano]
+  );
+  const plano = planos[0];
   if (!plano) throw new Error("Plano não encontrado.");
 
-  const nr_id_telegram = await obterIdentidadeParaCompra(user);
+  const nr_id_telegram = await obterIdentidadeParaCompra(sessao.cd_usuario);
 
-  const existente = await reaproveitarVendaPixPendente(
-    supabase,
-    nr_id_telegram,
-    "ASSINATURA",
-    null,
-    cd_plano
-  );
+  const existente = await reaproveitarVendaPixPendente(nr_id_telegram, "ASSINATURA", null, cd_plano);
   if (existente) return existente;
 
   const cobranca = await criarCobrancaPix(plano.vl_plano, `Assinatura: ${plano.nm_plano}`);
 
-  const { data: venda, error } = await supabase
-    .from("VENDAS")
-    .insert({
-      nr_id_telegram,
-      tp_compra: "ASSINATURA",
-      tp_status: "PENDENTE",
-      cd_conteudo: null,
-      cd_plano,
-      ds_txid: cobranca.txid,
-      vl_pago: plano.vl_plano,
-      tp_metodo_pagamento: "PIX",
-    })
-    .select("cd_venda")
-    .single();
-
-  if (error || !venda) throw new Error(error?.message ?? "Erro ao criar a compra.");
+  const { rows: vendas } = await pool.query<{ cd_venda: string }>(
+    `INSERT INTO "VENDAS"
+       (nr_id_telegram, tp_compra, tp_status, cd_conteudo, cd_plano, ds_txid, vl_pago, tp_metodo_pagamento)
+     VALUES ($1, 'ASSINATURA', 'PENDENTE', NULL, $2, $3, $4, 'PIX')
+     RETURNING cd_venda`,
+    [nr_id_telegram, cd_plano, cobranca.txid, plano.vl_plano]
+  );
+  const venda = vendas[0];
+  if (!venda) throw new Error("Erro ao criar a compra.");
 
   return { cd_venda: venda.cd_venda, qrcodeImage: cobranca.qrcodeImage, copiaECola: cobranca.copiaECola };
 }
@@ -185,15 +151,18 @@ export async function iniciarCheckoutPixPlano(cd_plano: string): Promise<Checkou
 export type StatusCheckoutPix = "PENDENTE" | "PAGA";
 
 export async function verificarPagamentoPix(cd_venda: string): Promise<StatusCheckoutPix> {
-  const { supabase, user } = await usuarioAutenticado();
+  const sessao = await usuarioAutenticado();
 
-  const idsDoUsuario = await obterIdsTelegramElegiveis(user);
+  const idsDoUsuario = await obterIdsTelegramElegiveis(sessao.cd_usuario);
 
-  const { data: venda } = await supabase
-    .from("VENDAS")
-    .select("*")
-    .eq("cd_venda", cd_venda)
-    .maybeSingle();
+  const { rows } = await pool.query<{
+    nr_id_telegram: number;
+    tp_status: string;
+    ds_txid: string | null;
+    tp_compra: TpCompra;
+    cd_plano: string | null;
+  }>('SELECT * FROM "VENDAS" WHERE cd_venda = $1 LIMIT 1', [cd_venda]);
+  const venda = rows[0];
 
   if (!venda || !idsDoUsuario.includes(venda.nr_id_telegram)) {
     throw new Error("Compra não encontrada.");
@@ -205,12 +174,12 @@ export async function verificarPagamentoPix(cd_venda: string): Promise<StatusChe
   const status = await consultarCobrancaPix(venda.ds_txid);
   if (status !== "PAGA") return "PENDENTE";
 
-  const dias = await calcularDiasValidade(supabase, venda.tp_compra, venda.cd_plano);
+  const dias = await calcularDiasValidade(venda.tp_compra, venda.cd_plano);
 
-  await supabase
-    .from("VENDAS")
-    .update({ tp_status: "APROVADA", ts_expiracao: somarDias(dias) })
-    .eq("cd_venda", cd_venda);
+  await pool.query(
+    `UPDATE "VENDAS" SET tp_status = 'APROVADA', ts_expiracao = $1 WHERE cd_venda = $2`,
+    [somarDias(dias), cd_venda]
+  );
 
   return "PAGA";
 }
@@ -230,7 +199,6 @@ export interface CheckoutCartaoResultado {
 }
 
 async function finalizarCompraCartao(
-  supabase: SupabaseClient<Database>,
   nr_id_telegram: number,
   tp_compra: TpCompra,
   cd_conteudo: string | null,
@@ -241,7 +209,7 @@ async function finalizarCompraCartao(
   cliente: DadosClienteCartao,
   installments?: number
 ): Promise<CheckoutCartaoResultado> {
-  const taxa = await obterTaxaCartao(supabase);
+  const taxa = await obterTaxaCartao();
   const total = valorBase + taxa;
 
   const resultado = await criarCobrancaCartao({
@@ -253,31 +221,33 @@ async function finalizarCompraCartao(
   });
 
   if (resultado.status === "RECUSADO") {
-    await supabase.from("TENTATIVAS_CARTAO_RECUSADAS").insert({
-      nr_id_telegram,
-      cd_conteudo,
-      cd_plano,
-      tp_compra,
-      vl_tentativa: total,
-      ds_motivo: resultado.motivoRecusa ?? null,
-    });
+    await pool.query(
+      `INSERT INTO "TENTATIVAS_CARTAO_RECUSADAS"
+         (nr_id_telegram, cd_conteudo, cd_plano, tp_compra, vl_tentativa, ds_motivo)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [nr_id_telegram, cd_conteudo, cd_plano, tp_compra, total, resultado.motivoRecusa ?? null]
+    );
     return { status: "RECUSADO", motivoRecusa: resultado.motivoRecusa };
   }
 
-  const dias = await calcularDiasValidade(supabase, tp_compra, cd_plano);
+  const dias = await calcularDiasValidade(tp_compra, cd_plano);
   const tp_status = resultado.status === "APROVADO" ? "APROVADA" : "PENDENTE";
 
-  await supabase.from("VENDAS").insert({
-    nr_id_telegram,
-    tp_compra,
-    tp_status,
-    cd_conteudo,
-    cd_plano,
-    ds_txid: resultado.chargeId,
-    ts_expiracao: tp_status === "APROVADA" ? somarDias(dias) : null,
-    vl_pago: total,
-    tp_metodo_pagamento: "CARTAO",
-  });
+  await pool.query(
+    `INSERT INTO "VENDAS"
+       (nr_id_telegram, tp_compra, tp_status, cd_conteudo, cd_plano, ds_txid, ts_expiracao, vl_pago, tp_metodo_pagamento)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'CARTAO')`,
+    [
+      nr_id_telegram,
+      tp_compra,
+      tp_status,
+      cd_conteudo,
+      cd_plano,
+      resultado.chargeId ?? null,
+      tp_status === "APROVADA" ? somarDias(dias) : null,
+      total,
+    ]
+  );
 
   return { status: resultado.status };
 }
@@ -289,22 +259,24 @@ export async function iniciarCheckoutCartaoConteudo(
   cliente: DadosClienteCartao,
   installments?: number
 ): Promise<CheckoutCartaoResultado> {
-  const { supabase, user } = await usuarioAutenticado();
+  const sessao = await usuarioAutenticado();
 
-  const { data: conteudo } = await supabase
-    .from("CONTEUDOS")
-    .select("nm_titulo, vl_aluguel, vl_vitalicio")
-    .eq("cd_conteudo", cd_conteudo)
-    .maybeSingle();
+  const { rows: conteudos } = await pool.query<{
+    nm_titulo: string;
+    vl_aluguel: number | null;
+    vl_vitalicio: number | null;
+  }>('SELECT nm_titulo, vl_aluguel, vl_vitalicio FROM "CONTEUDOS" WHERE cd_conteudo = $1 LIMIT 1', [
+    cd_conteudo,
+  ]);
+  const conteudo = conteudos[0];
   if (!conteudo) throw new Error("Conteúdo não encontrado.");
 
   const valor = tp_compra === "ALUGUEL" ? conteudo.vl_aluguel : conteudo.vl_vitalicio;
   if (!valor) throw new Error("Este conteúdo não está disponível para compra.");
 
-  const nr_id_telegram = await obterIdentidadeParaCompra(user);
+  const nr_id_telegram = await obterIdentidadeParaCompra(sessao.cd_usuario);
 
   return finalizarCompraCartao(
-    supabase,
     nr_id_telegram,
     tp_compra,
     cd_conteudo,
@@ -323,19 +295,18 @@ export async function iniciarCheckoutCartaoPlano(
   cliente: DadosClienteCartao,
   installments?: number
 ): Promise<CheckoutCartaoResultado> {
-  const { supabase, user } = await usuarioAutenticado();
+  const sessao = await usuarioAutenticado();
 
-  const { data: plano } = await supabase
-    .from("PLANOS")
-    .select("nm_plano, vl_plano")
-    .eq("cd_plano", cd_plano)
-    .maybeSingle();
+  const { rows: planos } = await pool.query<{ nm_plano: string; vl_plano: number }>(
+    'SELECT nm_plano, vl_plano FROM "PLANOS" WHERE cd_plano = $1 LIMIT 1',
+    [cd_plano]
+  );
+  const plano = planos[0];
   if (!plano) throw new Error("Plano não encontrado.");
 
-  const nr_id_telegram = await obterIdentidadeParaCompra(user);
+  const nr_id_telegram = await obterIdentidadeParaCompra(sessao.cd_usuario);
 
   return finalizarCompraCartao(
-    supabase,
     nr_id_telegram,
     "ASSINATURA",
     null,
@@ -349,6 +320,5 @@ export async function iniciarCheckoutCartaoPlano(
 }
 
 export async function obterTaxaCartaoAtual(): Promise<number> {
-  const supabase = await createSupabaseServerClient();
-  return obterTaxaCartao(supabase);
+  return obterTaxaCartao();
 }

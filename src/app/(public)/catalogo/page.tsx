@@ -1,5 +1,5 @@
 import CatalogoContent from "@/components/catalogo/CatalogoContent";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { pool } from "@/lib/db";
 import type { Conteudo, TpFormato } from "@/types/database";
 
 const FORMATOS_VALIDOS: TpFormato[] = ["FILME", "SERIE", "DOCUMENTARIO", "AULA"];
@@ -10,10 +10,8 @@ export default async function CatalogoPage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const params = await searchParams;
-  const supabase = await createSupabaseServerClient();
 
-  const { data } = await supabase.from("CONTEUDOS").select("*");
-  const conteudos: Conteudo[] = data ?? [];
+  const { rows: conteudos } = await pool.query<Conteudo>('SELECT * FROM "CONTEUDOS"');
 
   const categorias = Array.from(
     new Set(conteudos.map((c) => c.nm_categoria).filter(Boolean))

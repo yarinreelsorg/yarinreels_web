@@ -1,6 +1,7 @@
 export default function CampoTexto({
   label,
   type,
+  name,
   value,
   onChange,
   placeholder,
@@ -8,6 +9,7 @@ export default function CampoTexto({
 }: {
   label: string;
   type: string;
+  name?: string;
   value: string;
   onChange: (valor: string) => void;
   placeholder?: string;
@@ -18,6 +20,7 @@ export default function CampoTexto({
       {label}
       <input
         type={type}
+        name={name}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}

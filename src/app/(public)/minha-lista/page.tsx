@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { pool } from "@/lib/db";
+import { getSessaoUsuario } from "@/lib/user-auth";
 import { categoriasCompativeis, obterIdsTelegramElegiveis } from "@/lib/acesso";
 import Navbar from "@/components/layout/Navbar";
 import CardFilme from "@/components/catalog/CardFilme";
@@ -20,32 +21,23 @@ const ROTULO_TIPO: Record<TpCompra, string> = {
 };
 
 export default async function MinhaListaPage() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const sessao = await getSessaoUsuario();
+  if (!sessao) redirect("/login?redirect_to=/minha-lista");
 
-  if (!user) redirect("/login?redirect_to=/minha-lista");
-
-  const [{ data: favoritos }, ids] = await Promise.all([
-    supabase
-      .from("LISTA_FAVORITOS")
-      .select("cd_conteudo, ts_criacao")
-      .eq("cd_usuario_auth", user.id)
-      .order("ts_criacao", { ascending: false }),
-    obterIdsTelegramElegiveis(user),
+  const [{ rows: favoritos }, ids] = await Promise.all([
+    pool.query<{ cd_conteudo: string; ts_criacao: string }>(
+      'SELECT cd_conteudo, ts_criacao FROM "LISTA_FAVORITOS" WHERE cd_usuario_auth = $1 ORDER BY ts_criacao DESC',
+      [sessao.cd_usuario]
+    ),
+    obterIdsTelegramElegiveis(sessao.cd_usuario),
   ]);
 
-  const { data: vendasData } = await supabase
-    .from("VENDAS")
-    .select("*")
-    .in("nr_id_telegram", ids)
-    .eq("tp_status", "APROVADA")
-    .order("ts_criacao", { ascending: false });
+  const { rows: vendas } = await pool.query<Venda>(
+    `SELECT * FROM "VENDAS" WHERE nr_id_telegram = ANY($1::bigint[]) AND tp_status = 'APROVADA' ORDER BY ts_criacao DESC`,
+    [ids]
+  );
 
-  const vendas: Venda[] = vendasData ?? [];
-
-  const idsFavoritos = (favoritos ?? []).map((f) => f.cd_conteudo);
+  const idsFavoritos = favoritos.map((f) => f.cd_conteudo);
   const cdConteudosVendas = Array.from(
     new Set(vendas.map((v) => v.cd_conteudo).filter((id): id is string => !!id))
   );
@@ -55,17 +47,15 @@ export default async function MinhaListaPage() {
 
   const idsParaBuscar = Array.from(new Set([...idsFavoritos, ...cdConteudosVendas]));
 
-  const [{ data: conteudosData }, { data: planosData }] = await Promise.all([
-    idsParaBuscar.length > 0
-      ? supabase.from("CONTEUDOS").select("*").in("cd_conteudo", idsParaBuscar)
-      : Promise.resolve({ data: [] as Conteudo[] }),
-    cdPlanos.length > 0
-      ? supabase.from("PLANOS").select("*").in("cd_plano", cdPlanos)
-      : Promise.resolve({ data: [] as Plano[] }),
+  const [{ rows: conteudosData }, { rows: planosData }] = await Promise.all([
+    pool.query<Conteudo>('SELECT * FROM "CONTEUDOS" WHERE cd_conteudo = ANY($1::uuid[])', [
+      idsParaBuscar,
+    ]),
+    pool.query<Plano>('SELECT * FROM "PLANOS" WHERE cd_plano = ANY($1::uuid[])', [cdPlanos]),
   ]);
 
-  const conteudosMap = new Map((conteudosData ?? []).map((c) => [c.cd_conteudo, c]));
-  const planosMap = new Map((planosData ?? []).map((p) => [p.cd_plano, p]));
+  const conteudosMap = new Map(conteudosData.map((c) => [c.cd_conteudo, c]));
+  const planosMap = new Map(planosData.map((p) => [p.cd_plano, p]));
 
   const favoritosConteudos = idsFavoritos
     .map((id) => conteudosMap.get(id))
@@ -87,9 +77,9 @@ export default async function MinhaListaPage() {
   if (assinaturaAtiva) {
     planoAtivo = planosMap.get(assinaturaAtiva.cd_plano ?? "");
     if (planoAtivo) {
-      const { data: todosConteudos } = await supabase.from("CONTEUDOS").select("*");
+      const { rows: todosConteudos } = await pool.query<Conteudo>('SELECT * FROM "CONTEUDOS"');
       const idsAtivosAvulsos = new Set(ativos.map((v) => v.cd_conteudo));
-      liberadosPorAssinatura = (todosConteudos ?? []).filter(
+      liberadosPorAssinatura = todosConteudos.filter(
         (c) =>
           !idsAtivosAvulsos.has(c.cd_conteudo) &&
           categoriasCompativeis(planoAtivo!.nm_categoria, c.nm_categoria)

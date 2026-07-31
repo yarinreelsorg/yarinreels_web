@@ -3,7 +3,8 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { pool } from "@/lib/db";
+import type { Administrador } from "@/types/database";
 import {
   ADMIN_SESSION_COOKIE,
   ADMIN_SESSION_MAX_AGE,
@@ -25,12 +26,11 @@ export async function loginAdmin(
     return { erro: "Informe e-mail e senha." };
   }
 
-  const supabase = createSupabaseAdminClient();
-  const { data: admin } = await supabase
-    .from("ADMINISTRADORES")
-    .select("*")
-    .eq("nm_email", email)
-    .maybeSingle();
+  const { rows } = await pool.query<Administrador>(
+    'SELECT * FROM "ADMINISTRADORES" WHERE nm_email = $1 LIMIT 1',
+    [email]
+  );
+  const admin = rows[0];
 
   if (!admin || !admin.sn_ativo) {
     return { erro: "E-mail ou senha inválidos." };
@@ -57,10 +57,9 @@ export async function loginAdmin(
     maxAge: ADMIN_SESSION_MAX_AGE,
   });
 
-  await supabase
-    .from("ADMINISTRADORES")
-    .update({ ts_ultimo_login: new Date().toISOString() })
-    .eq("cd_administrador", admin.cd_administrador);
+  await pool.query('UPDATE "ADMINISTRADORES" SET ts_ultimo_login = now() WHERE cd_administrador = $1', [
+    admin.cd_administrador,
+  ]);
 
   redirect("/admin/dashboard");
 }

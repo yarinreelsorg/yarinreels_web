@@ -6,6 +6,17 @@ export type TpCompra = "ALUGUEL" | "VITALICIO" | "ASSINATURA";
 
 export type TpStatusVenda = "PENDENTE" | "APROVADA";
 
+export type Usuario = {
+  cd_usuario: string;
+  nm_email: string;
+  ds_senha_hash: string;
+  nm_nome: string | null;
+  nr_id_telegram: number | null;
+  nr_id_telegram_web: number | null;
+  ts_criacao: string;
+  ts_atualizacao: string;
+};
+
 export type Conteudo = {
   cd_conteudo: string;
   nm_titulo: string;

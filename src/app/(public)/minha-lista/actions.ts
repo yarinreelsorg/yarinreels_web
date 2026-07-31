@@ -1,37 +1,29 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { pool } from "@/lib/db";
+import { getSessaoUsuario } from "@/lib/user-auth";
 
 export async function alternarFavorito(cd_conteudo: string) {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const sessao = await getSessaoUsuario();
+  if (!sessao) throw new Error("Você precisa estar logado.");
 
-  if (!user) throw new Error("Você precisa estar logado.");
-
-  const { data: existente } = await supabase
-    .from("LISTA_FAVORITOS")
-    .select("cd_favorito")
-    .eq("cd_usuario_auth", user.id)
-    .eq("cd_conteudo", cd_conteudo)
-    .maybeSingle();
+  const { rows } = await pool.query<{ cd_favorito: string }>(
+    'SELECT cd_favorito FROM "LISTA_FAVORITOS" WHERE cd_usuario_auth = $1 AND cd_conteudo = $2 LIMIT 1',
+    [sessao.cd_usuario, cd_conteudo]
+  );
+  const existente = rows[0];
 
   if (existente) {
-    const { error } = await supabase
-      .from("LISTA_FAVORITOS")
-      .delete()
-      .eq("cd_favorito", existente.cd_favorito);
-    if (error) throw new Error(error.message);
+    await pool.query('DELETE FROM "LISTA_FAVORITOS" WHERE cd_favorito = $1', [existente.cd_favorito]);
     revalidatePath("/minha-lista");
     return { favoritado: false };
   }
 
-  const { error } = await supabase
-    .from("LISTA_FAVORITOS")
-    .insert({ cd_usuario_auth: user.id, cd_conteudo });
-  if (error) throw new Error(error.message);
+  await pool.query('INSERT INTO "LISTA_FAVORITOS" (cd_usuario_auth, cd_conteudo) VALUES ($1, $2)', [
+    sessao.cd_usuario,
+    cd_conteudo,
+  ]);
   revalidatePath("/minha-lista");
   return { favoritado: true };
 }

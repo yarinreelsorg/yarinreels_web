@@ -1,15 +1,10 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "./supabase/types";
+import { pool } from "./db";
 
-export async function obterIdsFavoritos(
-  supabase: SupabaseClient<Database>,
-  userId: string
-): Promise<Set<string>> {
-  const { data } = await supabase
-    .from("LISTA_FAVORITOS")
-    .select("cd_conteudo")
-    .eq("cd_usuario_auth", userId);
-
-  return new Set((data ?? []).map((f) => f.cd_conteudo));
+export async function obterIdsFavoritos(userId: string): Promise<Set<string>> {
+  const { rows } = await pool.query<{ cd_conteudo: string }>(
+    'SELECT cd_conteudo FROM "LISTA_FAVORITOS" WHERE cd_usuario_auth = $1',
+    [userId]
+  );
+  return new Set(rows.map((f) => f.cd_conteudo));
 }

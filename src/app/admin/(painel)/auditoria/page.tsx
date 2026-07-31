@@ -1,4 +1,4 @@
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { pool } from "@/lib/db";
 import AuditoriaClient from "./AuditoriaClient";
 import type { LogAuditoria } from "@/types/database";
 
@@ -15,23 +15,29 @@ export default async function AuditoriaPage({
   const busca = typeof params.busca === "string" ? params.busca : "";
   const pagina = Math.max(1, Number(params.page) || 1);
 
-  const supabase = createSupabaseAdminClient();
+  const valores: unknown[] = [];
+  const whereSql = busca
+    ? (() => {
+        valores.push(`%${busca}%`);
+        return `WHERE nm_administrador ILIKE $${valores.length} OR nm_entidade ILIKE $${valores.length}`;
+      })()
+    : "";
 
-  let query = supabase.from("LOGS_AUDITORIA").select("*", { count: "exact" });
-  if (busca) {
-    query = query.or(`nm_administrador.ilike.%${busca}%,nm_entidade.ilike.%${busca}%`);
-  }
-  query = query
-    .order("ts_criacao", { ascending: false })
-    .range((pagina - 1) * ITENS_POR_PAGINA, pagina * ITENS_POR_PAGINA - 1);
+  valores.push(ITENS_POR_PAGINA, (pagina - 1) * ITENS_POR_PAGINA);
 
-  const { data, count } = await query;
-  const logs: LogAuditoria[] = data ?? [];
+  const { rows } = await pool.query<LogAuditoria & { total_count: string }>(
+    `SELECT *, COUNT(*) OVER() AS total_count FROM "LOGS_AUDITORIA" ${whereSql}
+     ORDER BY ts_criacao DESC LIMIT $${valores.length - 1} OFFSET $${valores.length}`,
+    valores
+  );
+
+  const logs: LogAuditoria[] = rows;
+  const totalRegistros = Number(rows[0]?.total_count ?? 0);
 
   return (
     <AuditoriaClient
       logs={logs}
-      totalRegistros={count ?? 0}
+      totalRegistros={totalRegistros}
       itensPorPagina={ITENS_POR_PAGINA}
       pagina={pagina}
       busca={busca}

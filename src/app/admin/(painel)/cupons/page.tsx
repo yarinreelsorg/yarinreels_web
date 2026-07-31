@@ -1,13 +1,11 @@
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { pool } from "@/lib/db";
 import CuponsAdminClient from "./CuponsAdminClient";
 import type { Cupom } from "@/types/database";
 
 export const revalidate = 0;
 
 export default async function CuponsAdminPage() {
-  const supabase = createSupabaseAdminClient();
-  const { data } = await supabase.from("CUPONS").select("*").order("ts_criacao", { ascending: false });
-  const cupons: Cupom[] = data ?? [];
+  const { rows: cupons } = await pool.query<Cupom>('SELECT * FROM "CUPONS" ORDER BY ts_criacao DESC');
 
   return <CuponsAdminClient cuponsInicial={cupons} />;
 }

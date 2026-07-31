@@ -1,8 +1,8 @@
 "use server";
 
 import { cookies, headers } from "next/headers";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { pool } from "@/lib/db";
+import { getSessaoUsuario } from "@/lib/user-auth";
 
 const COOKIE_SESSAO = "visitor_session";
 const JANELA_ONLINE_MINUTOS = 5;
@@ -40,8 +40,11 @@ async function obterOuCriarSessao(): Promise<string> {
 
 export async function registrarVisita(pagina: string) {
   try {
-    const [headerStore, supabase] = await Promise.all([headers(), createSupabaseServerClient()]);
-    const cdSessao = await obterOuCriarSessao();
+    const [headerStore, sessao, cdSessao] = await Promise.all([
+      headers(),
+      getSessaoUsuario(),
+      obterOuCriarSessao(),
+    ]);
 
     const userAgent = headerStore.get("user-agent") ?? "";
     const ip =
@@ -49,22 +52,11 @@ export async function registrarVisita(pagina: string) {
       headerStore.get("x-real-ip") ??
       null;
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    const nrIdTelegram =
-      typeof user?.user_metadata?.nr_id_telegram === "number"
-        ? user.user_metadata.nr_id_telegram
-        : null;
-
-    const admin = createSupabaseAdminClient();
-    await admin.from("VISITAS").insert({
-      cd_sessao: cdSessao,
-      nr_id_telegram: nrIdTelegram,
-      ds_pagina: pagina,
-      ds_ip: ip,
-      ds_dispositivo: detectarDispositivo(userAgent),
-    });
+    await pool.query(
+      `INSERT INTO "VISITAS" (cd_sessao, nr_id_telegram, ds_pagina, ds_ip, ds_dispositivo)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [cdSessao, sessao?.nr_id_telegram ?? null, pagina, ip, detectarDispositivo(userAgent)]
+    );
   } catch {
     // rastreamento é best-effort — nunca deve quebrar a navegação do usuário
   }
@@ -77,32 +69,32 @@ export interface MetricasOnline {
 }
 
 export async function obterMetricasOnline(): Promise<MetricasOnline> {
-  const supabase = createSupabaseAdminClient();
-
   const agora = new Date();
   const janelaOnline = new Date(agora.getTime() - JANELA_ONLINE_MINUTOS * 60_000).toISOString();
   const inicioHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate()).toISOString();
 
-  const [{ data: sessoesOnline }, { count: visitasHoje }, { data: visitasDispositivo }] =
-    await Promise.all([
-      supabase.from("VISITAS").select("cd_sessao").gte("ts_criacao", janelaOnline),
-      supabase
-        .from("VISITAS")
-        .select("*", { count: "exact", head: true })
-        .gte("ts_criacao", inicioHoje),
-      supabase.from("VISITAS").select("ds_dispositivo").gte("ts_criacao", inicioHoje),
-    ]);
+  const [onlineResult, visitasHojeResult, dispositivosResult] = await Promise.all([
+    pool.query<{ total: string }>(
+      'SELECT COUNT(DISTINCT cd_sessao) AS total FROM "VISITAS" WHERE ts_criacao >= $1',
+      [janelaOnline]
+    ),
+    pool.query<{ total: string }>('SELECT COUNT(*) AS total FROM "VISITAS" WHERE ts_criacao >= $1', [
+      inicioHoje,
+    ]),
+    pool.query<{ dispositivo: string; total: string }>(
+      `SELECT COALESCE(ds_dispositivo, 'Outro') AS dispositivo, COUNT(*) AS total
+       FROM "VISITAS" WHERE ts_criacao >= $1
+       GROUP BY dispositivo ORDER BY total DESC`,
+      [inicioHoje]
+    ),
+  ]);
 
-  const onlineAgora = new Set((sessoesOnline ?? []).map((v) => v.cd_sessao)).size;
-
-  const contagemDispositivos = new Map<string, number>();
-  for (const v of visitasDispositivo ?? []) {
-    const chave = v.ds_dispositivo ?? "Outro";
-    contagemDispositivos.set(chave, (contagemDispositivos.get(chave) ?? 0) + 1);
-  }
-  const dispositivosHoje = Array.from(contagemDispositivos.entries())
-    .map(([dispositivo, total]) => ({ dispositivo, total }))
-    .sort((a, b) => b.total - a.total);
-
-  return { onlineAgora, visitasHoje: visitasHoje ?? 0, dispositivosHoje };
+  return {
+    onlineAgora: Number(onlineResult.rows[0]?.total ?? 0),
+    visitasHoje: Number(visitasHojeResult.rows[0]?.total ?? 0),
+    dispositivosHoje: dispositivosResult.rows.map((r) => ({
+      dispositivo: r.dispositivo,
+      total: Number(r.total),
+    })),
+  };
 }

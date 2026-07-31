@@ -1,23 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getSessaoUsuario } from "@/lib/user-auth";
 import Navbar from "@/components/layout/Navbar";
 import VincularTelegram from "@/components/conta/VincularTelegram";
 
 export default async function ContaPage() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) redirect("/login");
-
-  const nome =
-    typeof user.user_metadata?.nome === "string" ? user.user_metadata.nome : null;
-  const nrIdTelegram =
-    typeof user.user_metadata?.nr_id_telegram === "number"
-      ? (user.user_metadata.nr_id_telegram as number)
-      : null;
+  const sessao = await getSessaoUsuario();
+  if (!sessao) redirect("/login");
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -27,15 +16,15 @@ export default async function ContaPage() {
         <h1 className="text-2xl font-black text-foreground sm:text-3xl">Minha Conta</h1>
 
         <div className="mt-6 rounded-lg border border-border bg-surface p-6">
-          {nome && <p className="text-lg font-bold text-foreground">{nome}</p>}
-          <p className="text-sm text-secondary">{user.email}</p>
+          {sessao.nm_nome && <p className="text-lg font-bold text-foreground">{sessao.nm_nome}</p>}
+          <p className="text-sm text-secondary">{sessao.nm_email}</p>
         </div>
 
         <h2 className="mt-8 text-sm font-bold uppercase tracking-wide text-secondary">
           Conta do Telegram
         </h2>
         <div className="mt-3">
-          <VincularTelegram nrIdTelegramInicial={nrIdTelegram} />
+          <VincularTelegram nrIdTelegramInicial={sessao.nr_id_telegram} />
         </div>
 
         <div className="mt-8 flex flex-wrap gap-3">

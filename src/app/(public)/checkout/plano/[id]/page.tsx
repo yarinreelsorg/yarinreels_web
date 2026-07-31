@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { pool } from "@/lib/db";
+import { getSessaoUsuario } from "@/lib/user-auth";
 import { obterTaxaCartao } from "@/lib/pagamento";
 import Navbar from "@/components/layout/Navbar";
 import { MetodoPagamentoPlano } from "@/components/checkout/MetodoPagamento";
@@ -12,22 +13,18 @@ export default async function CheckoutPlanoPage({
 }) {
   const { id } = await params;
 
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const sessao = await getSessaoUsuario();
+  if (!sessao) redirect(`/login?redirect_to=/checkout/plano/${id}`);
 
-  if (!user) redirect(`/login?redirect_to=/checkout/plano/${id}`);
-
-  const { data: plano } = await supabase
-    .from("PLANOS")
-    .select("nm_plano, vl_plano")
-    .eq("cd_plano", id)
-    .maybeSingle();
+  const { rows } = await pool.query<{ nm_plano: string; vl_plano: number }>(
+    'SELECT nm_plano, vl_plano FROM "PLANOS" WHERE cd_plano = $1 LIMIT 1',
+    [id]
+  );
+  const plano = rows[0];
 
   if (!plano) notFound();
 
-  const taxaCartao = await obterTaxaCartao(supabase);
+  const taxaCartao = await obterTaxaCartao();
 
   return (
     <div className="flex min-h-screen flex-col">

@@ -1,58 +1,56 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { pool } from "@/lib/db";
+import { definirCookieSessao, getSessaoUsuario } from "@/lib/user-auth";
+import type { VinculacaoTelegram } from "@/types/database";
 
 function gerarCodigo() {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
 async function usuarioAutenticado() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Você precisa estar logado.");
-  return { supabase, user };
+  const sessao = await getSessaoUsuario();
+  if (!sessao) throw new Error("Você precisa estar logado.");
+  return sessao;
 }
 
 export async function gerarCodigoVinculacao() {
-  const { supabase, user } = await usuarioAutenticado();
+  const sessao = await usuarioAutenticado();
 
   // Limpa códigos antigos desse usuário antes de gerar um novo
-  await supabase.from("VINCULACOES_TELEGRAM").delete().eq("cd_usuario_auth", user.id);
+  await pool.query('DELETE FROM "VINCULACOES_TELEGRAM" WHERE cd_usuario_auth = $1', [
+    sessao.cd_usuario,
+  ]);
 
   const cd_codigo = gerarCodigo();
   const ts_expiracao = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
-  const { error } = await supabase.from("VINCULACOES_TELEGRAM").insert({
-    cd_usuario_auth: user.id,
-    cd_codigo,
-    ts_expiracao,
-  });
-
-  if (error) throw new Error(error.message);
+  await pool.query(
+    'INSERT INTO "VINCULACOES_TELEGRAM" (cd_usuario_auth, cd_codigo, ts_expiracao) VALUES ($1, $2, $3)',
+    [sessao.cd_usuario, cd_codigo, ts_expiracao]
+  );
 
   return { codigo: cd_codigo, expiraEm: ts_expiracao };
 }
 
 export async function verificarVinculacao() {
-  const { supabase, user } = await usuarioAutenticado();
+  const sessao = await usuarioAutenticado();
 
-  const { data: vinculacao } = await supabase
-    .from("VINCULACOES_TELEGRAM")
-    .select("*")
-    .eq("cd_usuario_auth", user.id)
-    .order("ts_criacao", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const { rows } = await pool.query<VinculacaoTelegram>(
+    'SELECT * FROM "VINCULACOES_TELEGRAM" WHERE cd_usuario_auth = $1 ORDER BY ts_criacao DESC LIMIT 1',
+    [sessao.cd_usuario]
+  );
+  const vinculacao = rows[0];
 
   if (!vinculacao) {
     return { status: "nenhum" as const };
   }
 
   if (new Date(vinculacao.ts_expiracao) < new Date() && vinculacao.tp_status === "PENDENTE") {
-    await supabase.from("VINCULACOES_TELEGRAM").delete().eq("cd_vinculacao", vinculacao.cd_vinculacao);
+    await pool.query('DELETE FROM "VINCULACOES_TELEGRAM" WHERE cd_vinculacao = $1', [
+      vinculacao.cd_vinculacao,
+    ]);
     return { status: "expirado" as const };
   }
 
@@ -61,24 +59,29 @@ export async function verificarVinculacao() {
   }
 
   // CONFIRMADO: consome o código e grava o nr_id_telegram no perfil do usuário
-  const { error: erroUpdate } = await supabase.auth.updateUser({
-    data: { nr_id_telegram: vinculacao.nr_id_telegram },
-  });
-  if (erroUpdate) throw new Error(erroUpdate.message);
+  await pool.query('UPDATE "USUARIOS" SET nr_id_telegram = $1, ts_atualizacao = now() WHERE cd_usuario = $2', [
+    vinculacao.nr_id_telegram,
+    sessao.cd_usuario,
+  ]);
 
-  await supabase.from("VINCULACOES_TELEGRAM").delete().eq("cd_vinculacao", vinculacao.cd_vinculacao);
+  await pool.query('DELETE FROM "VINCULACOES_TELEGRAM" WHERE cd_vinculacao = $1', [
+    vinculacao.cd_vinculacao,
+  ]);
+
+  await definirCookieSessao({ ...sessao, nr_id_telegram: vinculacao.nr_id_telegram });
 
   revalidatePath("/conta");
   return { status: "confirmado" as const, nr_id_telegram: vinculacao.nr_id_telegram };
 }
 
 export async function desvincularTelegram() {
-  const { supabase } = await usuarioAutenticado();
+  const sessao = await usuarioAutenticado();
 
-  const { error } = await supabase.auth.updateUser({
-    data: { nr_id_telegram: null },
-  });
-  if (error) throw new Error(error.message);
+  await pool.query('UPDATE "USUARIOS" SET nr_id_telegram = NULL, ts_atualizacao = now() WHERE cd_usuario = $1', [
+    sessao.cd_usuario,
+  ]);
+
+  await definirCookieSessao({ ...sessao, nr_id_telegram: null });
 
   revalidatePath("/conta");
 }

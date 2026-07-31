@@ -1,6 +1,6 @@
 "use server";
 
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { pool } from "@/lib/db";
 import { registrarLog } from "@/lib/auditoria";
 import { revalidatePath } from "next/cache";
 import type { TpDesconto } from "@/types/database";
@@ -30,19 +30,30 @@ function extrairCampos(formData: FormData) {
   };
 }
 
+function ehViolacaoUnicidade(err: unknown): boolean {
+  return !!(err && typeof err === "object" && "code" in err && err.code === "23505");
+}
+
 export async function criarCupom(formData: FormData) {
-  const supabase = createSupabaseAdminClient();
   const campos = extrairCampos(formData);
 
-  const { data, error } = await supabase.from("CUPONS").insert(campos).select("cd_cupom").single();
-  if (error) {
-    throw new Error(error.code === "23505" ? "Já existe um cupom com esse código." : error.message);
+  let cd_cupom: string;
+  try {
+    const { rows } = await pool.query<{ cd_cupom: string }>(
+      `INSERT INTO "CUPONS" (cd_codigo, tp_desconto, vl_desconto, nr_usos_maximo, dt_validade)
+       VALUES ($1, $2, $3, $4, $5) RETURNING cd_cupom`,
+      [campos.cd_codigo, campos.tp_desconto, campos.vl_desconto, campos.nr_usos_maximo, campos.dt_validade]
+    );
+    cd_cupom = rows[0].cd_cupom;
+  } catch (err) {
+    if (ehViolacaoUnicidade(err)) throw new Error("Já existe um cupom com esse código.");
+    throw err;
   }
 
   await registrarLog({
     tp_acao: "CRIACAO",
     nm_entidade: "CUPONS",
-    cd_entidade: data.cd_cupom,
+    cd_entidade: cd_cupom,
     ds_detalhes: { codigo: campos.cd_codigo },
   });
 
@@ -50,12 +61,17 @@ export async function criarCupom(formData: FormData) {
 }
 
 export async function editarCupom(id: string, formData: FormData) {
-  const supabase = createSupabaseAdminClient();
   const campos = extrairCampos(formData);
 
-  const { error } = await supabase.from("CUPONS").update(campos).eq("cd_cupom", id);
-  if (error) {
-    throw new Error(error.code === "23505" ? "Já existe um cupom com esse código." : error.message);
+  try {
+    await pool.query(
+      `UPDATE "CUPONS" SET cd_codigo = $1, tp_desconto = $2, vl_desconto = $3, nr_usos_maximo = $4, dt_validade = $5
+       WHERE cd_cupom = $6`,
+      [campos.cd_codigo, campos.tp_desconto, campos.vl_desconto, campos.nr_usos_maximo, campos.dt_validade, id]
+    );
+  } catch (err) {
+    if (ehViolacaoUnicidade(err)) throw new Error("Já existe um cupom com esse código.");
+    throw err;
   }
 
   await registrarLog({
@@ -69,17 +85,13 @@ export async function editarCupom(id: string, formData: FormData) {
 }
 
 export async function alternarAtivoCupom(id: string, ativo: boolean) {
-  const supabase = createSupabaseAdminClient();
-  const { error } = await supabase.from("CUPONS").update({ sn_ativo: ativo }).eq("cd_cupom", id);
-  if (error) throw new Error(error.message);
+  await pool.query('UPDATE "CUPONS" SET sn_ativo = $1 WHERE cd_cupom = $2', [ativo, id]);
 
   revalidatePath("/admin/cupons");
 }
 
 export async function removerCupom(id: string) {
-  const supabase = createSupabaseAdminClient();
-  const { error } = await supabase.from("CUPONS").delete().eq("cd_cupom", id);
-  if (error) throw new Error(error.message);
+  await pool.query('DELETE FROM "CUPONS" WHERE cd_cupom = $1', [id]);
 
   await registrarLog({ tp_acao: "EXCLUSAO", nm_entidade: "CUPONS", cd_entidade: id });
 

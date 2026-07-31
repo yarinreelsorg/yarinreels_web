@@ -1,6 +1,6 @@
 "use server";
 
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { pool } from "@/lib/db";
 import { registrarLog } from "@/lib/auditoria";
 import { revalidatePath } from "next/cache";
 import type { Plano } from "@/types/database";
@@ -27,16 +27,18 @@ function extrairCampos(formData: FormData) {
 }
 
 export async function criarPlano(formData: FormData) {
-  const supabase = createSupabaseAdminClient();
   const campos = extrairCampos(formData);
 
-  const { data, error } = await supabase.from("PLANOS").insert(campos).select("cd_plano").single();
-  if (error) throw new Error(error.message);
+  const { rows } = await pool.query<{ cd_plano: string }>(
+    `INSERT INTO "PLANOS" (nm_plano, nm_categoria, vl_plano, nr_dias_validade)
+     VALUES ($1, $2, $3, $4) RETURNING cd_plano`,
+    [campos.nm_plano, campos.nm_categoria, campos.vl_plano, campos.nr_dias_validade]
+  );
 
   await registrarLog({
     tp_acao: "CRIACAO",
     nm_entidade: "PLANOS",
-    cd_entidade: data.cd_plano,
+    cd_entidade: rows[0].cd_plano,
     ds_detalhes: { nome: campos.nm_plano },
   });
 
@@ -45,11 +47,13 @@ export async function criarPlano(formData: FormData) {
 }
 
 export async function editarPlano(id: string, formData: FormData) {
-  const supabase = createSupabaseAdminClient();
   const campos = extrairCampos(formData);
 
-  const { error } = await supabase.from("PLANOS").update(campos).eq("cd_plano", id);
-  if (error) throw new Error(error.message);
+  await pool.query(
+    `UPDATE "PLANOS" SET nm_plano = $1, nm_categoria = $2, vl_plano = $3, nr_dias_validade = $4
+     WHERE cd_plano = $5`,
+    [campos.nm_plano, campos.nm_categoria, campos.vl_plano, campos.nr_dias_validade, id]
+  );
 
   await registrarLog({
     tp_acao: "EDICAO",
@@ -63,12 +67,10 @@ export async function editarPlano(id: string, formData: FormData) {
 }
 
 export async function removerPlano(id: string) {
-  const supabase = createSupabaseAdminClient();
+  const { rows } = await pool.query<Plano>('SELECT * FROM "PLANOS" WHERE cd_plano = $1 LIMIT 1', [id]);
+  const registro = rows[0];
 
-  const { data: registro } = await supabase.from("PLANOS").select("*").eq("cd_plano", id).maybeSingle();
-
-  const { error } = await supabase.from("PLANOS").delete().eq("cd_plano", id);
-  if (error) throw new Error(error.message);
+  await pool.query('DELETE FROM "PLANOS" WHERE cd_plano = $1', [id]);
 
   if (registro) {
     await registrarLog({
@@ -84,10 +86,11 @@ export async function removerPlano(id: string) {
 }
 
 export async function restaurarPlano(snapshot: Plano) {
-  const supabase = createSupabaseAdminClient();
-
-  const { error } = await supabase.from("PLANOS").insert(snapshot);
-  if (error) throw new Error(error.message);
+  await pool.query(
+    `INSERT INTO "PLANOS" (cd_plano, nm_plano, nm_categoria, vl_plano, nr_dias_validade)
+     VALUES ($1, $2, $3, $4, $5)`,
+    [snapshot.cd_plano, snapshot.nm_plano, snapshot.nm_categoria, snapshot.vl_plano, snapshot.nr_dias_validade]
+  );
 
   await registrarLog({
     tp_acao: "RESTAURACAO",

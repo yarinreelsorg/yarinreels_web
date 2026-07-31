@@ -1,7 +1,6 @@
 "use server";
 
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { enviarPoster } from "@/lib/supabase/storage";
+import { pool } from "@/lib/db";
 import { registrarLog } from "@/lib/auditoria";
 import { revalidatePath } from "next/cache";
 import type { Conteudo, TpFontePrioritaria, TpFormato } from "@/types/database";
@@ -72,25 +71,33 @@ function extrairCampos(formData: FormData) {
   };
 }
 
-export async function enviarPosterConteudo(cdConteudo: string, formData: FormData) {
-  const arquivo = formData.get("arquivo");
-  if (!(arquivo instanceof File) || arquivo.size === 0) {
-    throw new Error("Nenhuma imagem enviada.");
-  }
-  return enviarPoster(arquivo, cdConteudo);
-}
-
 export async function adicionarConteudo(cdConteudo: string, formData: FormData) {
-  const supabase = createSupabaseAdminClient();
   const campos = extrairCampos(formData);
 
-  const { error } = await supabase.from("CONTEUDOS").insert({
-    cd_conteudo: cdConteudo,
-    ...campos,
-    nr_views: 0,
-  });
-
-  if (error) throw new Error(error.message);
+  await pool.query(
+    `INSERT INTO "CONTEUDOS"
+       (cd_conteudo, nm_titulo, nm_categoria, tp_formato, nm_idioma, ds_generos, ds_descricao,
+        vl_aluguel, vl_vitalicio, ds_url_poster, ds_url_bunny, ds_file_id_telegram,
+        tp_fonte_prioritaria, sn_destaque, dt_lancamento, nr_views)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,0)`,
+    [
+      cdConteudo,
+      campos.nm_titulo,
+      campos.nm_categoria,
+      campos.tp_formato,
+      campos.nm_idioma,
+      campos.ds_generos,
+      campos.ds_descricao,
+      campos.vl_aluguel,
+      campos.vl_vitalicio,
+      campos.ds_url_poster,
+      campos.ds_url_bunny,
+      campos.ds_file_id_telegram,
+      campos.tp_fonte_prioritaria,
+      campos.sn_destaque,
+      campos.dt_lancamento,
+    ]
+  );
 
   await registrarLog({
     tp_acao: "CRIACAO",
@@ -104,12 +111,33 @@ export async function adicionarConteudo(cdConteudo: string, formData: FormData) 
 }
 
 export async function editarConteudo(id: string, formData: FormData) {
-  const supabase = createSupabaseAdminClient();
   const campos = extrairCampos(formData);
 
-  const { error } = await supabase.from("CONTEUDOS").update(campos).eq("cd_conteudo", id);
-
-  if (error) throw new Error(error.message);
+  await pool.query(
+    `UPDATE "CONTEUDOS" SET
+       nm_titulo = $1, nm_categoria = $2, tp_formato = $3, nm_idioma = $4, ds_generos = $5,
+       ds_descricao = $6, vl_aluguel = $7, vl_vitalicio = $8, ds_url_poster = $9,
+       ds_url_bunny = $10, ds_file_id_telegram = $11, tp_fonte_prioritaria = $12,
+       sn_destaque = $13, dt_lancamento = $14
+     WHERE cd_conteudo = $15`,
+    [
+      campos.nm_titulo,
+      campos.nm_categoria,
+      campos.tp_formato,
+      campos.nm_idioma,
+      campos.ds_generos,
+      campos.ds_descricao,
+      campos.vl_aluguel,
+      campos.vl_vitalicio,
+      campos.ds_url_poster,
+      campos.ds_url_bunny,
+      campos.ds_file_id_telegram,
+      campos.tp_fonte_prioritaria,
+      campos.sn_destaque,
+      campos.dt_lancamento,
+      id,
+    ]
+  );
 
   await registrarLog({
     tp_acao: "EDICAO",
@@ -122,13 +150,15 @@ export async function editarConteudo(id: string, formData: FormData) {
   revalidatePath("/");
 }
 
-async function removerConteudosPorId(supabase: ReturnType<typeof createSupabaseAdminClient>, ids: string[]) {
-  const { data: registros } = await supabase.from("CONTEUDOS").select("*").in("cd_conteudo", ids);
+async function removerConteudosPorId(ids: string[]) {
+  const { rows: registros } = await pool.query<Conteudo>(
+    'SELECT * FROM "CONTEUDOS" WHERE cd_conteudo = ANY($1::uuid[])',
+    [ids]
+  );
 
-  const { error } = await supabase.from("CONTEUDOS").delete().in("cd_conteudo", ids);
-  if (error) throw new Error(error.message);
+  await pool.query('DELETE FROM "CONTEUDOS" WHERE cd_conteudo = ANY($1::uuid[])', [ids]);
 
-  for (const registro of (registros ?? []) as Conteudo[]) {
+  for (const registro of registros) {
     await registrarLog({
       tp_acao: "EXCLUSAO",
       nm_entidade: "CONTEUDOS",
@@ -142,25 +172,16 @@ async function removerConteudosPorId(supabase: ReturnType<typeof createSupabaseA
 }
 
 export async function removerConteudo(id: string) {
-  const supabase = createSupabaseAdminClient();
-  await removerConteudosPorId(supabase, [id]);
+  await removerConteudosPorId([id]);
 }
 
 export async function removerConteudosEmLote(ids: string[]) {
   if (ids.length === 0) return;
-  const supabase = createSupabaseAdminClient();
-  await removerConteudosPorId(supabase, ids);
+  await removerConteudosPorId(ids);
 }
 
 export async function toggleDestaque(id: string, valor: boolean) {
-  const supabase = createSupabaseAdminClient();
-
-  const { error } = await supabase
-    .from("CONTEUDOS")
-    .update({ sn_destaque: valor })
-    .eq("cd_conteudo", id);
-
-  if (error) throw new Error(error.message);
+  await pool.query('UPDATE "CONTEUDOS" SET sn_destaque = $1 WHERE cd_conteudo = $2', [valor, id]);
 
   revalidatePath("/admin/catalogo");
   revalidatePath("/");
@@ -168,14 +189,11 @@ export async function toggleDestaque(id: string, valor: boolean) {
 
 export async function toggleDestaqueEmLote(ids: string[], valor: boolean) {
   if (ids.length === 0) return;
-  const supabase = createSupabaseAdminClient();
 
-  const { error } = await supabase
-    .from("CONTEUDOS")
-    .update({ sn_destaque: valor })
-    .in("cd_conteudo", ids);
-
-  if (error) throw new Error(error.message);
+  await pool.query('UPDATE "CONTEUDOS" SET sn_destaque = $1 WHERE cd_conteudo = ANY($2::uuid[])', [
+    valor,
+    ids,
+  ]);
 
   await registrarLog({
     tp_acao: "EDICAO",
@@ -189,10 +207,33 @@ export async function toggleDestaqueEmLote(ids: string[], valor: boolean) {
 
 /** Restaura um conteúdo excluído a partir do snapshot salvo no log de auditoria. */
 export async function restaurarConteudo(snapshot: Conteudo) {
-  const supabase = createSupabaseAdminClient();
-
-  const { error } = await supabase.from("CONTEUDOS").insert(snapshot);
-  if (error) throw new Error(error.message);
+  await pool.query(
+    `INSERT INTO "CONTEUDOS"
+       (cd_conteudo, nm_titulo, nm_categoria, tp_formato, dt_lancamento, nm_idioma, ds_descricao,
+        ds_generos, ds_url_trailer_youtube, nr_duracao_minutos, vl_aluguel, vl_vitalicio,
+        ds_url_poster, ds_file_id_telegram, ds_url_bunny, tp_fonte_prioritaria, sn_destaque, nr_views)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,
+    [
+      snapshot.cd_conteudo,
+      snapshot.nm_titulo,
+      snapshot.nm_categoria,
+      snapshot.tp_formato,
+      snapshot.dt_lancamento,
+      snapshot.nm_idioma,
+      snapshot.ds_descricao,
+      snapshot.ds_generos,
+      snapshot.ds_url_trailer_youtube,
+      snapshot.nr_duracao_minutos,
+      snapshot.vl_aluguel,
+      snapshot.vl_vitalicio,
+      snapshot.ds_url_poster,
+      snapshot.ds_file_id_telegram,
+      snapshot.ds_url_bunny,
+      snapshot.tp_fonte_prioritaria,
+      snapshot.sn_destaque,
+      snapshot.nr_views,
+    ]
+  );
 
   await registrarLog({
     tp_acao: "RESTAURACAO",
@@ -214,23 +255,39 @@ export interface FiltroCatalogo {
   direcao?: "asc" | "desc";
 }
 
+const COLUNAS_ORDENACAO = ["nm_titulo", "nr_views", "vl_aluguel", "dt_lancamento"] as const;
+
 /** Exporta todo o catálogo filtrado (sem limite de página) como CSV. */
 export async function exportarCatalogoCsv(filtro: FiltroCatalogo): Promise<string> {
-  const supabase = createSupabaseAdminClient();
+  const condicoes: string[] = [];
+  const valores: unknown[] = [];
 
-  let query = supabase.from("CONTEUDOS").select("*");
-  if (filtro.busca) query = query.ilike("nm_titulo", `%${filtro.busca}%`);
-  if (filtro.categoria) query = query.eq("nm_categoria", filtro.categoria);
-  if (filtro.formato) query = query.eq("tp_formato", filtro.formato);
-  query = query.order(filtro.ordenarPor ?? "nm_titulo", {
-    ascending: (filtro.direcao ?? "asc") === "asc",
-  });
+  if (filtro.busca) {
+    valores.push(`%${filtro.busca}%`);
+    condicoes.push(`nm_titulo ILIKE $${valores.length}`);
+  }
+  if (filtro.categoria) {
+    valores.push(filtro.categoria);
+    condicoes.push(`nm_categoria = $${valores.length}`);
+  }
+  if (filtro.formato) {
+    valores.push(filtro.formato);
+    condicoes.push(`tp_formato = $${valores.length}`);
+  }
 
-  const { data, error } = await query;
-  if (error) throw new Error(error.message);
+  const coluna = COLUNAS_ORDENACAO.includes(filtro.ordenarPor as (typeof COLUNAS_ORDENACAO)[number])
+    ? filtro.ordenarPor
+    : "nm_titulo";
+  const direcao = filtro.direcao === "desc" ? "DESC" : "ASC";
+  const whereSql = condicoes.length > 0 ? `WHERE ${condicoes.join(" AND ")}` : "";
+
+  const { rows } = await pool.query<Conteudo>(
+    `SELECT * FROM "CONTEUDOS" ${whereSql} ORDER BY ${coluna} ${direcao}`,
+    valores
+  );
 
   const { paraCsv } = await import("@/lib/csv");
-  return paraCsv((data ?? []) as Conteudo[], [
+  return paraCsv(rows, [
     { chave: "nm_titulo", rotulo: "Título" },
     { chave: "nm_categoria", rotulo: "Categoria" },
     { chave: "tp_formato", rotulo: "Formato" },

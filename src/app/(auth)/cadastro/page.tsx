@@ -1,20 +1,20 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { traduzirErroAuth } from "@/lib/auth";
+import { cadastrarUsuario } from "./actions";
 import AuthCard from "@/components/auth/AuthCard";
 import CampoTexto from "@/components/auth/CampoTexto";
 
 export default function CadastroPage() {
+  const router = useRouter();
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
-  const [cadastrado, setCadastrado] = useState(false);
 
   async function cadastrar(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -30,53 +30,15 @@ export default function CadastroPage() {
     }
 
     setCarregando(true);
-
-    const supabase = createSupabaseBrowserClient();
-    const { error } = await supabase.auth.signUp({
-      email,
-      password: senha,
-      options: {
-        data: { nome },
-        emailRedirectTo: `${window.location.origin}/`,
-      },
-    });
-
-    setCarregando(false);
-
-    if (error) {
-      setErro(traduzirErroAuth(error.message));
-      return;
+    try {
+      const formData = new FormData(e.currentTarget);
+      await cadastrarUsuario(formData);
+      router.push("/");
+      router.refresh();
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : "Erro ao criar conta.");
+      setCarregando(false);
     }
-
-    setCadastrado(true);
-  }
-
-  if (cadastrado) {
-    return (
-      <AuthCard
-        titulo="Quase lá"
-        subtitulo="Confirme seu e-mail para ativar a conta"
-      >
-        <p className="rounded-md border border-border bg-surface px-4 py-3 text-sm text-foreground">
-          Enviamos um link de confirmação para <strong>{email}</strong>. Abra
-          o e-mail para ativar sua conta.
-        </p>
-        <p className="mt-4 text-sm text-secondary">
-          Já comprou pelo nosso bot no Telegram? Depois de confirmar o e-mail
-          e entrar, vá em{" "}
-          <strong className="text-foreground">Minha Conta</strong> pra
-          vincular seu Telegram e ver tudo em um só lugar.
-        </p>
-        <p className="mt-6 text-center text-sm text-secondary">
-          <Link
-            href="/login"
-            className="font-semibold text-primary hover:underline"
-          >
-            Voltar para o login
-          </Link>
-        </p>
-      </AuthCard>
-    );
   }
 
   return (
@@ -88,6 +50,7 @@ export default function CadastroPage() {
         <CampoTexto
           label="Nome"
           type="text"
+          name="nome"
           value={nome}
           onChange={setNome}
           placeholder="Seu nome"
@@ -96,6 +59,7 @@ export default function CadastroPage() {
         <CampoTexto
           label="E-mail"
           type="email"
+          name="email"
           value={email}
           onChange={setEmail}
           placeholder="voce@email.com"
@@ -104,6 +68,7 @@ export default function CadastroPage() {
         <CampoTexto
           label="Senha"
           type="password"
+          name="senha"
           value={senha}
           onChange={setSenha}
           placeholder="••••••••"
@@ -112,6 +77,7 @@ export default function CadastroPage() {
         <CampoTexto
           label="Confirmar senha"
           type="password"
+          name="confirmar_senha"
           value={confirmarSenha}
           onChange={setConfirmarSenha}
           placeholder="••••••••"

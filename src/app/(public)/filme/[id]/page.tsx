@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import FilmeContent from "@/components/filme/FilmeContent";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { pool } from "@/lib/db";
+import { getSessaoUsuario } from "@/lib/user-auth";
 import { obterIdsFavoritos } from "@/lib/favoritos";
 import type { Conteudo, Episodio } from "@/types/database";
 
@@ -11,10 +12,7 @@ export default async function FilmePage({
 }) {
   const { id } = await params;
 
-  const supabase = await createSupabaseServerClient();
-
-  const { data: todos } = await supabase.from("CONTEUDOS").select("*");
-  const conteudos: Conteudo[] = todos ?? [];
+  const { rows: conteudos } = await pool.query<Conteudo>('SELECT * FROM "CONTEUDOS"');
 
   const conteudo = conteudos.find((c) => String(c.cd_conteudo) === id);
   if (!conteudo) notFound();
@@ -34,17 +32,14 @@ export default async function FilmePage({
 
   let episodios: Episodio[] = [];
   if (conteudo.tp_formato === "SERIE") {
-    const { data } = await supabase.from("EPISODIOS").select("*");
-    const todosEpisodios: Episodio[] = data ?? [];
+    const { rows: todosEpisodios } = await pool.query<Episodio>('SELECT * FROM "EPISODIOS"');
     episodios = todosEpisodios
       .filter((e) => String(e.cd_conteudo) === id)
       .sort((a, b) => a.nr_episodio - b.nr_episodio);
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const idsFavoritos = user ? await obterIdsFavoritos(supabase, user.id) : new Set<string>();
+  const sessao = await getSessaoUsuario();
+  const idsFavoritos = sessao ? await obterIdsFavoritos(sessao.cd_usuario) : new Set<string>();
 
   return (
     <FilmeContent
@@ -53,7 +48,7 @@ export default async function FilmePage({
       similares={similares}
       categorias={categorias}
       favoritado={idsFavoritos.has(conteudo.cd_conteudo)}
-      logado={!!user}
+      logado={!!sessao}
     />
   );
 }

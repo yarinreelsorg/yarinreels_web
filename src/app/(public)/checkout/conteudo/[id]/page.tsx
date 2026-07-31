@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { pool } from "@/lib/db";
+import { getSessaoUsuario } from "@/lib/user-auth";
 import { obterTaxaCartao } from "@/lib/pagamento";
 import Navbar from "@/components/layout/Navbar";
 import { MetodoPagamentoConteudo } from "@/components/checkout/MetodoPagamento";
@@ -17,25 +18,24 @@ export default async function CheckoutConteudoPage({
 
   const tpCompra = tipo === "VITALICIO" ? "VITALICIO" : "ALUGUEL";
 
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const sessao = await getSessaoUsuario();
+  if (!sessao) redirect(`/login?redirect_to=/checkout/conteudo/${id}?tipo=${tpCompra}`);
 
-  if (!user) redirect(`/login?redirect_to=/checkout/conteudo/${id}?tipo=${tpCompra}`);
-
-  const { data: conteudo } = await supabase
-    .from("CONTEUDOS")
-    .select("nm_titulo, vl_aluguel, vl_vitalicio")
-    .eq("cd_conteudo", id)
-    .maybeSingle();
+  const { rows } = await pool.query<{
+    nm_titulo: string;
+    vl_aluguel: number | null;
+    vl_vitalicio: number | null;
+  }>('SELECT nm_titulo, vl_aluguel, vl_vitalicio FROM "CONTEUDOS" WHERE cd_conteudo = $1 LIMIT 1', [
+    id,
+  ]);
+  const conteudo = rows[0];
 
   if (!conteudo) notFound();
 
   const valor = tpCompra === "ALUGUEL" ? conteudo.vl_aluguel : conteudo.vl_vitalicio;
   if (!valor) notFound();
 
-  const taxaCartao = await obterTaxaCartao(supabase);
+  const taxaCartao = await obterTaxaCartao();
 
   return (
     <div className="flex min-h-screen flex-col">

@@ -1,18 +1,14 @@
 import HomeContent from "@/components/home/HomeContent";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { pool } from "@/lib/db";
+import { getSessaoUsuario } from "@/lib/user-auth";
 import { obterIdsFavoritos } from "@/lib/favoritos";
 import type { Conteudo } from "@/types/database";
 
 export default async function HomePage() {
-  const supabase = await createSupabaseServerClient();
+  const { rows: conteudos } = await pool.query<Conteudo>('SELECT * FROM "CONTEUDOS"');
 
-  const { data } = await supabase.from("CONTEUDOS").select("*");
-  const conteudos: Conteudo[] = data ?? [];
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const idsFavoritos = user ? await obterIdsFavoritos(supabase, user.id) : new Set<string>();
+  const sessao = await getSessaoUsuario();
+  const idsFavoritos = sessao ? await obterIdsFavoritos(sessao.cd_usuario) : new Set<string>();
 
   const categorias = Array.from(
     new Set(conteudos.map((c) => c.nm_categoria).filter(Boolean))
@@ -35,7 +31,7 @@ export default async function HomePage() {
       destaques={destaques}
       top12={top12}
       favoritosIds={Array.from(idsFavoritos)}
-      logado={!!user}
+      logado={!!sessao}
     />
   );
 }
