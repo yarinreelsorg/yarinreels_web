@@ -111,8 +111,8 @@ export async function verificarAcessoConteudo(
   if (nrIdsTelegram.length === 0) return { liberado: false };
 
   const { rows: banidos } = await pool.query(
-    'SELECT 1 FROM "BANS" WHERE nr_id_telegram = ANY($1::bigint[])',
-    [nrIdsTelegram]
+    'SELECT 1 FROM "BANS" WHERE nr_id_telegram = ANY($1::text[])',
+    [nrIdsTelegram.map(String)]
   );
   if (banidos.length > 0) return { liberado: false };
 

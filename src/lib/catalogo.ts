@@ -48,16 +48,20 @@ const BASE_URL_MEDIA_LOCAL = "https://media.melreels.com.br/filmes/";
  *   "disponível só pelo bot".
  */
 export function resolverUrlVideo(item: {
-  tp_fonte_prioritaria: "LOCAL" | "BUNNY" | "TELEGRAM";
+  tp_fonte_prioritaria: string;
   ds_url_bunny: string | null;
   ds_file_id_telegram: string | null;
   nm_titulo: string;
 }): string | null {
-  if (item.tp_fonte_prioritaria === "BUNNY") {
+  // Dado legado do bot grava esse campo com casing inconsistente
+  // ("LOCAL", "local", etc) — normaliza antes de comparar.
+  const fonte = (item.tp_fonte_prioritaria || "").toUpperCase();
+
+  if (fonte === "BUNNY") {
     return item.ds_url_bunny && item.ds_url_bunny.startsWith("http") ? item.ds_url_bunny : null;
   }
 
-  if (item.tp_fonte_prioritaria === "LOCAL") {
+  if (fonte === "LOCAL") {
     const nomeBase = (item.ds_file_id_telegram || item.nm_titulo || "").trim();
     if (!nomeBase) return null;
     const arquivo = nomeBase.toLowerCase().endsWith(".mp4") ? nomeBase : `${nomeBase}.mp4`;

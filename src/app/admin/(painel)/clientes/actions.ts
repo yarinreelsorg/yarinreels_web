@@ -106,14 +106,14 @@ export async function buscarUltimaVisita(nrIdTelegram: number) {
 export async function verificarBanido(nrIdTelegram: number): Promise<boolean> {
   const { rows } = await pool.query<{ total: string }>(
     'SELECT COUNT(*) AS total FROM "BANS" WHERE nr_id_telegram = $1',
-    [nrIdTelegram]
+    [String(nrIdTelegram)]
   );
   return Number(rows[0]?.total ?? 0) > 0;
 }
 
 export async function banirCliente(nrIdTelegram: number) {
   try {
-    await pool.query('INSERT INTO "BANS" (nr_id_telegram) VALUES ($1)', [nrIdTelegram]);
+    await pool.query('INSERT INTO "BANS" (nr_id_telegram) VALUES ($1)', [String(nrIdTelegram)]);
   } catch (err) {
     if (!(err && typeof err === "object" && "code" in err && err.code === "23505")) {
       throw err;
@@ -130,7 +130,7 @@ export async function banirCliente(nrIdTelegram: number) {
 }
 
 export async function desbanirCliente(nrIdTelegram: number) {
-  await pool.query('DELETE FROM "BANS" WHERE nr_id_telegram = $1', [nrIdTelegram]);
+  await pool.query('DELETE FROM "BANS" WHERE nr_id_telegram = $1', [String(nrIdTelegram)]);
 
   await registrarLog({
     tp_acao: "DESBANIMENTO",
