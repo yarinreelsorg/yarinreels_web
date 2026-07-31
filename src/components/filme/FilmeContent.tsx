@@ -65,18 +65,20 @@ export default function FilmeContent({
     <div className="flex min-h-screen flex-col">
       <Navbar categorias={categorias} />
 
-      <section className="relative flex min-h-[70vh] w-full items-end overflow-hidden">
+      <section className="relative flex h-[46vh] w-full items-end overflow-hidden sm:h-[56vh] lg:h-[64vh]">
         <div className="absolute inset-0">
           {conteudo.ds_url_poster ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={conteudo.ds_url_poster}
-              alt={conteudo.nm_titulo}
-              className="h-full w-full object-cover object-top"
+              alt=""
+              aria-hidden="true"
+              className="h-full w-full scale-110 object-cover object-top blur-md"
             />
           ) : (
             <div className="h-full w-full bg-surface" />
           )}
+          <div className="absolute inset-0 bg-background/50" />
           <div className="absolute inset-0 bg-gradient-to-r from-background via-background/75 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/50" />
         </div>

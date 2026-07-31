@@ -58,7 +58,6 @@ export default async function AssistirPage({
       episodios={episodios}
       episodioAtual={episodioAtual}
       statusAcesso={statusAcesso}
-      expiraEm={acesso.liberado ? acesso.expiraEm : null}
     />
   );
 }
