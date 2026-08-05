@@ -19,10 +19,10 @@ export default function UpsellSection({ destaques = [] }: { destaques?: Conteudo
 
   return (
     <section
-      className="w-full bg-[#0D0A1A] px-6 py-14 sm:px-8 sm:py-20 my-10"
+      className="w-full bg-surface px-6 py-14 sm:px-8 sm:py-20 my-10"
       style={{
-        borderTop: "1px solid rgba(123,47,190,0.3)",
-        borderBottom: "1px solid rgba(123,47,190,0.3)",
+        borderTop: "1px solid rgba(229,9,20,0.3)",
+        borderBottom: "1px solid rgba(229,9,20,0.3)",
       }}
     >
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-12 lg:flex-row lg:items-center lg:justify-between">
@@ -35,16 +35,16 @@ export default function UpsellSection({ destaques = [] }: { destaques?: Conteudo
             Assista tudo, sem limites
           </h2>
           <p
-            className="mt-3 font-semibold"
-            style={{ fontSize: "20px", color: "#9D4EDD" }}
+            className="mt-3 font-semibold text-primary"
+            style={{ fontSize: "20px" }}
           >
             Primeiro mês por R$ 20
           </p>
 
-          <ul className="mt-6 flex flex-col gap-3 text-sm text-[#A78BFA] sm:text-base">
+          <ul className="mt-6 flex flex-col gap-3 text-sm text-secondary sm:text-base">
             {BENEFICIOS.map((beneficio) => (
               <li key={beneficio} className="flex items-center">
-                <span className="text-[#9D4EDD] mr-2.5 font-bold text-lg select-none">✓</span>
+                <span className="text-primary mr-2.5 font-bold text-lg select-none">✓</span>
                 {beneficio}
               </li>
             ))}
@@ -55,7 +55,7 @@ export default function UpsellSection({ destaques = [] }: { destaques?: Conteudo
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             transition={springExpressivo}
-            className="animate-pulse-roxo mt-9 rounded-md bg-[#7B2FBE] hover:bg-[#6D28D9] text-white font-bold transition-colors px-10 cursor-pointer flex items-center justify-center"
+            className="animate-pulse-soft mt-9 rounded-md bg-primary hover:bg-primary-dark text-white font-bold transition-colors px-10 cursor-pointer flex items-center justify-center"
             style={{ height: "48px" }}
           >
             Começar agora

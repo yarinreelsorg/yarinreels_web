@@ -34,21 +34,13 @@ export default function Carrossel({
   return (
     <section className="relative py-5">
       <div className="mb-3 flex items-center justify-between px-4 sm:px-8">
-        <h2
-          className="text-foreground text-[18px] font-bold"
-          style={{
-            borderLeft: "3px solid #7B2FBE",
-            paddingLeft: "12px",
-          }}
-        >
-          {titulo}
-        </h2>
+        <h2 className="text-[17px] font-black text-foreground">{titulo}</h2>
         {verTudoHref && (
           <Link
             href={verTudoHref}
-            className="text-sm font-semibold text-[#9D4EDD] transition-colors hover:text-white"
+            className="text-sm font-bold text-primary transition-colors hover:text-white"
           >
-            Ver todos →
+            Ver tudo →
           </Link>
         )}
       </div>
@@ -71,7 +63,7 @@ export default function Carrossel({
           aria-label="Anterior"
           onClick={() => rolar("esquerda")}
           {...buttonTap}
-          className="absolute left-4 top-1/2 -translate-y-1/2 z-20 hidden h-10 w-10 items-center justify-center bg-[rgba(5,2,8,0.9)] border border-[rgba(139,92,246,0.3)] text-[#9D4EDD] rounded-[8px] text-2xl opacity-0 transition-opacity group-hover/carrossel:opacity-100 sm:flex cursor-pointer hover:bg-[#0D0A1A]"
+          className="absolute left-4 top-1/2 -translate-y-1/2 z-20 hidden h-10 w-10 items-center justify-center bg-black/90 border border-white/15 text-foreground rounded-[8px] text-2xl opacity-0 transition-opacity group-hover/carrossel:opacity-100 sm:flex cursor-pointer hover:bg-surface"
         >
           ‹
         </motion.button>
@@ -80,7 +72,7 @@ export default function Carrossel({
           aria-label="Próximo"
           onClick={() => rolar("direita")}
           {...buttonTap}
-          className="absolute right-4 top-1/2 -translate-y-1/2 z-20 hidden h-10 w-10 items-center justify-center bg-[rgba(5,2,8,0.9)] border border-[rgba(139,92,246,0.3)] text-[#9D4EDD] rounded-[8px] text-2xl opacity-0 transition-opacity group-hover/carrossel:opacity-100 sm:flex cursor-pointer hover:bg-[#0D0A1A]"
+          className="absolute right-4 top-1/2 -translate-y-1/2 z-20 hidden h-10 w-10 items-center justify-center bg-black/90 border border-white/15 text-foreground rounded-[8px] text-2xl opacity-0 transition-opacity group-hover/carrossel:opacity-100 sm:flex cursor-pointer hover:bg-surface"
         >
           ›
         </motion.button>

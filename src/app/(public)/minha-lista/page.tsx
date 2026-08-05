@@ -127,7 +127,7 @@ export default async function MinhaListaPage() {
     <div className="flex min-h-screen flex-col">
       <Navbar categorias={[]} />
 
-      <div className="px-4 pb-20 pt-24 sm:px-8">
+      <div className="px-4 pb-20 pt-6 sm:px-8">
         {/* Cabeçalho */}
         <Reveal>
           <h1 className="text-3xl font-black tracking-tight text-foreground sm:text-4xl">

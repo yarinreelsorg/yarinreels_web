@@ -5,6 +5,7 @@ import type { Conteudo, Universo } from "@/types/database";
 import Navbar from "@/components/layout/Navbar";
 import UpsellSection from "@/components/layout/UpsellSection";
 import HeroBanner from "@/components/catalog/HeroBanner";
+import ChipsCategorias from "@/components/catalog/ChipsCategorias";
 import UniversosBar from "@/components/catalog/UniversosBar";
 import Carrossel from "@/components/catalog/Carrossel";
 import CardFilme from "@/components/catalog/CardFilme";
@@ -21,15 +22,11 @@ export default function HomeContent({
   categorias,
   destaques,
   top12,
-  favoritosIds,
-  logado,
 }: {
   conteudos: Conteudo[];
   categorias: string[];
   destaques: Conteudo[];
   top12: Conteudo[];
-  favoritosIds: string[];
-  logado: boolean;
 }) {
   const [busca, setBusca] = useState("");
   const [, startTransition] = useTransition();
@@ -74,7 +71,7 @@ export default function HomeContent({
       <Navbar busca={busca} onBuscaChange={aoMudarBusca} />
 
       {buscando ? (
-        <section className="px-4 pb-16 pt-24 sm:px-8">
+        <section className="px-4 pb-16 pt-6 sm:px-8">
           <h2 className="mb-4 text-lg font-bold text-foreground">
             {resultadosBusca.length > 0
               ? `${resultadosBusca.length} resultado(s)`
@@ -93,9 +90,9 @@ export default function HomeContent({
         </section>
       ) : (
         <>
-          {destaques.length > 0 && (
-            <HeroBanner destaques={destaques} favoritosIds={favoritosIds} logado={logado} />
-          )}
+          <ChipsCategorias categorias={categorias} />
+
+          {destaques.length > 0 && <HeroBanner destaques={destaques} />}
 
           <UniversosBar universos={universos} />
 

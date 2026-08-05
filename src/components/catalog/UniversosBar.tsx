@@ -33,8 +33,8 @@ export default function UniversosBar({ universos }: { universos: Universo[] }) {
               >
                 <Link
                   href={`/universo/${universo.slug}`}
-                  className={`group/universo relative block h-[120px] w-[220px] cursor-pointer overflow-hidden rounded-[10px] border-2 transition-colors duration-300 ease-out hover:border-[#9D4EDD] hover:shadow-[0_0_20px_rgba(157,78,221,0.5)] ${
-                    isAtivo ? "border-[#9D4EDD]" : "border-transparent"
+                  className={`group/universo relative block h-[120px] w-[220px] cursor-pointer overflow-hidden rounded-[10px] border-2 transition-colors duration-300 ease-out hover:border-primary hover:shadow-[0_0_20px_rgba(229,9,20,0.5)] ${
+                    isAtivo ? "border-primary" : "border-transparent"
                   }`}
                   style={{
                     backgroundImage: universo.ds_url_imagem

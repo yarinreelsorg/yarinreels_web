@@ -21,7 +21,7 @@ export default async function AssinaturasPage() {
     <div className="flex min-h-screen flex-col">
       <Navbar categorias={[]} />
 
-      <section className="mx-auto w-full max-w-5xl px-4 pb-16 pt-28 text-center sm:px-8">
+      <section className="mx-auto w-full max-w-5xl px-4 pb-16 pt-6 text-center sm:px-8">
         <h1 className="text-3xl font-black text-foreground sm:text-4xl">
           Escolha sua assinatura
         </h1>

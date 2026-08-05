@@ -95,7 +95,7 @@ export default function CatalogoContent({
     <div className="flex min-h-screen flex-col">
       <Navbar busca={busca} onBuscaChange={aoMudarBusca} />
 
-      <section className="px-4 pb-16 pt-24 sm:px-8">
+      <section className="px-4 pb-16 pt-6 sm:px-8">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="text-2xl font-black tracking-tight text-foreground sm:text-3xl">

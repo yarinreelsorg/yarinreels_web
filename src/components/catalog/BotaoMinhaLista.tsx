@@ -12,12 +12,15 @@ export default function BotaoMinhaLista({
   logado,
   className,
   style,
+  iconeApenas,
 }: {
   cdConteudo: string;
   favoritadoInicial: boolean;
   logado: boolean;
   className?: string;
   style?: React.CSSProperties;
+  /** Mostra só o ícone de coração, sem o texto "Minha Lista". */
+  iconeApenas?: boolean;
 }) {
   const router = useRouter();
   const [favoritado, setFavoritado] = useState(favoritadoInicial);
@@ -49,7 +52,7 @@ export default function BotaoMinhaLista({
       className={className}
       style={style}
     >
-      {favoritado ? "✓ Na Minha Lista" : "+ Minha Lista"}
+      {iconeApenas ? (favoritado ? "♥" : "♡") : favoritado ? "✓ Na Minha Lista" : "+ Minha Lista"}
     </motion.button>
   );
 }

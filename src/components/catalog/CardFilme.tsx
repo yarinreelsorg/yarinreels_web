@@ -2,22 +2,17 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { motion } from "motion/react";
-import type { Conteudo } from "@/types/database";
-import { formatarPreco, formatarViews } from "@/lib/catalogo";
-import { springExpressivo } from "@/lib/motion";
+import { formatarPreco } from "@/lib/catalogo";
 
 type Variant = "carrossel" | "top12" | "grid";
 
-const TAMANHOS: Record<"carrossel" | "top12", { largura: number; altura: number }> = {
-  carrossel: { largura: 160, altura: 240 },
-  top12: { largura: 180, altura: 270 },
-};
+const TAMANHO_CARROSSEL = { largura: 125, altura: 185 };
+const TAMANHO_TOP12_THUMB = { largura: 75, altura: 105 };
 
-const subDays = (date: Date, days: number) => {
-  const result = new Date(date);
-  result.setDate(result.getDate() - days);
-  return result;
+const CORES_RANK: Record<number, string> = {
+  1: "bg-gradient-to-br from-yellow-400 to-amber-500 text-black",
+  2: "bg-gradient-to-br from-gray-300 to-gray-400 text-black",
+  3: "bg-gradient-to-br from-orange-500 to-orange-700 text-white",
 };
 
 export default function CardFilme({
@@ -28,135 +23,108 @@ export default function CardFilme({
   legenda,
   badge,
 }: {
-  conteudo: Conteudo;
+  conteudo: { cd_conteudo: string; nm_titulo: string; ds_url_poster: string | null; vl_aluguel: number | null; vl_vitalicio: number | null };
   rank?: number;
   variant?: Variant;
-  /** Sobrescreve o destino do pôster/botão de play (padrão: /filme/[id]). */
+  /** Sobrescreve o destino do pôster/botão (padrão: /filme/[id]). */
   href?: string;
-  /** Texto fixo embaixo do pôster (ex: "3 dias restantes"). Sem hover. */
+  /** Texto fixo embaixo do pôster (ex: "3 dias restantes"), no lugar do preço/botão. */
   legenda?: string;
-  /** Sobrescreve o badge padrão (formato) no canto superior direito. */
+  /** Selo no canto do pôster (ex: "Alugado", "Vitalício", "Expirado"). */
   badge?: string;
 }) {
   const [carregada, setCarregada] = useState(false);
-
-  const generos = conteudo.ds_generos
-    ?.split(",")
-    .map((g) => g.trim())
-    .filter(Boolean);
   const preco = formatarPreco(conteudo.vl_aluguel ?? conteudo.vl_vitalicio);
-
-  // Badge NOVO vermelho para conteúdos com dt_lancamento dos últimos 30 dias
-  // verificar com new Date(c.dt_lancamento) > subDays(new Date(), 30)
-  const novo = conteudo.dt_lancamento
-    ? new Date(conteudo.dt_lancamento) > subDays(new Date(), 30)
-    : false;
-
-  const fixo = variant !== "grid";
-  const mostraRank = variant === "top12" && typeof rank === "number";
-  const { largura, altura } = TAMANHOS[variant === "top12" ? "top12" : "carrossel"];
   const destino = href ?? `/filme/${conteudo.cd_conteudo}`;
 
-  return (
-    <div className={fixo ? "shrink-0" : "w-full"} style={fixo ? { width: largura } : undefined}>
-      <motion.div
-        className="group/card relative flex items-end w-full"
-        whileHover={{ scale: 1.08, zIndex: 20 }}
-        whileTap={{ scale: 0.97 }}
-        transition={springExpressivo}
-      >
-        {/* Ranking numbers overlaid on bottom left */}
-        {mostraRank && (
+  const poster = (largura: number, altura: number, fixo: boolean, className: string) => (
+    <div
+      className={`relative overflow-hidden rounded-lg bg-surface ${fixo ? "" : "aspect-[2/3] w-full"} ${className}`}
+      style={fixo ? { width: largura, height: altura } : undefined}
+    >
+      {!carregada && conteudo.ds_url_poster && (
+        <div className="absolute inset-0 animate-shimmer bg-[linear-gradient(110deg,#161616_30%,#222_50%,#161616_70%)]" />
+      )}
+      {conteudo.ds_url_poster ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={conteudo.ds_url_poster}
+          alt={conteudo.nm_titulo}
+          loading="lazy"
+          onLoad={() => setCarregada(true)}
+          className={`h-full w-full object-cover transition-opacity duration-300 ${
+            carregada ? "opacity-100" : "opacity-0"
+          }`}
+        />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center px-2 text-center text-xs text-secondary">
+          {conteudo.nm_titulo}
+        </div>
+      )}
+    </div>
+  );
+
+  if (variant === "top12" && typeof rank === "number") {
+    const { largura, altura } = TAMANHO_TOP12_THUMB;
+    return (
+      <div className="flex items-center gap-2.5">
+        <Link href={destino} className="relative shrink-0">
+          {poster(largura, altura, true, "")}
           <span
-            className="pointer-events-none absolute bottom-[-10px] left-[-10px] z-30 select-none font-black leading-none text-white/[0.07]"
-            style={{
-              fontSize: "80px",
-              fontWeight: 900,
-              WebkitTextStroke: "1px rgba(139,92,246,0.3)",
-            }}
+            className={`absolute bottom-0 left-0 flex h-[25px] w-[25px] items-center justify-center rounded-tr-lg text-sm font-black ${
+              CORES_RANK[rank] ?? "bg-primary text-white"
+            }`}
           >
             {rank}
           </span>
-        )}
-
-        {/* Card Body */}
-        <div
-          className={`relative z-10 origin-bottom-left overflow-hidden rounded-[8px] bg-surface transition-all duration-[250ms] ease-out border-2 border-transparent group-hover/card:border-[rgba(139,92,246,0.6)] group-hover/card:shadow-[0_8px_32px_rgba(123,47,190,0.4)] ${
-            fixo ? "" : "aspect-[2/3] w-full"
-          }`}
-          style={fixo ? { width: largura, height: altura } : undefined}
-        >
-          {!carregada && conteudo.ds_url_poster && (
-            <div className="absolute inset-0 animate-shimmer bg-[linear-gradient(110deg,#0d0a1a_30%,#18101f_50%,#0d0a1a_70%)]" />
-          )}
-
-          {conteudo.ds_url_poster ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={conteudo.ds_url_poster}
-              alt={conteudo.nm_titulo}
-              loading="lazy"
-              onLoad={() => setCarregada(true)}
-              className={`h-full w-full object-cover transition-opacity duration-300 ${
-                carregada ? "opacity-100" : "opacity-0"
-              }`}
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center px-2 text-center text-xs text-secondary">
-              {conteudo.nm_titulo}
-            </div>
-          )}
-
-          {/* Badge NOVO vermelho */}
-          {novo && (
-            <span className="absolute left-1.5 top-1.5 rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white z-10">
-              Novo
-            </span>
-          )}
-
-          {/* Badge de formato (ou custom) canto superior direito */}
-          <span
-            className="absolute right-1.5 top-1.5 rounded-full px-2 py-0.5 font-medium uppercase tracking-wide text-foreground/90 backdrop-blur-sm z-10"
-            style={{
-              background: "rgba(0,0,0,0.7)",
-              border: "1px solid rgba(139,92,246,0.4)",
-              fontSize: "9px",
-            }}
+        </Link>
+        <div className="flex min-w-0 flex-1 flex-col justify-center">
+          <Link href={destino} className="line-clamp-2 text-[11px] font-bold leading-tight text-foreground">
+            {conteudo.nm_titulo}
+          </Link>
+          {preco && <p className="mt-1 text-[11px] font-extrabold text-secondary">{preco}</p>}
+          <Link
+            href={destino}
+            className="mt-2 flex w-fit items-center gap-1 rounded-full bg-white px-3 py-1.5 text-[10px] font-black text-black transition-transform active:scale-95"
           >
-            {badge ?? conteudo.tp_formato}
-          </span>
-
-          {/* Hover overlay bottom with gradient rgba(5,2,8,0) to rgba(5,2,8,0.95) */}
-          <div
-            className="absolute inset-0 flex flex-col justify-end p-3 opacity-0 transition-opacity duration-200 group-hover/card:opacity-100"
-            style={{
-              backgroundImage: "linear-gradient(to top, rgba(5,2,8,0.95) 0%, rgba(5,2,8,0) 100%)",
-            }}
-          >
-            {/* Botão play circular 40px roxo centralizado */}
-            <Link
-              href={destino}
-              aria-label={`Assistir ${conteudo.nm_titulo}`}
-              className="absolute left-1/2 top-1/2 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-[#7B2FBE] text-white shadow-[0_4px_20px_rgba(123,47,190,0.6)] transition-transform hover:scale-110 cursor-pointer"
-            >
-              ▶
-            </Link>
-
-            <Link
-              href={destino}
-              className="line-clamp-1 text-[13px] font-semibold text-foreground hover:underline"
-            >
-              {conteudo.nm_titulo}
-            </Link>
-            {generos && generos.length > 0 && (
-              <p className="line-clamp-1 text-[11px] text-[#A78BFA]">{generos.join(" • ")}</p>
-            )}
-            {preco && <p className="mt-0.5 text-xs font-semibold text-[#9D4EDD]">{preco}</p>}
-          </div>
+            🛒 Comprar
+          </Link>
         </div>
-      </motion.div>
+      </div>
+    );
+  }
 
-      {legenda && <p className="mt-2 line-clamp-1 text-xs text-secondary">{legenda}</p>}
+  const fixo = variant === "carrossel";
+  const { largura, altura } = TAMANHO_CARROSSEL;
+
+  return (
+    <div className={fixo ? "shrink-0" : "w-full"} style={fixo ? { width: largura } : undefined}>
+      <Link href={destino} className="relative block">
+        {poster(largura, altura, fixo, "cursor-pointer")}
+        {badge && (
+          <span className="absolute left-1.5 top-1.5 rounded bg-black/80 px-1.5 py-0.5 text-[10px] font-bold text-foreground">
+            {badge}
+          </span>
+        )}
+      </Link>
+
+      <Link href={destino} className="mt-2 block line-clamp-1 text-xs font-bold text-foreground">
+        {conteudo.nm_titulo}
+      </Link>
+
+      {legenda ? (
+        <p className="mt-0.5 line-clamp-1 text-[11px] text-secondary">{legenda}</p>
+      ) : (
+        <>
+          {preco && <p className="text-xs font-extrabold text-price">{preco}</p>}
+          <Link
+            href={destino}
+            className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-md bg-white/15 py-2 text-[10px] font-bold uppercase tracking-wide text-white transition-colors hover:bg-white/25"
+          >
+            + Detalhes
+          </Link>
+        </>
+      )}
     </div>
   );
 }

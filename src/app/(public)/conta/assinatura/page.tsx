@@ -59,7 +59,7 @@ export default async function ContaAssinaturaPage() {
     <div className="flex min-h-screen flex-col">
       <Navbar categorias={[]} />
 
-      <section className="mx-auto w-full max-w-2xl px-4 pb-12 pt-28 sm:px-8">
+      <section className="mx-auto w-full max-w-2xl px-4 pb-12 pt-6 sm:px-8">
         <h1 className="text-2xl font-black text-foreground sm:text-3xl">
           Minha Assinatura
         </h1>
