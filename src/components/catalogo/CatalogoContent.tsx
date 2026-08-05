@@ -222,6 +222,7 @@ export default function CatalogoContent({
         ) : (
           <>
             <StaggerGroup
+              key={`${categoriaAtiva}-${formatoAtivo}-${appAtivo}-${termo}`}
               className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
               staggerChildren={0.03}
             >
