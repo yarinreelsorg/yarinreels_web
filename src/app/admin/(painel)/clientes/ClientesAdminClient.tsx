@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import type { ClienteResumo, TpCompra, Venda, Conteudo, Plano } from "@/types/database";
 import { formatarPreco } from "@/lib/catalogo";
@@ -47,6 +47,8 @@ export default function ClientesAdminClient({
   const router = useRouter();
   const pathname = usePathname();
   const toast = useToast();
+  const searchParams = useSearchParams();
+  const emailDaQuery = searchParams.get("concederEmail");
 
   const [buscaLocal, setBuscaLocal] = useState(filtrosAtuais.busca);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -64,10 +66,11 @@ export default function ClientesAdminClient({
     ts_criacao: string;
   } | null>(null);
 
-  // Conceder acesso (modal)
-  const [concederAberto, setConcederAberto] = useState(false);
+  // Conceder acesso (modal) — pode chegar já aberto vindo de
+  // /admin/usuarios?concederEmail=...
+  const [concederAberto, setConcederAberto] = useState(!!emailDaQuery);
   const [telegramIdConceder, setTelegramIdConceder] = useState("");
-  const [emailConceder, setEmailConceder] = useState("");
+  const [emailConceder, setEmailConceder] = useState(emailDaQuery ?? "");
   const [tipoConceder, setTipoConceder] = useState<TpCompra>("ALUGUEL");
   const [buscaConteudo, setBuscaConteudo] = useState("");
   const [salvandoAcesso, setSalvandoAcesso] = useState(false);
@@ -132,15 +135,24 @@ export default function ClientesAdminClient({
     .filter((c) => c.nm_titulo.toLowerCase().includes(buscaConteudo.toLowerCase()))
     .slice(0, 50);
 
-  const abrirConceder = (nrIdTelegram?: number) => {
+  const abrirConceder = (nrIdTelegram?: number, email?: string) => {
     setTelegramIdConceder(nrIdTelegram ? String(nrIdTelegram) : "");
-    setEmailConceder("");
+    setEmailConceder(email ?? "");
     setTipoConceder("ALUGUEL");
     setBuscaConteudo("");
     setErroAcesso(null);
     setDuplicidadeDetectada(false);
     setConcederAberto(true);
   };
+
+  // Vem da tela de Usuários do Site (?concederEmail=...): o modal já abre
+  // com o e-mail preenchido (ver estado inicial acima); aqui só limpa a URL.
+  useEffect(() => {
+    if (emailDaQuery) {
+      router.replace(pathname, { scroll: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const abrirDetalhes = async (nrIdTelegram: number) => {
     setSelectedTelegramId(nrIdTelegram);

@@ -32,7 +32,6 @@ export default function CheckoutCartao({
   const [email, setEmail] = useState("");
   const [cpf, setCpf] = useState("");
   const [telefone, setTelefone] = useState("");
-  const [parcelas, setParcelas] = useState(1);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [resultado, setResultado] = useState<"APROVADO" | "PROCESSANDO" | null>(null);
@@ -56,7 +55,7 @@ export default function CheckoutCartao({
         cvv,
       });
 
-      const resposta = await aoConfirmar(paymentToken, { email, nome, cpf, telefone }, parcelas);
+      const resposta = await aoConfirmar(paymentToken, { email, nome, cpf, telefone }, 1);
 
       if (resposta.status === "RECUSADO") {
         setErro(resposta.motivoRecusa ?? "Pagamento recusado. Tente outro cartão.");
@@ -216,21 +215,6 @@ export default function CheckoutCartao({
           placeholder="(11) 91234-5678"
           className="rounded-md border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none focus:border-accent/50"
         />
-      </label>
-
-      <label className="flex flex-col gap-1.5 text-sm text-secondary">
-        Parcelas
-        <select
-          value={parcelas}
-          onChange={(e) => setParcelas(Number(e.target.value))}
-          className="rounded-md border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none focus:border-accent/50"
-        >
-          {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
-            <option key={n} value={n} className="bg-background">
-              {n}x de {formatarPreco(total / n)}
-            </option>
-          ))}
-        </select>
       </label>
 
       {erro && <p className="text-sm text-red-400">{erro}</p>}

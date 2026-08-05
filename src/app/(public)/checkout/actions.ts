@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { pool } from "@/lib/db";
 import { getSessaoUsuario } from "@/lib/user-auth";
 import {
@@ -22,6 +23,30 @@ async function usuarioAutenticado() {
   const sessao = await getSessaoUsuario();
   if (!sessao) throw new Error("Você precisa estar logado.");
   return sessao;
+}
+
+// Versão do texto de /termos em vigor — bump isso sempre que o texto mudar,
+// pra o log de consentimento continuar refletindo o que a pessoa leu de fato.
+const VERSAO_TERMOS = "2026-08-05";
+
+/**
+ * Registra que o cliente aceitou os Termos de Uso / Política de Reembolso
+ * antes de pagar — prova documental pra contestar chargebacks fraudulentos
+ * (cliente assiste e depois pede o dinheiro de volta alegando desconhecer
+ * a política de não-reembolso de produto digital).
+ */
+export async function registrarConsentimentoTermos(contexto: string) {
+  const sessao = await usuarioAutenticado();
+  const h = await headers();
+  const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? h.get("x-real-ip") ?? null;
+  const userAgent = h.get("user-agent");
+
+  await pool.query(
+    `INSERT INTO "CONSENTIMENTOS_TERMOS"
+       (cd_usuario, nm_email, ds_contexto, nm_versao_termos, ds_ip, ds_user_agent)
+     VALUES ($1,$2,$3,$4,$5,$6)`,
+    [sessao.cd_usuario, sessao.nm_email, contexto, VERSAO_TERMOS, ip, userAgent]
+  );
 }
 
 async function calcularDiasValidade(tp_compra: TpCompra, cd_plano: string | null) {

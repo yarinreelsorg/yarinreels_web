@@ -82,7 +82,7 @@ export default function CheckoutPix({
 
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={`data:image/png;base64,${qrcodeImage}`}
+        src={qrcodeImage.startsWith("data:") ? qrcodeImage : `data:image/png;base64,${qrcodeImage}`}
         alt="QR Code Pix"
         className="h-56 w-56 rounded-lg border border-border bg-white p-2"
       />
