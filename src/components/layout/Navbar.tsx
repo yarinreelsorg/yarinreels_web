@@ -11,6 +11,13 @@ interface UsuarioNavbar {
   nm_email: string;
 }
 
+const LINKS = [
+  { label: "Início", href: "/" },
+  { label: "Catálogo", href: "/catalogo" },
+  { label: "Minha Lista", href: "/minha-lista" },
+  { label: "Assinar", href: "/assinaturas" },
+];
+
 export default function Navbar(props: {
   categorias?: string[];
   busca?: string;
@@ -81,71 +88,85 @@ function NavbarInner({
           "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 60%, rgba(0,0,0,0) 100%)",
       }}
     >
-      <div className="mx-auto flex max-w-[1600px] items-center gap-2.5 rounded-xl border border-white/5 bg-white/10 px-3.5 py-3 backdrop-blur-2xl">
-        <span className="shrink-0 text-lg">🔍</span>
-        <input
-          type="search"
-          value={onBuscaChange ? busca : buscaLocal}
-          onChange={(e) => aoDigitarBusca(e.target.value)}
-          onKeyDown={aoPressionarBusca}
-          placeholder="Buscar título..."
-          className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-secondary/70"
-        />
+      <div className="mx-auto flex max-w-[1600px] flex-col gap-4 lg:flex-row lg:items-center lg:gap-8">
+        <h1 className="order-1 shrink-0 text-center text-2xl font-black uppercase tracking-[0.2em] text-primary lg:order-none lg:text-left lg:text-xl">
+          Melreels
+        </h1>
 
-        {user ? (
-          <div ref={menuRef} className="relative shrink-0">
-            <button
-              type="button"
-              onClick={() => setMenuAberto((v) => !v)}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-white"
+        <nav className="order-3 hidden shrink-0 items-center gap-6 lg:order-none lg:flex">
+          {LINKS.map((link) => (
+            <Link
+              key={link.label}
+              href={link.href}
+              className="text-sm font-medium text-secondary transition-colors hover:text-foreground"
             >
-              {inicial}
-            </button>
-            <AnimatePresence>
-              {menuAberto && (
-                <motion.div
-                  initial={{ opacity: 0, y: -8, scale: 0.96 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -8, scale: 0.96 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute right-0 top-10 w-48 origin-top-right overflow-hidden rounded-md border border-border bg-surface py-1.5 shadow-[0_12px_30px_rgba(0,0,0,0.6)]"
-                >
-                  <Link
-                    href="/conta"
-                    className="block px-4 py-2 text-sm text-foreground hover:bg-white/5"
-                  >
-                    Minha Conta
-                  </Link>
-                  <Link
-                    href="/minha-lista"
-                    className="block px-4 py-2 text-sm text-foreground hover:bg-white/5"
-                  >
-                    Minha Lista
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={sair}
-                    className="block w-full px-4 py-2 text-left text-sm text-foreground hover:bg-white/5"
-                  >
-                    Sair
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        ) : (
-          <Link
-            href="/login"
-            className="shrink-0 rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold text-white"
-          >
-            Entrar
-          </Link>
-        )}
-      </div>
+              {link.label}
+            </Link>
+          ))}
+        </nav>
 
-      <h1 className="mt-4 text-center text-2xl font-black uppercase tracking-[0.2em] text-primary">
-        Melreels
-      </h1>
+        <div className="order-2 flex flex-1 items-center gap-2.5 rounded-xl border border-white/5 bg-white/10 px-3.5 py-3 backdrop-blur-2xl lg:order-none lg:py-2.5">
+          <span className="shrink-0 text-lg">🔍</span>
+          <input
+            type="search"
+            value={onBuscaChange ? busca : buscaLocal}
+            onChange={(e) => aoDigitarBusca(e.target.value)}
+            onKeyDown={aoPressionarBusca}
+            placeholder="Buscar título..."
+            className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-secondary/70"
+          />
+
+          {user ? (
+            <div ref={menuRef} className="relative shrink-0">
+              <button
+                type="button"
+                onClick={() => setMenuAberto((v) => !v)}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-white"
+              >
+                {inicial}
+              </button>
+              <AnimatePresence>
+                {menuAberto && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-10 w-48 origin-top-right overflow-hidden rounded-md border border-border bg-surface py-1.5 shadow-[0_12px_30px_rgba(0,0,0,0.6)]"
+                  >
+                    <Link
+                      href="/conta"
+                      className="block px-4 py-2 text-sm text-foreground hover:bg-white/5"
+                    >
+                      Minha Conta
+                    </Link>
+                    <Link
+                      href="/minha-lista"
+                      className="block px-4 py-2 text-sm text-foreground hover:bg-white/5"
+                    >
+                      Minha Lista
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={sair}
+                      className="block w-full px-4 py-2 text-left text-sm text-foreground hover:bg-white/5"
+                    >
+                      Sair
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ) : (
+            <Link
+              href="/login"
+              className="shrink-0 rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold text-white"
+            >
+              Entrar
+            </Link>
+          )}
+        </div>
+      </div>
     </header>
   );
 }

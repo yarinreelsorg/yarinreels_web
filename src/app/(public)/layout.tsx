@@ -6,7 +6,7 @@ export default function PublicLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="pb-[75px]">
+    <div className="pb-[75px] lg:pb-0">
       {children}
       <BottomNav />
     </div>

@@ -89,7 +89,7 @@ export default function HomeContent({
           </StaggerGroup>
         </section>
       ) : (
-        <>
+        <div className="mx-auto w-full max-w-[1600px]">
           <ChipsCategorias categorias={categorias} />
 
           {destaques.length > 0 && <HeroBanner destaques={destaques} />}
@@ -110,7 +110,7 @@ export default function HomeContent({
               />
             ))}
           </div>
-        </>
+        </div>
       )}
     </div>
   );

@@ -14,7 +14,7 @@ export default function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-[100] flex h-[75px] items-center justify-around border-t border-white/10 bg-[#0a0a0a]">
+    <nav className="fixed inset-x-0 bottom-0 z-[100] flex h-[75px] items-center justify-around border-t border-white/10 bg-[#0a0a0a] lg:hidden">
       {ITENS.map((item) => {
         const ativo = pathname === item.href;
         return (
