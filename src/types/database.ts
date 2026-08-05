@@ -36,6 +36,7 @@ export type Conteudo = {
   tp_fonte_prioritaria: TpFontePrioritaria;
   sn_destaque: boolean;
   nr_views: number;
+  nm_app_origem: string | null;
 };
 
 export type ConteudoInsert = {
@@ -57,6 +58,7 @@ export type ConteudoInsert = {
   tp_fonte_prioritaria?: TpFontePrioritaria;
   sn_destaque?: boolean;
   nr_views?: number;
+  nm_app_origem?: string | null;
 };
 
 export type ConteudoUpdate = {
@@ -77,6 +79,7 @@ export type ConteudoUpdate = {
   tp_fonte_prioritaria?: TpFontePrioritaria;
   sn_destaque?: boolean;
   nr_views?: number;
+  nm_app_origem?: string | null;
 };
 
 export type Episodio = {

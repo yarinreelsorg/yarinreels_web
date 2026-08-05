@@ -68,6 +68,7 @@ function extrairCampos(formData: FormData) {
     tp_fonte_prioritaria: (parseString(formData.get("tp_fonte_prioritaria")) ?? "LOCAL") as TpFontePrioritaria,
     sn_destaque: formData.get("sn_destaque") === "on" || formData.get("sn_destaque") === "true",
     dt_lancamento: parseString(formData.get("dt_lancamento")),
+    nm_app_origem: parseString(formData.get("nm_app_origem")),
   };
 }
 
@@ -78,8 +79,8 @@ export async function adicionarConteudo(cdConteudo: string, formData: FormData) 
     `INSERT INTO "CONTEUDOS"
        (cd_conteudo, nm_titulo, nm_categoria, tp_formato, nm_idioma, ds_generos, ds_descricao,
         vl_aluguel, vl_vitalicio, ds_url_poster, ds_url_bunny, ds_file_id_telegram,
-        tp_fonte_prioritaria, sn_destaque, dt_lancamento, nr_views)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,0)`,
+        tp_fonte_prioritaria, sn_destaque, dt_lancamento, nm_app_origem, nr_views)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,0)`,
     [
       cdConteudo,
       campos.nm_titulo,
@@ -96,6 +97,7 @@ export async function adicionarConteudo(cdConteudo: string, formData: FormData) 
       campos.tp_fonte_prioritaria,
       campos.sn_destaque,
       campos.dt_lancamento,
+      campos.nm_app_origem,
     ]
   );
 
@@ -118,8 +120,8 @@ export async function editarConteudo(id: string, formData: FormData) {
        nm_titulo = $1, nm_categoria = $2, tp_formato = $3, nm_idioma = $4, ds_generos = $5,
        ds_descricao = $6, vl_aluguel = $7, vl_vitalicio = $8, ds_url_poster = $9,
        ds_url_bunny = $10, ds_file_id_telegram = $11, tp_fonte_prioritaria = $12,
-       sn_destaque = $13, dt_lancamento = $14
-     WHERE cd_conteudo = $15`,
+       sn_destaque = $13, dt_lancamento = $14, nm_app_origem = $15
+     WHERE cd_conteudo = $16`,
     [
       campos.nm_titulo,
       campos.nm_categoria,
@@ -135,6 +137,7 @@ export async function editarConteudo(id: string, formData: FormData) {
       campos.tp_fonte_prioritaria,
       campos.sn_destaque,
       campos.dt_lancamento,
+      campos.nm_app_origem,
       id,
     ]
   );

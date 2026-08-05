@@ -17,6 +17,10 @@ export default async function CatalogoPage({
     new Set(conteudos.map((c) => c.nm_categoria).filter(Boolean))
   ).sort();
 
+  const apps = Array.from(
+    new Set(conteudos.map((c) => c.nm_app_origem).filter((a): a is string => Boolean(a)))
+  ).sort();
+
   const formatoParam =
     typeof params.formato === "string" ? params.formato.toUpperCase() : null;
   const formatoInicial =
@@ -31,12 +35,17 @@ export default async function CatalogoPage({
 
   const buscaInicial = typeof params.busca === "string" ? params.busca : "";
 
+  const appParam = typeof params.app === "string" ? params.app : null;
+  const appInicial = appParam && apps.includes(appParam) ? appParam : null;
+
   return (
     <CatalogoContent
       conteudos={conteudos}
       categorias={categorias}
+      apps={apps}
       formatoInicial={formatoInicial}
       categoriaInicial={categoriaInicial}
+      appInicial={appInicial}
       buscaInicial={buscaInicial}
     />
   );

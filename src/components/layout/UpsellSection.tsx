@@ -18,13 +18,26 @@ export default function UpsellSection({ destaques = [] }: { destaques?: Conteudo
   const poster3 = destaques[2]?.ds_url_poster;
 
   return (
-    <section
-      className="w-full bg-surface px-6 py-14 sm:px-8 sm:py-20 my-10"
-      style={{
-        borderTop: "1px solid rgba(229,9,20,0.3)",
-        borderBottom: "1px solid rgba(229,9,20,0.3)",
-      }}
-    >
+    <>
+      {/* Mobile: botão discreto, mesma lógica do bot */}
+      <div className="px-4 py-4 sm:px-8 lg:hidden">
+        <motion.a
+          href="/assinaturas"
+          whileTap={{ scale: 0.97 }}
+          className="flex items-center justify-center gap-2 rounded-full bg-primary/15 border border-primary/40 px-4 py-2.5 text-xs font-bold text-primary"
+        >
+          🔥 Assine e assista tudo sem limites — primeiro mês R$ 20
+        </motion.a>
+      </div>
+
+      {/* Desktop: seção completa */}
+      <section
+        className="hidden w-full bg-surface px-6 py-14 sm:px-8 sm:py-20 my-10 lg:block"
+        style={{
+          borderTop: "1px solid rgba(229,9,20,0.3)",
+          borderBottom: "1px solid rgba(229,9,20,0.3)",
+        }}
+      >
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-12 lg:flex-row lg:items-center lg:justify-between">
         {/* Left Column */}
         <Reveal className="flex max-w-lg flex-col items-start text-left">
@@ -96,6 +109,7 @@ export default function UpsellSection({ destaques = [] }: { destaques?: Conteudo
           )}
         </Reveal>
       </div>
-    </section>
+      </section>
+    </>
   );
 }

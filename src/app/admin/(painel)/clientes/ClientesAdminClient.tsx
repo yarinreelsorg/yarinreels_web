@@ -67,6 +67,7 @@ export default function ClientesAdminClient({
   // Conceder acesso (modal)
   const [concederAberto, setConcederAberto] = useState(false);
   const [telegramIdConceder, setTelegramIdConceder] = useState("");
+  const [emailConceder, setEmailConceder] = useState("");
   const [tipoConceder, setTipoConceder] = useState<TpCompra>("ALUGUEL");
   const [buscaConteudo, setBuscaConteudo] = useState("");
   const [salvandoAcesso, setSalvandoAcesso] = useState(false);
@@ -133,6 +134,7 @@ export default function ClientesAdminClient({
 
   const abrirConceder = (nrIdTelegram?: number) => {
     setTelegramIdConceder(nrIdTelegram ? String(nrIdTelegram) : "");
+    setEmailConceder("");
     setTipoConceder("ALUGUEL");
     setBuscaConteudo("");
     setErroAcesso(null);
@@ -626,7 +628,8 @@ export default function ClientesAdminClient({
                     type="number"
                     id="nr_id_telegram"
                     name="nr_id_telegram"
-                    required
+                    required={!emailConceder}
+                    disabled={!!emailConceder}
                     value={telegramIdConceder}
                     onChange={(e) => {
                       setTelegramIdConceder(e.target.value);
@@ -634,8 +637,36 @@ export default function ClientesAdminClient({
                       setErroAcesso(null);
                     }}
                     placeholder="Ex: 123456789"
+                    className="w-full bg-[#050208] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white disabled:opacity-40"
+                  />
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="h-px flex-1 bg-[rgba(139,92,246,0.2)]" />
+                  <span className="text-[10px] font-semibold uppercase text-[#A78BFA]">ou</span>
+                  <div className="h-px flex-1 bg-[rgba(139,92,246,0.2)]" />
+                </div>
+
+                <div>
+                  <label htmlFor="nm_email_usuario" className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">
+                    E-mail de usuário do site
+                  </label>
+                  <input
+                    type="email"
+                    id="nm_email_usuario"
+                    name="nm_email_usuario"
+                    value={emailConceder}
+                    onChange={(e) => {
+                      setEmailConceder(e.target.value);
+                      setDuplicidadeDetectada(false);
+                      setErroAcesso(null);
+                    }}
+                    placeholder="cliente@email.com"
                     className="w-full bg-[#050208] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white"
                   />
+                  <p className="mt-1 text-[11px] text-[#A78BFA]/70">
+                    Preencha isso pra liberar acesso a quem se cadastrou pelo site (não pelo bot), em vez do ID do Telegram.
+                  </p>
                 </div>
 
                 <div>

@@ -23,14 +23,18 @@ const TAMANHO_PAGINA = 24;
 export default function CatalogoContent({
   conteudos,
   categorias,
+  apps,
   formatoInicial,
   categoriaInicial,
+  appInicial = null,
   buscaInicial = "",
 }: {
   conteudos: Conteudo[];
   categorias: string[];
+  apps: string[];
   formatoInicial: TpFormato | null;
   categoriaInicial: string | null;
+  appInicial?: string | null;
   buscaInicial?: string;
 }) {
   const [busca, setBusca] = useState(buscaInicial);
@@ -40,6 +44,7 @@ export default function CatalogoContent({
   const [formatoAtivo, setFormatoAtivo] = useState<TpFormato | null>(
     formatoInicial
   );
+  const [appAtivo, setAppAtivo] = useState<string | null>(appInicial);
   const [ordenacao, setOrdenacao] = useState<Ordenacao>("relevancia");
   const [visiveis, setVisiveis] = useState(TAMANHO_PAGINA);
   const [, startTransition] = useTransition();
@@ -65,6 +70,13 @@ export default function CatalogoContent({
     });
   }
 
+  function aoMudarApp(app: string | null) {
+    startTransition(() => {
+      setAppAtivo(app);
+      setVisiveis(TAMANHO_PAGINA);
+    });
+  }
+
   const termo = busca.trim().toLowerCase();
 
   const filtrados = conteudos.filter((c) => {
@@ -73,7 +85,8 @@ export default function CatalogoContent({
     const bateCategoria =
       categoriaAtiva === null || c.nm_categoria === categoriaAtiva;
     const bateFormato = formatoAtivo === null || c.tp_formato === formatoAtivo;
-    return bateBusca && bateCategoria && bateFormato;
+    const bateApp = appAtivo === null || c.nm_app_origem === appAtivo;
+    return bateBusca && bateCategoria && bateFormato && bateApp;
   });
 
   const ordenados = [...filtrados].sort((a, b) => {
@@ -167,6 +180,36 @@ export default function CatalogoContent({
                 }`}
               >
                 {categoria}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {apps.length > 0 && (
+          <div className="mb-8 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => aoMudarApp(null)}
+              className={`rounded-full border px-3.5 py-1 text-xs font-medium capitalize transition-colors ${
+                appAtivo === null
+                  ? "border-accent bg-accent/15 text-foreground"
+                  : "border-border text-secondary hover:border-accent/40 hover:text-foreground"
+              }`}
+            >
+              Todos os apps
+            </button>
+            {apps.map((app) => (
+              <button
+                key={app}
+                type="button"
+                onClick={() => aoMudarApp(app)}
+                className={`rounded-full border px-3.5 py-1 text-xs font-medium capitalize transition-colors ${
+                  appAtivo === app
+                    ? "border-accent bg-accent/15 text-foreground"
+                    : "border-border text-secondary hover:border-accent/40 hover:text-foreground"
+                }`}
+              >
+                {app}
               </button>
             ))}
           </div>

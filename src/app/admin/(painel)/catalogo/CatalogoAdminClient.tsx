@@ -644,6 +644,27 @@ export default function CatalogoAdminClient({
                 </div>
 
                 <div>
+                  <label htmlFor="nm_app_origem" className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">
+                    App de origem
+                  </label>
+                  <input
+                    type="text"
+                    id="nm_app_origem"
+                    name="nm_app_origem"
+                    list="lista-apps-origem"
+                    placeholder="ReelShort, DramaBox..."
+                    defaultValue={conteudoEdicao?.nm_app_origem || ""}
+                    className="w-full bg-[#0D0A1A] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white"
+                  />
+                  <datalist id="lista-apps-origem">
+                    <option value="ReelShort" />
+                    <option value="DramaBox" />
+                    <option value="ShortMax" />
+                    <option value="MoboReels" />
+                  </datalist>
+                </div>
+
+                <div>
                   <label htmlFor="ds_descricao" className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">
                     Descrição
                   </label>

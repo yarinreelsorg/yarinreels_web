@@ -1,13 +1,55 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 import type { Conteudo } from "@/types/database";
 
 export default function HeroBanner({ destaques }: { destaques: Conteudo[] }) {
+  const trilhoRef = useRef<HTMLElement>(null);
+  const pausadoRef = useRef(false);
+
+  useEffect(() => {
+    if (destaques.length <= 1) return;
+
+    const id = setInterval(() => {
+      const trilho = trilhoRef.current;
+      if (!trilho || pausadoRef.current) return;
+
+      const largura = trilho.firstElementChild?.clientWidth ?? trilho.clientWidth;
+      const gap = 16;
+      const fim = trilho.scrollWidth - trilho.clientWidth;
+      const proximo = trilho.scrollLeft + largura + gap;
+
+      trilho.scrollTo({
+        left: proximo > fim + 10 ? 0 : proximo,
+        behavior: "smooth",
+      });
+    }, 4500);
+
+    return () => clearInterval(id);
+  }, [destaques.length]);
+
   if (destaques.length === 0) return null;
 
+  function pausar() {
+    pausadoRef.current = true;
+  }
+
+  function retomar() {
+    setTimeout(() => {
+      pausadoRef.current = false;
+    }, 4000);
+  }
+
   return (
-    <section className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth px-4 py-2.5 [scrollbar-width:none] sm:px-8 [&::-webkit-scrollbar]:hidden">
+    <section
+      ref={trilhoRef}
+      onPointerDown={pausar}
+      onPointerUp={retomar}
+      onMouseEnter={pausar}
+      onMouseLeave={retomar}
+      className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth px-4 py-2.5 [scrollbar-width:none] sm:px-8 [&::-webkit-scrollbar]:hidden"
+    >
       {destaques.map((item) => (
         <Link
           key={item.cd_conteudo}

@@ -9,6 +9,10 @@ export default async function HomePage() {
     new Set(conteudos.map((c) => c.nm_categoria).filter(Boolean))
   ).sort();
 
+  const apps = Array.from(
+    new Set(conteudos.map((c) => c.nm_app_origem).filter((a): a is string => Boolean(a)))
+  ).sort();
+
   const destacados = conteudos.filter((c) => c.sn_destaque);
   const destaques = (destacados.length > 0 ? destacados : conteudos)
     .slice()
@@ -23,6 +27,7 @@ export default async function HomePage() {
     <HomeContent
       conteudos={conteudos}
       categorias={categorias}
+      apps={apps}
       destaques={destaques}
       top12={top12}
     />

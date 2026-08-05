@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { pool } from "@/lib/db";
-import { DIAS_ALUGUEL, DIAS_VITALICIO, somarDias } from "@/lib/acesso";
+import { DIAS_ALUGUEL, DIAS_VITALICIO, obterIdentidadeParaCompra, somarDias } from "@/lib/acesso";
 import { registrarLog } from "@/lib/auditoria";
 import type { ClienteResumo, TpCompra, Venda } from "@/types/database";
 
@@ -14,14 +14,34 @@ export async function buscarVendasCliente(nrIdTelegram: number): Promise<Venda[]
   return rows;
 }
 
+/** Busca o ID a usar pra conceder acesso a partir do e-mail de um usuário do site. */
+export async function resolverIdentidadePorEmail(email: string): Promise<number | null> {
+  const { rows } = await pool.query<{ cd_usuario: string }>(
+    'SELECT cd_usuario FROM "USUARIOS" WHERE nm_email = $1 LIMIT 1',
+    [email.trim().toLowerCase()]
+  );
+  if (!rows[0]) return null;
+  return obterIdentidadeParaCompra(rows[0].cd_usuario);
+}
+
 export async function concederAcesso(formData: FormData, forcar = false) {
-  const nr_id_telegram = Number(formData.get("nr_id_telegram"));
+  const emailUsuario = String(formData.get("nm_email_usuario") ?? "").trim();
+  let nr_id_telegram = Number(formData.get("nr_id_telegram"));
+
+  if (emailUsuario) {
+    const idResolvido = await resolverIdentidadePorEmail(emailUsuario);
+    if (!idResolvido) {
+      throw new Error("Nenhum usuário do site encontrado com esse e-mail.");
+    }
+    nr_id_telegram = idResolvido;
+  }
+
   const tp_compra = formData.get("tp_compra") as TpCompra;
   const cd_conteudo = String(formData.get("cd_conteudo") ?? "").trim() || null;
   const cd_plano = String(formData.get("cd_plano") ?? "").trim() || null;
 
   if (!nr_id_telegram || Number.isNaN(nr_id_telegram)) {
-    throw new Error("Informe um ID do Telegram válido.");
+    throw new Error("Informe um ID do Telegram válido ou o e-mail de um usuário do site.");
   }
   if (!tp_compra) {
     throw new Error("Selecione o tipo de acesso.");

@@ -48,7 +48,7 @@ export default function Carrossel({
       <div className="group/carrossel relative overflow-hidden">
         <StaggerGroup
           ref={trilhoRef}
-          className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-4 pb-2 [scrollbar-width:none] sm:px-8 [&::-webkit-scrollbar]:hidden"
+          className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-4 pb-2 [scrollbar-width:none] sm:px-8 lg:gap-4 [&::-webkit-scrollbar]:hidden"
           staggerChildren={0.04}
         >
           {itens.map((item) => (

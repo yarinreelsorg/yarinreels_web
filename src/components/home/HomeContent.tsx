@@ -1,30 +1,27 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
-import type { Conteudo, Universo } from "@/types/database";
+import { useState, useTransition } from "react";
+import type { Conteudo } from "@/types/database";
 import Navbar from "@/components/layout/Navbar";
 import UpsellSection from "@/components/layout/UpsellSection";
 import HeroBanner from "@/components/catalog/HeroBanner";
 import ChipsCategorias from "@/components/catalog/ChipsCategorias";
-import UniversosBar from "@/components/catalog/UniversosBar";
+import AppsBar from "@/components/catalog/AppsBar";
 import Carrossel from "@/components/catalog/Carrossel";
 import CardFilme from "@/components/catalog/CardFilme";
 import Top12 from "@/components/catalog/Top12";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Stagger";
-import {
-  UNIVERSOS_CONFIG,
-  categoriaParaSlug,
-  COR_UNIVERSO_PADRAO,
-} from "@/lib/universos-config";
 
 export default function HomeContent({
   conteudos,
   categorias,
+  apps,
   destaques,
   top12,
 }: {
   conteudos: Conteudo[];
   categorias: string[];
+  apps: string[];
   destaques: Conteudo[];
   top12: Conteudo[];
 }) {
@@ -49,26 +46,11 @@ export default function HomeContent({
     porCategoria.set(conteudo.nm_categoria, lista);
   }
 
-  const universos: Universo[] = useMemo(() => {
-    return categorias.map((nm_categoria) => {
-      const slug = categoriaParaSlug(nm_categoria);
-      const config = UNIVERSOS_CONFIG[slug];
-      const itensCategoria = porCategoria.get(nm_categoria) ?? [];
-      return {
-        nm_categoria,
-        slug,
-        label: config?.label ?? nm_categoria,
-        cor: config?.cor ?? COR_UNIVERSO_PADRAO,
-        ds_url_imagem: config?.imagemUrl ?? itensCategoria[0]?.ds_url_poster ?? undefined,
-        nr_total_conteudos: itensCategoria.length,
-      };
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conteudos, categorias]);
-
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar busca={busca} onBuscaChange={aoMudarBusca} />
+
+      <AppsBar apps={apps} />
 
       {buscando ? (
         <section className="px-4 pb-16 pt-6 sm:px-8">
@@ -93,8 +75,6 @@ export default function HomeContent({
           <ChipsCategorias categorias={categorias} />
 
           {destaques.length > 0 && <HeroBanner destaques={destaques} />}
-
-          <UniversosBar universos={universos} />
 
           <UpsellSection destaques={destaques} />
 

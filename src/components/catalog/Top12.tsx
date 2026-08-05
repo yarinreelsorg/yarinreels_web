@@ -34,7 +34,7 @@ export default function Top12({ itens }: { itens: Conteudo[] }) {
             aria-label="Anterior"
             onClick={() => rolar("esquerda")}
             {...buttonTap}
-            className="flex h-7 w-7 items-center justify-center rounded-full border border-white/15 text-secondary transition-colors hover:text-foreground cursor-pointer"
+            className="flex h-5 w-5 items-center justify-center rounded-full border border-white/15 text-xs text-secondary transition-colors hover:text-foreground cursor-pointer sm:h-6 sm:w-6 sm:text-sm"
           >
             ‹
           </motion.button>
@@ -43,7 +43,7 @@ export default function Top12({ itens }: { itens: Conteudo[] }) {
             aria-label="Próximo"
             onClick={() => rolar("direita")}
             {...buttonTap}
-            className="flex h-7 w-7 items-center justify-center rounded-full border border-white/15 text-secondary transition-colors hover:text-foreground cursor-pointer"
+            className="flex h-5 w-5 items-center justify-center rounded-full border border-white/15 text-xs text-secondary transition-colors hover:text-foreground cursor-pointer sm:h-6 sm:w-6 sm:text-sm"
           >
             ›
           </motion.button>
@@ -52,7 +52,7 @@ export default function Top12({ itens }: { itens: Conteudo[] }) {
 
       <StaggerGroup
         ref={trilhoRef}
-        className="grid snap-x snap-mandatory grid-flow-col grid-rows-3 gap-x-3 gap-y-4 overflow-x-auto scroll-smooth px-4 pb-2 [grid-auto-columns:min(calc(50vw-15px),270px)] [scrollbar-width:none] sm:px-8 [&::-webkit-scrollbar]:hidden"
+        className="grid snap-x snap-mandatory grid-flow-col grid-rows-3 gap-x-3 gap-y-4 overflow-x-auto scroll-smooth px-4 pb-2 [grid-auto-columns:min(calc(50vw-15px),270px)] [scrollbar-width:none] sm:px-8 lg:grid-rows-2 lg:gap-x-5 lg:gap-y-6 lg:[grid-auto-columns:440px] [&::-webkit-scrollbar]:hidden"
         staggerChildren={0.04}
       >
         {itens.slice(0, 12).map((item, index) => (
