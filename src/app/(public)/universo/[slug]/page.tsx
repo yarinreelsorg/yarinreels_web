@@ -9,7 +9,14 @@ export default async function UniversoRoute({
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  const { slug } = await params;
+  const { slug: slugParam } = await params;
+  // Alguns caracteres (ex: "+" em "+18") chegam sem decodificar do roteador.
+  let slug = slugParam;
+  try {
+    slug = decodeURIComponent(slugParam);
+  } catch {
+    // slug já decodificado ou malformado — usa como veio
+  }
 
   const { rows: categoriaRows } = await pool.query<Pick<Conteudo, "nm_categoria">>(
     'SELECT nm_categoria FROM "CONTEUDOS"'

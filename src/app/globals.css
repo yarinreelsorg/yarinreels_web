@@ -3,9 +3,9 @@
 :root {
   --background: #050505;
   --surface: #161616;
-  --primary: #E50914;
-  --primary-dark: #B20710;
-  --accent: #FF3B3F;
+  --primary: #C2185B;
+  --primary-dark: #93123F;
+  --accent: #E6417E;
   --foreground: #F5F5F5;
   --secondary: #A3A3A3;
   --border: rgba(255,255,255,0.1);
@@ -49,10 +49,10 @@ body {
 
 @keyframes pulse-roxo {
   0% {
-    box-shadow: 0 0 0 0 rgba(229, 9, 20, 0.7);
+    box-shadow: 0 0 0 0 rgba(194, 24, 91, 0.7);
   }
   100% {
-    box-shadow: 0 0 0 14px rgba(229, 9, 20, 0);
+    box-shadow: 0 0 0 14px rgba(194, 24, 91, 0);
   }
 }
 
@@ -63,10 +63,10 @@ body {
 @keyframes pulse-soft {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(255, 59, 63, 0.45);
+    box-shadow: 0 0 0 0 rgba(230, 65, 126, 0.45);
   }
   50% {
-    box-shadow: 0 0 0 14px rgba(255, 59, 63, 0);
+    box-shadow: 0 0 0 14px rgba(230, 65, 126, 0);
   }
 }
 
