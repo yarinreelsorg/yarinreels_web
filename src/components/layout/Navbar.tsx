@@ -1,9 +1,9 @@
 "use client";
 
+import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
 import { obterUsuarioAtual, sairUsuario } from "./navbar-actions";
 
 interface UsuarioNavbar {
@@ -90,7 +90,7 @@ function NavbarInner({
     >
       <div className="mx-auto flex max-w-[1600px] flex-col gap-4 lg:flex-row lg:items-center lg:gap-8">
         <h1 className="order-1 shrink-0 text-center text-2xl font-black uppercase tracking-[0.2em] text-primary lg:order-none lg:text-left lg:text-xl">
-          Melreels
+          YarinReels
         </h1>
 
         <nav className="order-3 hidden shrink-0 items-center gap-6 lg:order-none lg:flex">
