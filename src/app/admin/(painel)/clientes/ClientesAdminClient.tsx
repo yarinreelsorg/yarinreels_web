@@ -36,6 +36,7 @@ export default function ClientesAdminClient({
   filtrosAtuais,
   conteudos,
   planos,
+  avatares,
 }: {
   clientes: ClienteResumo[];
   totalRegistros: number;
@@ -43,6 +44,7 @@ export default function ClientesAdminClient({
   filtrosAtuais: Filtros;
   conteudos: Conteudo[];
   planos: Plano[];
+  avatares: Record<number, string>;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -348,6 +350,11 @@ export default function ClientesAdminClient({
                       className="hover:bg-[rgba(139,92,246,0.05)] transition-colors"
                     >
                       <td className="px-6 py-4 font-mono text-xs font-semibold">
+                        {avatares[cliente.nr_id_telegram] && (
+                          <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#050208] text-sm align-middle">
+                            {avatares[cliente.nr_id_telegram]}
+                          </span>
+                        )}
                         {cliente.nr_id_telegram}
                       </td>
                       <td className="px-6 py-4 font-semibold">{cliente.total_compras}</td>

@@ -47,6 +47,29 @@ export default async function ClientesAdminPage({
   const clientes: ClienteResumo[] = clientesResult.rows;
   const totalRegistros = Number(clientesResult.rows[0]?.total_count ?? 0);
 
+  const idsTelegramPagina = clientes.map((c) => c.nr_id_telegram);
+  const avatares: Record<number, string> = {};
+  if (idsTelegramPagina.length > 0) {
+    const { rows: usuariosComAvatar } = await pool.query<{
+      nr_id_telegram: number | null;
+      nr_id_telegram_web: number | null;
+      ds_avatar: string;
+    }>(
+      `SELECT nr_id_telegram, nr_id_telegram_web, ds_avatar FROM "USUARIOS"
+       WHERE ds_avatar IS NOT NULL
+         AND (nr_id_telegram = ANY($1::bigint[]) OR nr_id_telegram_web = ANY($1::bigint[]))`,
+      [idsTelegramPagina]
+    );
+    for (const u of usuariosComAvatar) {
+      if (u.nr_id_telegram && idsTelegramPagina.includes(u.nr_id_telegram)) {
+        avatares[u.nr_id_telegram] = u.ds_avatar;
+      }
+      if (u.nr_id_telegram_web && idsTelegramPagina.includes(u.nr_id_telegram_web)) {
+        avatares[u.nr_id_telegram_web] = u.ds_avatar;
+      }
+    }
+  }
+
   return (
     <ClientesAdminClient
       clientes={clientes}
@@ -55,6 +78,7 @@ export default async function ClientesAdminPage({
       filtrosAtuais={{ busca, ordenarPor, direcao, pagina }}
       conteudos={conteudosResult.rows}
       planos={planosResult.rows}
+      avatares={avatares}
     />
   );
 }
