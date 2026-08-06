@@ -1,13 +1,17 @@
 import HomeContent from "@/components/home/HomeContent";
 import { pool } from "@/lib/db";
+import { obterCdPlanoPromoInicial } from "@/lib/pagamento";
+import { ordenarCategorias } from "@/lib/categorias-config";
 import type { Conteudo } from "@/types/database";
 
 export default async function HomePage() {
   const { rows: conteudos } = await pool.query<Conteudo>('SELECT * FROM "CONTEUDOS"');
+  const cdPlanoPromo = await obterCdPlanoPromoInicial();
 
-  const categorias = Array.from(
+  const categoriasSemOrdem = Array.from(
     new Set(conteudos.map((c) => c.nm_categoria).filter(Boolean))
-  ).sort();
+  );
+  const categorias = await ordenarCategorias(categoriasSemOrdem);
 
   const apps = Array.from(
     new Set(conteudos.map((c) => c.nm_app_origem).filter((a): a is string => Boolean(a)))
@@ -30,6 +34,7 @@ export default async function HomePage() {
       apps={apps}
       destaques={destaques}
       top12={top12}
+      cdPlanoPromo={cdPlanoPromo}
     />
   );
 }

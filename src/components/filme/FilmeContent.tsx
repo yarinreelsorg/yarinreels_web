@@ -65,7 +65,7 @@ export default function FilmeContent({
     <div className="flex min-h-screen flex-col">
       <Navbar categorias={categorias} />
 
-      <section className="relative flex h-[46vh] w-full items-end overflow-hidden sm:h-[56vh] lg:h-[64vh]">
+      <section className="relative flex min-h-[46vh] w-full items-end sm:min-h-[56vh] lg:min-h-[64vh]">
         <div className="absolute inset-0">
           {conteudo.ds_url_poster ? (
             // eslint-disable-next-line @next/next/no-img-element

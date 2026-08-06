@@ -12,17 +12,24 @@ const BENEFICIOS = [
   "Cancele quando quiser",
 ];
 
-export default function UpsellSection({ destaques = [] }: { destaques?: Conteudo[] }) {
+export default function UpsellSection({
+  destaques = [],
+  cdPlanoPromo,
+}: {
+  destaques?: Conteudo[];
+  cdPlanoPromo: string | null;
+}) {
   const poster1 = destaques[0]?.ds_url_poster;
   const poster2 = destaques[1]?.ds_url_poster;
   const poster3 = destaques[2]?.ds_url_poster;
+  const hrefPromo = cdPlanoPromo ? `/checkout/plano/${cdPlanoPromo}` : "/assinaturas";
 
   return (
     <>
       {/* Mobile: botão discreto, mesma lógica do bot */}
       <div className="px-4 py-4 sm:px-8 lg:hidden">
         <motion.a
-          href="/assinaturas"
+          href={hrefPromo}
           whileTap={{ scale: 0.97 }}
           className="flex items-center justify-center gap-2 rounded-full bg-primary/15 border border-primary/40 px-4 py-2.5 text-xs font-bold text-primary"
         >
@@ -63,8 +70,8 @@ export default function UpsellSection({ destaques = [] }: { destaques?: Conteudo
             ))}
           </ul>
 
-          <motion.button
-            type="button"
+          <motion.a
+            href={hrefPromo}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             transition={springExpressivo}
@@ -72,7 +79,7 @@ export default function UpsellSection({ destaques = [] }: { destaques?: Conteudo
             style={{ height: "48px" }}
           >
             Começar agora
-          </motion.button>
+          </motion.a>
         </Reveal>
 
         {/* Right Column with 3 stacked posters in perspective */}

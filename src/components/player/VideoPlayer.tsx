@@ -321,7 +321,10 @@ export default function VideoPlayer({
             <div className="pointer-events-none absolute inset-x-0 bottom-24 px-4 sm:bottom-28 sm:px-10">
               <p className="text-xs font-medium text-white/60">Você está assistindo</p>
               {titulo && (
-                <h2 className="mt-1 text-xl font-black text-white sm:text-2xl">{titulo}</h2>
+                <h2 className="mt-1 flex items-center gap-2 text-xl font-black text-white sm:text-2xl">
+                  <span className="text-primary tracking-wide">YR</span>
+                  {titulo}
+                </h2>
               )}
               {subtitulo && (
                 <p className="mt-0.5 text-sm font-semibold text-white/80">{subtitulo}</p>
@@ -411,7 +414,8 @@ export default function VideoPlayer({
               </span>
 
               {(titulo || subtitulo) && (
-                <span className="ml-1 min-w-0 flex-1 truncate text-xs font-semibold text-white/70 sm:text-sm">
+                <span className="ml-1 flex min-w-0 flex-1 items-center gap-1.5 truncate text-xs font-semibold text-white/70 sm:text-sm">
+                  <span className="shrink-0 font-black text-primary">YR</span>
                   {titulo}
                   {subtitulo ? ` · ${subtitulo}` : ""}
                 </span>

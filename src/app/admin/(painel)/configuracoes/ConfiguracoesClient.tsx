@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import type { Administrador, TpPapelAdmin } from "@/types/database";
 import {
   alternarAtivoAdministrador,
+  atualizarOrdemCategorias,
   atualizarPapelAdministrador,
   atualizarTaxaCartao,
   criarAdministrador,
@@ -18,11 +19,13 @@ export default function ConfiguracoesClient({
   cdAdministradorAtual,
   papelAtual,
   taxaCartaoInicial,
+  categoriasOrdenadas,
 }: {
   administradores: Administrador[];
   cdAdministradorAtual: string | null;
   papelAtual: TpPapelAdmin;
   taxaCartaoInicial: number;
+  categoriasOrdenadas: string[];
 }) {
   const ehSuperAdmin = papelAtual === "SUPER_ADMIN";
   const toast = useToast();
@@ -37,6 +40,33 @@ export default function ConfiguracoesClient({
   const [salvandoTaxa, setSalvandoTaxa] = useState(false);
   const [erroTaxa, setErroTaxa] = useState<string | null>(null);
   const [taxaSalva, setTaxaSalva] = useState(false);
+
+  const [categorias, setCategorias] = useState(categoriasOrdenadas);
+  const [salvandoOrdem, setSalvandoOrdem] = useState(false);
+  const [ordemSalva, setOrdemSalva] = useState(false);
+
+  const moverCategoria = (indice: number, direcao: -1 | 1) => {
+    const alvo = indice + direcao;
+    if (alvo < 0 || alvo >= categorias.length) return;
+    const proxima = [...categorias];
+    [proxima[indice], proxima[alvo]] = [proxima[alvo], proxima[indice]];
+    setCategorias(proxima);
+  };
+
+  const aoSalvarOrdem = async () => {
+    setSalvandoOrdem(true);
+    setOrdemSalva(false);
+    try {
+      await atualizarOrdemCategorias(categorias);
+      toast.sucesso("Ordem das categorias salva.");
+      setOrdemSalva(true);
+      setTimeout(() => setOrdemSalva(false), 2000);
+    } catch (err) {
+      toast.erro(err instanceof Error ? err.message : "Erro ao salvar a ordem.");
+    } finally {
+      setSalvandoOrdem(false);
+    }
+  };
 
   const aoSalvarTaxa = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -157,6 +187,62 @@ export default function ConfiguracoesClient({
           )}
           {erroTaxa && <p className="w-full text-sm text-red-400">{erroTaxa}</p>}
         </form>
+      </div>
+
+      <div className="rounded-lg border border-[rgba(139,92,246,0.15)] bg-[#0D0A1A] p-6 shadow-lg">
+        <h2 className="text-lg font-bold text-white">Ordem das Categorias</h2>
+        <p className="mt-1 text-sm text-[#A78BFA]">
+          Define a ordem dos carrosséis e chips de categoria na home e no catálogo. Sem
+          configuração, usa a ordem padrão (Americanas e Brasileiras primeiro, +18 mais abaixo).
+        </p>
+
+        {categorias.length === 0 ? (
+          <p className="mt-4 text-sm text-[#A78BFA]">Nenhuma categoria cadastrada ainda.</p>
+        ) : (
+          <div className="mt-4 flex flex-col gap-1.5">
+            {categorias.map((categoria, indice) => (
+              <div
+                key={categoria}
+                className="flex items-center justify-between gap-3 rounded-md border border-[rgba(139,92,246,0.15)] bg-[#050208] px-4 py-2.5"
+              >
+                <span className="text-sm text-white">
+                  <span className="mr-2 text-[#A78BFA]">{indice + 1}.</span>
+                  {categoria}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => moverCategoria(indice, -1)}
+                    disabled={indice === 0}
+                    aria-label="Mover pra cima"
+                    className="flex h-7 w-7 items-center justify-center rounded-md text-[#A78BFA] hover:text-white hover:bg-white/5 disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => moverCategoria(indice, 1)}
+                    disabled={indice === categorias.length - 1}
+                    aria-label="Mover pra baixo"
+                    className="flex h-7 w-7 items-center justify-center rounded-md text-[#A78BFA] hover:text-white hover:bg-white/5 disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer"
+                  >
+                    ↓
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <motion.button
+          type="button"
+          onClick={aoSalvarOrdem}
+          disabled={salvandoOrdem || categorias.length === 0}
+          {...buttonTap}
+          className="mt-4 rounded-md bg-[#7B2FBE] hover:bg-[#6D28D9] disabled:opacity-50 px-5 py-2.5 text-sm font-bold text-white transition-colors cursor-pointer"
+        >
+          {salvandoOrdem ? "Salvando..." : ordemSalva ? "Salvo!" : "Salvar ordem"}
+        </motion.button>
       </div>
 
       <div className="rounded-lg border border-[rgba(139,92,246,0.15)] bg-[#0D0A1A] overflow-hidden shadow-lg">

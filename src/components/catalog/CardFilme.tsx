@@ -100,7 +100,10 @@ export default function CardFilme({
         )}
       </Link>
 
-      <Link href={destino} className="mt-2 block line-clamp-1 text-xs font-bold text-foreground lg:text-base">
+      <Link
+        href={destino}
+        className="mt-2 block line-clamp-2 min-h-[34px] text-xs font-bold leading-tight text-foreground lg:min-h-[45px] lg:text-base"
+      >
         {conteudo.nm_titulo}
       </Link>
 

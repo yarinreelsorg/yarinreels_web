@@ -1,5 +1,6 @@
 import CatalogoContent from "@/components/catalogo/CatalogoContent";
 import { pool } from "@/lib/db";
+import { ordenarCategorias } from "@/lib/categorias-config";
 import type { Conteudo, TpFormato } from "@/types/database";
 
 const FORMATOS_VALIDOS: TpFormato[] = ["FILME", "SERIE", "DOCUMENTARIO", "AULA"];
@@ -13,9 +14,10 @@ export default async function CatalogoPage({
 
   const { rows: conteudos } = await pool.query<Conteudo>('SELECT * FROM "CONTEUDOS"');
 
-  const categorias = Array.from(
+  const categoriasSemOrdem = Array.from(
     new Set(conteudos.map((c) => c.nm_categoria).filter(Boolean))
-  ).sort();
+  );
+  const categorias = await ordenarCategorias(categoriasSemOrdem);
 
   const apps = Array.from(
     new Set(conteudos.map((c) => c.nm_app_origem).filter((a): a is string => Boolean(a)))

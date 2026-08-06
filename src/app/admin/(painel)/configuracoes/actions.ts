@@ -126,6 +126,33 @@ export async function atualizarTaxaCartao(formData: FormData) {
   revalidatePath("/checkout");
 }
 
+export async function atualizarOrdemCategorias(ordem: string[]) {
+  await exigirSuperAdmin();
+
+  const { rows: existente } = await pool.query<{ cd_configuracao: string }>(
+    'SELECT cd_configuracao FROM "CONFIGURACAO_CATEGORIAS" LIMIT 1'
+  );
+
+  if (existente[0]) {
+    await pool.query('UPDATE "CONFIGURACAO_CATEGORIAS" SET ds_ordem = $1 WHERE cd_configuracao = $2', [
+      ordem,
+      existente[0].cd_configuracao,
+    ]);
+  } else {
+    await pool.query('INSERT INTO "CONFIGURACAO_CATEGORIAS" (ds_ordem) VALUES ($1)', [ordem]);
+  }
+
+  await registrarLog({
+    tp_acao: "ALTERACAO_CONFIGURACAO",
+    nm_entidade: "CONFIGURACAO_CATEGORIAS",
+    ds_detalhes: { ordem },
+  });
+
+  revalidatePath("/admin/configuracoes");
+  revalidatePath("/");
+  revalidatePath("/catalogo");
+}
+
 export async function atualizarPapelAdministrador(
   cd_administrador: string,
   tp_papel: TpPapelAdmin
