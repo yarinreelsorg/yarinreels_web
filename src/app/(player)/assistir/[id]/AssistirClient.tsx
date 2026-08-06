@@ -6,6 +6,7 @@ import type { Conteudo, Episodio } from "@/types/database";
 import VideoPlayer from "@/components/player/VideoPlayer";
 import { formatarPreco, resolverUrlVideo } from "@/lib/catalogo";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Stagger";
+import { registrarProgressoAssistindo } from "@/lib/historico-actions";
 
 const ROTULO_FORMATO: Record<string, string> = {
   FILME: "Filme",
@@ -56,6 +57,9 @@ export default function AssistirClient({
             subtitulo={subtitulo}
             descricao={conteudo.ds_descricao}
             hrefVoltar={`/filme/${conteudo.cd_conteudo}`}
+            aoProgredir={(segundoAtual, duracaoTotal) =>
+              registrarProgressoAssistindo(conteudo.cd_conteudo, segundoAtual, duracaoTotal)
+            }
           />
         </div>
       ) : (

@@ -40,6 +40,7 @@ export default function VideoPlayer({
   subtitulo,
   descricao,
   hrefVoltar,
+  aoProgredir,
 }: {
   src: string;
   poster?: string | null;
@@ -50,11 +51,17 @@ export default function VideoPlayer({
   subtitulo?: string;
   descricao?: string | null;
   hrefVoltar?: string;
+  /** Chamado periodicamente durante a reprodução, pra sincronizar o progresso no servidor. */
+  aoProgredir?: (segundoAtual: number, duracaoTotal: number) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const esconderTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const aoProgredirRef = useRef(aoProgredir);
+  useEffect(() => {
+    aoProgredirRef.current = aoProgredir;
+  }, [aoProgredir]);
 
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -150,11 +157,14 @@ export default function VideoPlayer({
     const intervalo = window.setInterval(() => {
       if (!video.paused && !video.ended) {
         salvarProgresso(idProgresso, video.currentTime);
+        aoProgredirRef.current?.(video.currentTime, video.duration || 0);
       }
     }, SALVAR_PROGRESSO_INTERVALO_MS);
 
     function aoTerminar() {
       salvarProgresso(idProgresso, 0);
+      const duracaoFinal = video?.duration || 0;
+      aoProgredirRef.current?.(duracaoFinal, duracaoFinal);
     }
 
     video.addEventListener("ended", aoTerminar);
@@ -168,7 +178,10 @@ export default function VideoPlayer({
       video.removeEventListener("play", aoTocar);
       video.removeEventListener("pause", aoPausarEvento);
       video.removeEventListener("ended", aoTerminar);
-      if (video.currentTime > 0) salvarProgresso(idProgresso, video.currentTime);
+      if (video.currentTime > 0) {
+        salvarProgresso(idProgresso, video.currentTime);
+        aoProgredirRef.current?.(video.currentTime, video.duration || 0);
+      }
       hls?.destroy();
     };
   }, [src, idProgresso]);

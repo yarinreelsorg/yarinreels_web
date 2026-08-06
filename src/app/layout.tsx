@@ -16,6 +16,14 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Yarinreels",
   description: "Streaming de filmes, séries, doramas e documentários",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
+};
+
+export const viewport = {
+  themeColor: "#050505",
 };
 
 export default function RootLayout({

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import type { Conteudo } from "@/types/database";
+import type { ItemContinuarAssistindo } from "@/lib/historico";
 import Navbar from "@/components/layout/Navbar";
 import UpsellSection from "@/components/layout/UpsellSection";
 import HeroBanner from "@/components/catalog/HeroBanner";
@@ -10,6 +11,7 @@ import AppsBar from "@/components/catalog/AppsBar";
 import Carrossel from "@/components/catalog/Carrossel";
 import CardFilme from "@/components/catalog/CardFilme";
 import Top12 from "@/components/catalog/Top12";
+import ContinuarAssistindo from "@/components/catalog/ContinuarAssistindo";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Stagger";
 
 export default function HomeContent({
@@ -19,6 +21,7 @@ export default function HomeContent({
   destaques,
   top12,
   cdPlanoPromo,
+  continuarAssistindo,
 }: {
   conteudos: Conteudo[];
   categorias: string[];
@@ -26,6 +29,7 @@ export default function HomeContent({
   destaques: Conteudo[];
   top12: Conteudo[];
   cdPlanoPromo: string | null;
+  continuarAssistindo: ItemContinuarAssistindo[];
 }) {
   const [busca, setBusca] = useState("");
   const [, startTransition] = useTransition();
@@ -82,6 +86,8 @@ export default function HomeContent({
           <UpsellSection destaques={destaques} cdPlanoPromo={cdPlanoPromo} />
 
           {top12.length > 0 && <Top12 itens={top12} />}
+
+          <ContinuarAssistindo itens={continuarAssistindo} />
 
           <div className="flex flex-col">
             {categorias.map((categoria) => (

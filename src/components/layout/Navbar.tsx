@@ -9,6 +9,7 @@ import { obterUsuarioAtual, sairUsuario } from "./navbar-actions";
 interface UsuarioNavbar {
   nm_nome: string | null;
   nm_email: string;
+  ds_avatar: string | null;
 }
 
 const LINKS = [
@@ -121,9 +122,11 @@ function NavbarInner({
               <button
                 type="button"
                 onClick={() => setMenuAberto((v) => !v)}
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-white"
+                className={`flex h-8 w-8 items-center justify-center rounded-full text-white ${
+                  user.ds_avatar ? "bg-surface text-base" : "bg-primary text-xs font-bold"
+                }`}
               >
-                {inicial}
+                {user.ds_avatar ?? inicial}
               </button>
               <AnimatePresence>
                 {menuAberto && (

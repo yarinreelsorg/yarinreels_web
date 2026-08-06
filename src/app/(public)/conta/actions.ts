@@ -74,6 +74,17 @@ export async function verificarVinculacao() {
   return { status: "confirmado" as const, nr_id_telegram: vinculacao.nr_id_telegram };
 }
 
+export async function atualizarAvatar(avatar: string) {
+  const sessao = await usuarioAutenticado();
+
+  await pool.query('UPDATE "USUARIOS" SET ds_avatar = $1, ts_atualizacao = now() WHERE cd_usuario = $2', [
+    avatar,
+    sessao.cd_usuario,
+  ]);
+
+  revalidatePath("/conta");
+}
+
 export async function desvincularTelegram() {
   const sessao = await usuarioAutenticado();
 

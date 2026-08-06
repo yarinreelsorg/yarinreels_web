@@ -44,13 +44,22 @@ export default function ConfiguracoesClient({
   const [categorias, setCategorias] = useState(categoriasOrdenadas);
   const [salvandoOrdem, setSalvandoOrdem] = useState(false);
   const [ordemSalva, setOrdemSalva] = useState(false);
+  const [indiceArrastado, setIndiceArrastado] = useState<number | null>(null);
+  const [indiceSobre, setIndiceSobre] = useState<number | null>(null);
 
-  const moverCategoria = (indice: number, direcao: -1 | 1) => {
-    const alvo = indice + direcao;
-    if (alvo < 0 || alvo >= categorias.length) return;
+  const moverCategoria = (indiceOrigem: number, indiceDestino: number) => {
+    if (indiceDestino < 0 || indiceDestino >= categorias.length) return;
+    if (indiceOrigem === indiceDestino) return;
     const proxima = [...categorias];
-    [proxima[indice], proxima[alvo]] = [proxima[alvo], proxima[indice]];
+    const [removida] = proxima.splice(indiceOrigem, 1);
+    proxima.splice(indiceDestino, 0, removida);
     setCategorias(proxima);
+  };
+
+  const aoSoltarArraste = (indiceDestino: number) => {
+    if (indiceArrastado !== null) moverCategoria(indiceArrastado, indiceDestino);
+    setIndiceArrastado(null);
+    setIndiceSobre(null);
   };
 
   const aoSalvarOrdem = async () => {
@@ -192,8 +201,9 @@ export default function ConfiguracoesClient({
       <div className="rounded-lg border border-[rgba(139,92,246,0.15)] bg-[#0D0A1A] p-6 shadow-lg">
         <h2 className="text-lg font-bold text-white">Ordem das Categorias</h2>
         <p className="mt-1 text-sm text-[#A78BFA]">
-          Define a ordem dos carrosséis e chips de categoria na home e no catálogo. Sem
-          configuração, usa a ordem padrão (Americanas e Brasileiras primeiro, +18 mais abaixo).
+          Arraste pra reordenar (ou use as setas). Define a ordem dos carrosséis e chips de
+          categoria na home e no catálogo. Sem configuração, usa a ordem padrão (Americanas e
+          Brasileiras primeiro, +18 mais abaixo).
         </p>
 
         {categorias.length === 0 ? (
@@ -203,16 +213,35 @@ export default function ConfiguracoesClient({
             {categorias.map((categoria, indice) => (
               <div
                 key={categoria}
-                className="flex items-center justify-between gap-3 rounded-md border border-[rgba(139,92,246,0.15)] bg-[#050208] px-4 py-2.5"
+                draggable
+                onDragStart={() => setIndiceArrastado(indice)}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (indiceSobre !== indice) setIndiceSobre(indice);
+                }}
+                onDragEnd={() => {
+                  setIndiceArrastado(null);
+                  setIndiceSobre(null);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  aoSoltarArraste(indice);
+                }}
+                className={`flex cursor-grab items-center justify-between gap-3 rounded-md border bg-[#050208] px-4 py-2.5 transition-colors active:cursor-grabbing ${
+                  indiceSobre === indice
+                    ? "border-[#9D4EDD]"
+                    : "border-[rgba(139,92,246,0.15)]"
+                } ${indiceArrastado === indice ? "opacity-40" : ""}`}
               >
-                <span className="text-sm text-white">
-                  <span className="mr-2 text-[#A78BFA]">{indice + 1}.</span>
+                <span className="flex items-center gap-2 text-sm text-white">
+                  <span className="text-[#A78BFA]/60 select-none">⠿</span>
+                  <span className="text-[#A78BFA]">{indice + 1}.</span>
                   {categoria}
                 </span>
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
-                    onClick={() => moverCategoria(indice, -1)}
+                    onClick={() => moverCategoria(indice, indice - 1)}
                     disabled={indice === 0}
                     aria-label="Mover pra cima"
                     className="flex h-7 w-7 items-center justify-center rounded-md text-[#A78BFA] hover:text-white hover:bg-white/5 disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer"
@@ -221,7 +250,7 @@ export default function ConfiguracoesClient({
                   </button>
                   <button
                     type="button"
-                    onClick={() => moverCategoria(indice, 1)}
+                    onClick={() => moverCategoria(indice, indice + 1)}
                     disabled={indice === categorias.length - 1}
                     aria-label="Mover pra baixo"
                     className="flex h-7 w-7 items-center justify-center rounded-md text-[#A78BFA] hover:text-white hover:bg-white/5 disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer"

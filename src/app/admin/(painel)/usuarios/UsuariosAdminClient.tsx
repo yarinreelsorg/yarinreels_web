@@ -68,7 +68,12 @@ export default function UsuariosAdminClient({
                   key={usuario.cd_usuario}
                   className="border-b border-[rgba(139,92,246,0.08)] last:border-0"
                 >
-                  <td className="p-3 text-white">{usuario.nm_email}</td>
+                  <td className="p-3 text-white">
+                    <span className="mr-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#050208] text-base align-middle">
+                      {usuario.ds_avatar ?? "🙂"}
+                    </span>
+                    {usuario.nm_email}
+                  </td>
                   <td className="p-3 text-[#A78BFA]">{usuario.nm_nome || "—"}</td>
                   <td className="p-3 text-[#A78BFA]">
                     {usuario.nr_id_telegram ? (

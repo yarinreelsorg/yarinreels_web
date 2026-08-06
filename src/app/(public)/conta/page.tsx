@@ -1,12 +1,20 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessaoUsuario } from "@/lib/user-auth";
+import { pool } from "@/lib/db";
 import Navbar from "@/components/layout/Navbar";
 import VincularTelegram from "@/components/conta/VincularTelegram";
+import SeletorAvatar from "@/components/conta/SeletorAvatar";
 
 export default async function ContaPage() {
   const sessao = await getSessaoUsuario();
   if (!sessao) redirect("/login");
+
+  const { rows } = await pool.query<{ ds_avatar: string | null }>(
+    'SELECT ds_avatar FROM "USUARIOS" WHERE cd_usuario = $1 LIMIT 1',
+    [sessao.cd_usuario]
+  );
+  const avatarAtual = rows[0]?.ds_avatar ?? null;
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -15,9 +23,12 @@ export default async function ContaPage() {
       <section className="mx-auto w-full max-w-2xl px-4 pb-16 pt-6 sm:px-8">
         <h1 className="text-2xl font-black text-foreground sm:text-3xl">Minha Conta</h1>
 
-        <div className="mt-6 rounded-lg border border-border bg-surface p-6">
-          {sessao.nm_nome && <p className="text-lg font-bold text-foreground">{sessao.nm_nome}</p>}
-          <p className="text-sm text-secondary">{sessao.nm_email}</p>
+        <div className="mt-6 flex items-center gap-4 rounded-lg border border-border bg-surface p-6">
+          <SeletorAvatar avatarAtual={avatarAtual} />
+          <div>
+            {sessao.nm_nome && <p className="text-lg font-bold text-foreground">{sessao.nm_nome}</p>}
+            <p className="text-sm text-secondary">{sessao.nm_email}</p>
+          </div>
         </div>
 
         <h2 className="mt-8 text-sm font-bold uppercase tracking-wide text-secondary">

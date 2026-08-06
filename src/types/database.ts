@@ -13,6 +13,7 @@ export type Usuario = {
   nm_nome: string | null;
   nr_id_telegram: number | null;
   nr_id_telegram_web: number | null;
+  ds_avatar: string | null;
   ts_criacao: string;
   ts_atualizacao: string;
 };
