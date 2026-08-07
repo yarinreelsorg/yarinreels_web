@@ -24,7 +24,7 @@ export default function HeroBanner({ destaques }: { destaques: Conteudo[] }) {
         left: proximo > fim + 10 ? 0 : proximo,
         behavior: "smooth",
       });
-    }, 4500);
+    }, 3000);
 
     return () => clearInterval(id);
   }, [destaques.length]);
@@ -69,12 +69,12 @@ export default function HeroBanner({ destaques }: { destaques: Conteudo[] }) {
           )}
 
           <div
-            className="absolute inset-x-0 bottom-0 flex h-[60%] items-end justify-center pb-6"
+            className="pointer-events-none absolute inset-x-0 bottom-0 flex h-[45%] items-end justify-center pb-4"
             style={{
-              backgroundImage: "linear-gradient(to top, rgba(0,0,0,1), transparent)",
+              backgroundImage: "linear-gradient(to top, rgba(0,0,0,0.85), transparent)",
             }}
           >
-            <span className="w-[85%] max-w-[250px] rounded-md bg-primary py-3.5 text-center font-black text-white shadow-lg">
+            <span className="rounded-full bg-primary px-5 py-2 text-xs font-bold text-white shadow-lg sm:text-sm">
               🛒 Comprar
             </span>
           </div>

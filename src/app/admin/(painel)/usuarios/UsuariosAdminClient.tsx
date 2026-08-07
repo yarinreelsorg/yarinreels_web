@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Usuario } from "@/types/database";
+import Avatar from "@/components/ui/Avatar";
 
 export default function UsuariosAdminClient({
   usuarios,
@@ -69,8 +70,8 @@ export default function UsuariosAdminClient({
                   className="border-b border-[rgba(139,92,246,0.08)] last:border-0"
                 >
                   <td className="p-3 text-white">
-                    <span className="mr-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#050208] text-base align-middle">
-                      {usuario.ds_avatar ?? "🙂"}
+                    <span className="mr-2 inline-flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-[#050208] text-base align-middle">
+                      <Avatar valor={usuario.ds_avatar} className="h-full w-full" />
                     </span>
                     {usuario.nm_email}
                   </td>

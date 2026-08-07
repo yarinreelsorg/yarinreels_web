@@ -1,7 +1,7 @@
 import { pool } from "@/lib/db";
 import { getSessaoAdmin } from "@/lib/admin-auth";
 import { obterTaxaCartao } from "@/lib/pagamento";
-import { ordenarCategorias } from "@/lib/categorias-config";
+import { ordenarCategoriasParaAdmin } from "@/lib/categorias-config";
 import type { Administrador, Conteudo } from "@/types/database";
 import ConfiguracoesClient from "./ConfiguracoesClient";
 
@@ -16,7 +16,7 @@ export default async function ConfiguracoesPage() {
   ]);
 
   const categoriasSemOrdem = conteudos.map((c) => c.nm_categoria).filter(Boolean);
-  const categoriasOrdenadas = await ordenarCategorias(categoriasSemOrdem);
+  const categoriasOrdenadas = await ordenarCategoriasParaAdmin(categoriasSemOrdem);
 
   return (
     <ConfiguracoesClient

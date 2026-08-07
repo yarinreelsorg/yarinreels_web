@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { obterUsuarioAtual, sairUsuario } from "./navbar-actions";
+import Avatar from "@/components/ui/Avatar";
 
 interface UsuarioNavbar {
   nm_nome: string | null;
@@ -90,7 +91,9 @@ function NavbarInner({
       }}
     >
       <div className="mx-auto flex max-w-[1600px] flex-col gap-4 lg:flex-row lg:items-center lg:gap-8">
-        <h1 className="order-1 shrink-0 text-center text-2xl font-black uppercase tracking-[0.2em] text-primary lg:order-none lg:text-left lg:text-xl">
+        <h1 className="order-1 flex shrink-0 items-center justify-center gap-2 text-2xl font-black uppercase tracking-[0.2em] text-primary lg:order-none lg:justify-start lg:text-xl">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icon.svg" alt="" className="h-7 w-7 rounded-md lg:h-6 lg:w-6" />
           YarinReels
         </h1>
 
@@ -122,11 +125,15 @@ function NavbarInner({
               <button
                 type="button"
                 onClick={() => setMenuAberto((v) => !v)}
-                className={`flex h-8 w-8 items-center justify-center rounded-full text-white ${
+                className={`flex h-8 w-8 items-center justify-center overflow-hidden rounded-full text-white ${
                   user.ds_avatar ? "bg-surface text-base" : "bg-primary text-xs font-bold"
                 }`}
               >
-                {user.ds_avatar ?? inicial}
+                {user.ds_avatar ? (
+                  <Avatar valor={user.ds_avatar} className="h-full w-full" />
+                ) : (
+                  inicial
+                )}
               </button>
               <AnimatePresence>
                 {menuAberto && (

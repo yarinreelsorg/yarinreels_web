@@ -1,26 +1,30 @@
 import HomeContent from "@/components/home/HomeContent";
 import { pool } from "@/lib/db";
-import { obterCdPlanoPromoInicial } from "@/lib/pagamento";
+import { deveExibirPromoInicial, obterCdPlanoPromoInicial } from "@/lib/pagamento";
 import { ordenarCategorias } from "@/lib/categorias-config";
 import { getSessaoUsuario } from "@/lib/user-auth";
 import { obterContinuarAssistindo } from "@/lib/historico";
+import { obterAppsVisiveis } from "@/lib/apps-config";
 import type { Conteudo } from "@/types/database";
 
 export default async function HomePage() {
-  const { rows: conteudos } = await pool.query<Conteudo>('SELECT * FROM "CONTEUDOS"');
+  // sn_exclusivo_assinantes nunca aparece na home, nem pra quem assina —
+  // a ideia é não poluir a tela inicial, não é uma trava de acesso.
+  const { rows: conteudos } = await pool.query<Conteudo>(
+    'SELECT * FROM "CONTEUDOS" WHERE sn_exclusivo_assinantes = false'
+  );
   const cdPlanoPromo = await obterCdPlanoPromoInicial();
 
   const sessao = await getSessaoUsuario();
   const continuarAssistindo = sessao ? await obterContinuarAssistindo(sessao.cd_usuario) : [];
+  const exibirPromoInicial = sessao ? await deveExibirPromoInicial(sessao.cd_usuario) : true;
 
   const categoriasSemOrdem = Array.from(
     new Set(conteudos.map((c) => c.nm_categoria).filter(Boolean))
   );
   const categorias = await ordenarCategorias(categoriasSemOrdem);
 
-  const apps = Array.from(
-    new Set(conteudos.map((c) => c.nm_app_origem).filter((a): a is string => Boolean(a)))
-  ).sort();
+  const apps = await obterAppsVisiveis();
 
   const destacados = conteudos.filter((c) => c.sn_destaque);
   const destaques = (destacados.length > 0 ? destacados : conteudos)
@@ -41,6 +45,7 @@ export default async function HomePage() {
       top12={top12}
       cdPlanoPromo={cdPlanoPromo}
       continuarAssistindo={continuarAssistindo}
+      exibirPromoInicial={exibirPromoInicial}
     />
   );
 }

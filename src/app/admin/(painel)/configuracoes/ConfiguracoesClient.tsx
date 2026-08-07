@@ -9,6 +9,7 @@ import {
   atualizarPapelAdministrador,
   atualizarTaxaCartao,
   criarAdministrador,
+  renomearCategoriaAction,
 } from "./actions";
 import { buttonTap } from "@/lib/motion";
 import { useFocoModal } from "@/components/admin/useFocoModal";
@@ -25,7 +26,7 @@ export default function ConfiguracoesClient({
   cdAdministradorAtual: string | null;
   papelAtual: TpPapelAdmin;
   taxaCartaoInicial: number;
-  categoriasOrdenadas: string[];
+  categoriasOrdenadas: { nm_categoria: string; visivel: boolean }[];
 }) {
   const ehSuperAdmin = papelAtual === "SUPER_ADMIN";
   const toast = useToast();
@@ -46,6 +47,9 @@ export default function ConfiguracoesClient({
   const [ordemSalva, setOrdemSalva] = useState(false);
   const [indiceArrastado, setIndiceArrastado] = useState<number | null>(null);
   const [indiceSobre, setIndiceSobre] = useState<number | null>(null);
+  const [categoriaRenomeando, setCategoriaRenomeando] = useState<string | null>(null);
+  const [novoNome, setNovoNome] = useState("");
+  const [renomeando, setRenomeando] = useState(false);
 
   const moverCategoria = (indiceOrigem: number, indiceDestino: number) => {
     if (indiceDestino < 0 || indiceDestino >= categorias.length) return;
@@ -62,12 +66,47 @@ export default function ConfiguracoesClient({
     setIndiceSobre(null);
   };
 
+  const alternarVisivel = (indice: number) => {
+    setCategorias((atual) =>
+      atual.map((c, i) => (i === indice ? { ...c, visivel: !c.visivel } : c))
+    );
+  };
+
+  const iniciarRenomear = (nmCategoria: string) => {
+    setCategoriaRenomeando(nmCategoria);
+    setNovoNome(nmCategoria);
+  };
+
+  const confirmarRenomear = async () => {
+    if (!categoriaRenomeando) return;
+    const nomeLimpo = novoNome.trim();
+    if (!nomeLimpo || nomeLimpo === categoriaRenomeando) {
+      setCategoriaRenomeando(null);
+      return;
+    }
+    setRenomeando(true);
+    try {
+      await renomearCategoriaAction(categoriaRenomeando, nomeLimpo);
+      setCategorias((atual) =>
+        atual.map((c) => (c.nm_categoria === categoriaRenomeando ? { ...c, nm_categoria: nomeLimpo } : c))
+      );
+      toast.sucesso("Categoria renomeada.");
+      setCategoriaRenomeando(null);
+    } catch (err) {
+      toast.erro(err instanceof Error ? err.message : "Erro ao renomear.");
+    } finally {
+      setRenomeando(false);
+    }
+  };
+
   const aoSalvarOrdem = async () => {
     setSalvandoOrdem(true);
     setOrdemSalva(false);
     try {
-      await atualizarOrdemCategorias(categorias);
-      toast.sucesso("Ordem das categorias salva.");
+      const ordem = categorias.filter((c) => c.visivel).map((c) => c.nm_categoria);
+      const ocultas = categorias.filter((c) => !c.visivel).map((c) => c.nm_categoria);
+      await atualizarOrdemCategorias(ordem, ocultas);
+      toast.sucesso("Categorias salvas.");
       setOrdemSalva(true);
       setTimeout(() => setOrdemSalva(false), 2000);
     } catch (err) {
@@ -201,9 +240,9 @@ export default function ConfiguracoesClient({
       <div className="rounded-lg border border-[rgba(139,92,246,0.15)] bg-[#0D0A1A] p-6 shadow-lg">
         <h2 className="text-lg font-bold text-white">Ordem das Categorias</h2>
         <p className="mt-1 text-sm text-[#A78BFA]">
-          Arraste pra reordenar (ou use as setas). Define a ordem dos carrosséis e chips de
-          categoria na home e no catálogo. Sem configuração, usa a ordem padrão (Americanas e
-          Brasileiras primeiro, +18 mais abaixo).
+          Arraste pra reordenar (ou use as setas), clique no olho pra ocultar da home/catálogo, ou
+          no lápis pra renomear (renomeia em todo o catálogo e nos planos). Sem configuração, usa
+          a ordem padrão (Americanas, Brasileiras, +18, resto em ordem alfabética).
         </p>
 
         {categorias.length === 0 ? (
@@ -212,7 +251,7 @@ export default function ConfiguracoesClient({
           <div className="mt-4 flex flex-col gap-1.5">
             {categorias.map((categoria, indice) => (
               <div
-                key={categoria}
+                key={categoria.nm_categoria}
                 draggable
                 onDragStart={() => setIndiceArrastado(indice)}
                 onDragOver={(e) => {
@@ -231,14 +270,67 @@ export default function ConfiguracoesClient({
                   indiceSobre === indice
                     ? "border-[#9D4EDD]"
                     : "border-[rgba(139,92,246,0.15)]"
-                } ${indiceArrastado === indice ? "opacity-40" : ""}`}
+                } ${indiceArrastado === indice ? "opacity-40" : ""} ${
+                  !categoria.visivel ? "opacity-50" : ""
+                }`}
               >
-                <span className="flex items-center gap-2 text-sm text-white">
-                  <span className="text-[#A78BFA]/60 select-none">⠿</span>
-                  <span className="text-[#A78BFA]">{indice + 1}.</span>
-                  {categoria}
-                </span>
-                <div className="flex items-center gap-1">
+                {categoriaRenomeando === categoria.nm_categoria ? (
+                  <div className="flex flex-1 items-center gap-2">
+                    <input
+                      type="text"
+                      value={novoNome}
+                      onChange={(e) => setNovoNome(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && confirmarRenomear()}
+                      autoFocus
+                      className="flex-1 bg-[#0D0A1A] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] px-3 py-1.5 text-sm text-white"
+                    />
+                    <button
+                      type="button"
+                      disabled={renomeando}
+                      onClick={confirmarRenomear}
+                      className="text-xs font-bold text-emerald-400 hover:text-emerald-300 disabled:opacity-50"
+                    >
+                      Salvar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCategoriaRenomeando(null)}
+                      className="text-xs font-bold text-[#A78BFA] hover:text-white"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                ) : (
+                  <span className="flex items-center gap-2 text-sm text-white">
+                    <span className="text-[#A78BFA]/60 select-none">⠿</span>
+                    <span className="text-[#A78BFA]">{indice + 1}.</span>
+                    {categoria.nm_categoria}
+                    {!categoria.visivel && (
+                      <span className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] uppercase text-[#A78BFA]">
+                        Oculta
+                      </span>
+                    )}
+                  </span>
+                )}
+                <div className="flex shrink-0 items-center gap-1">
+                  {categoriaRenomeando !== categoria.nm_categoria && (
+                    <button
+                      type="button"
+                      onClick={() => iniciarRenomear(categoria.nm_categoria)}
+                      aria-label="Renomear"
+                      className="flex h-7 w-7 items-center justify-center rounded-md text-[#A78BFA] hover:text-white hover:bg-white/5 cursor-pointer"
+                    >
+                      ✎
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => alternarVisivel(indice)}
+                    aria-label={categoria.visivel ? "Ocultar categoria" : "Mostrar categoria"}
+                    className="flex h-7 w-7 items-center justify-center rounded-md text-[#A78BFA] hover:text-white hover:bg-white/5 cursor-pointer"
+                  >
+                    {categoria.visivel ? "👁" : "🚫"}
+                  </button>
                   <button
                     type="button"
                     onClick={() => moverCategoria(indice, indice - 1)}

@@ -38,6 +38,7 @@ export type Conteudo = {
   sn_destaque: boolean;
   nr_views: number;
   nm_app_origem: string | null;
+  sn_exclusivo_assinantes: boolean;
 };
 
 export type ConteudoInsert = {
@@ -60,6 +61,7 @@ export type ConteudoInsert = {
   sn_destaque?: boolean;
   nr_views?: number;
   nm_app_origem?: string | null;
+  sn_exclusivo_assinantes?: boolean;
 };
 
 export type ConteudoUpdate = {
@@ -81,6 +83,7 @@ export type ConteudoUpdate = {
   sn_destaque?: boolean;
   nr_views?: number;
   nm_app_origem?: string | null;
+  sn_exclusivo_assinantes?: boolean;
 };
 
 export type Episodio = {

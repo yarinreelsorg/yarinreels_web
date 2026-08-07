@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { pool } from "@/lib/db";
 import { getSessaoAdmin } from "@/lib/admin-auth";
 import { registrarLog } from "@/lib/auditoria";
+import { renomearCategoria, salvarConfigCategorias } from "@/lib/categorias-config";
 import type { TpPapelAdmin } from "@/types/database";
 
 async function exigirSuperAdmin() {
@@ -126,29 +127,38 @@ export async function atualizarTaxaCartao(formData: FormData) {
   revalidatePath("/checkout");
 }
 
-export async function atualizarOrdemCategorias(ordem: string[]) {
+export async function atualizarOrdemCategorias(ordem: string[], ocultas: string[] = []) {
   await exigirSuperAdmin();
 
-  const { rows: existente } = await pool.query<{ cd_configuracao: string }>(
-    'SELECT cd_configuracao FROM "CONFIGURACAO_CATEGORIAS" LIMIT 1'
-  );
-
-  if (existente[0]) {
-    await pool.query('UPDATE "CONFIGURACAO_CATEGORIAS" SET ds_ordem = $1 WHERE cd_configuracao = $2', [
-      ordem,
-      existente[0].cd_configuracao,
-    ]);
-  } else {
-    await pool.query('INSERT INTO "CONFIGURACAO_CATEGORIAS" (ds_ordem) VALUES ($1)', [ordem]);
-  }
+  await salvarConfigCategorias(ordem, ocultas);
 
   await registrarLog({
     tp_acao: "ALTERACAO_CONFIGURACAO",
     nm_entidade: "CONFIGURACAO_CATEGORIAS",
-    ds_detalhes: { ordem },
+    ds_detalhes: { ordem, ocultas },
   });
 
   revalidatePath("/admin/configuracoes");
+  revalidatePath("/");
+  revalidatePath("/catalogo");
+}
+
+export async function renomearCategoriaAction(nomeAntigo: string, nomeNovo: string) {
+  await exigirSuperAdmin();
+
+  const nomeLimpo = nomeNovo.trim();
+  if (!nomeLimpo) throw new Error("O novo nome não pode ficar em branco.");
+
+  await renomearCategoria(nomeAntigo, nomeLimpo);
+
+  await registrarLog({
+    tp_acao: "ALTERACAO_CONFIGURACAO",
+    nm_entidade: "CONTEUDOS",
+    ds_detalhes: { acao: "renomear_categoria", de: nomeAntigo, para: nomeLimpo },
+  });
+
+  revalidatePath("/admin/configuracoes");
+  revalidatePath("/admin/catalogo");
   revalidatePath("/");
   revalidatePath("/catalogo");
 }

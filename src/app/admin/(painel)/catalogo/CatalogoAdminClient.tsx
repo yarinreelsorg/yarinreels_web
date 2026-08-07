@@ -819,6 +819,19 @@ export default function CatalogoAdminClient({
                       Destacar na Home
                     </label>
                   </div>
+
+                  <div className="flex items-center pt-2">
+                    <input
+                      type="checkbox"
+                      id="sn_exclusivo_assinantes"
+                      name="sn_exclusivo_assinantes"
+                      defaultChecked={conteudoEdicao?.sn_exclusivo_assinantes}
+                      className="h-4 w-4 rounded border-[rgba(139,92,246,0.3)] bg-[#0D0A1A] text-[#7B2FBE] focus:ring-[#9D4EDD] cursor-pointer"
+                    />
+                    <label htmlFor="sn_exclusivo_assinantes" className="ml-2 text-xs font-semibold text-[#A78BFA] uppercase cursor-pointer">
+                      Exclusivo para assinantes (oculto da home/catálogo pra quem não assina)
+                    </label>
+                  </div>
                 </div>
 
                 {/* Form Buttons */}

@@ -82,6 +82,36 @@ export async function obterIdentidadeParaCompra(cdUsuario: string): Promise<numb
   return ids[ids.length - 1];
 }
 
+/**
+ * Confere se o usuário tem alguma assinatura APROVADA e ainda dentro da
+ * validade — usado pra liberar conteúdos marcados como exclusivos pra
+ * assinantes. Não usa obterIdsTelegramElegiveis de propósito (essa função
+ * cria uma identidade sintética na hora); aqui só lemos o que já existe.
+ */
+export async function usuarioTemAssinaturaAtiva(cdUsuario: string): Promise<boolean> {
+  const { rows } = await pool.query<{
+    nr_id_telegram: number | null;
+    nr_id_telegram_web: number | null;
+  }>('SELECT nr_id_telegram, nr_id_telegram_web FROM "USUARIOS" WHERE cd_usuario = $1 LIMIT 1', [
+    cdUsuario,
+  ]);
+  const usuario = rows[0];
+  if (!usuario) return false;
+
+  const ids = [usuario.nr_id_telegram, usuario.nr_id_telegram_web].filter(
+    (id): id is number => !!id
+  );
+  if (ids.length === 0) return false;
+
+  const { rows: assinaturaRows } = await pool.query<{ total: string }>(
+    `SELECT COUNT(*) AS total FROM "VENDAS"
+     WHERE nr_id_telegram = ANY($1::bigint[]) AND tp_compra = 'ASSINATURA'
+       AND tp_status = 'APROVADA' AND ts_expiracao > now()`,
+    [ids]
+  );
+  return Number(assinaturaRows[0]?.total ?? 0) > 0;
+}
+
 /** Validade por tipo de compra — mesma regra usada na concessão manual pelo admin. */
 export const DIAS_ALUGUEL = 7;
 export const DIAS_VITALICIO = 18250;

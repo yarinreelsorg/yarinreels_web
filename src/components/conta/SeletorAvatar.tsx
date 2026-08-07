@@ -5,11 +5,14 @@ import { AnimatePresence, motion } from "motion/react";
 import { atualizarAvatar } from "@/app/(public)/conta/actions";
 import { AVATARES_DISPONIVEIS, avatarAleatorio } from "@/lib/avatares";
 import { useFocoModal } from "@/components/admin/useFocoModal";
+import Avatar from "@/components/ui/Avatar";
 
 export default function SeletorAvatar({ avatarAtual }: { avatarAtual: string | null }) {
   const [avatar, setAvatar] = useState(avatarAtual);
   const [aberto, setAberto] = useState(false);
   const [salvando, setSalvando] = useState(false);
+  const [urlFoto, setUrlFoto] = useState("");
+  const [erroUrl, setErroUrl] = useState<string | null>(null);
   const modalRef = useFocoModal<HTMLDivElement>(aberto, () => setAberto(false));
 
   const escolher = async (novoAvatar: string) => {
@@ -23,15 +26,29 @@ export default function SeletorAvatar({ avatarAtual }: { avatarAtual: string | n
     }
   };
 
+  const usarFoto = async () => {
+    const url = urlFoto.trim();
+    if (!url) return;
+    try {
+      new URL(url);
+    } catch {
+      setErroUrl("Cole um link válido (começando com http:// ou https://).");
+      return;
+    }
+    setErroUrl(null);
+    await escolher(url);
+    setUrlFoto("");
+  };
+
   return (
     <>
       <button
         type="button"
         onClick={() => setAberto(true)}
         aria-label="Escolher avatar"
-        className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-surface text-3xl outline outline-2 outline-offset-2 outline-transparent transition-colors hover:outline-primary/50"
+        className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface text-3xl outline outline-2 outline-offset-2 outline-transparent transition-colors hover:outline-primary/50"
       >
-        {avatar ?? "🙂"}
+        <Avatar valor={avatar} className="h-full w-full" />
         <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] text-white">
           ✎
         </span>
@@ -90,6 +107,34 @@ export default function SeletorAvatar({ avatarAtual }: { avatarAtual: string | n
               >
                 🎲 Surpreenda-me
               </button>
+
+              <div className="mt-5 flex items-center gap-3">
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-[10px] font-semibold uppercase text-secondary">ou</span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+
+              <label className="mt-4 block text-xs font-semibold uppercase text-secondary">
+                Usar uma foto sua
+              </label>
+              <div className="mt-1.5 flex gap-2">
+                <input
+                  type="url"
+                  value={urlFoto}
+                  onChange={(e) => setUrlFoto(e.target.value)}
+                  placeholder="Link da foto (https://...)"
+                  className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary/50"
+                />
+                <button
+                  type="button"
+                  disabled={salvando || !urlFoto.trim()}
+                  onClick={usarFoto}
+                  className="shrink-0 rounded-md bg-primary px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
+                >
+                  Usar
+                </button>
+              </div>
+              {erroUrl && <p className="mt-1.5 text-xs text-red-400">{erroUrl}</p>}
             </motion.div>
           </motion.div>
         )}

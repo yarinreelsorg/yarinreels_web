@@ -1,6 +1,9 @@
 import CatalogoContent from "@/components/catalogo/CatalogoContent";
 import { pool } from "@/lib/db";
 import { ordenarCategorias } from "@/lib/categorias-config";
+import { obterAppsVisiveis } from "@/lib/apps-config";
+import { getSessaoUsuario } from "@/lib/user-auth";
+import { usuarioTemAssinaturaAtiva } from "@/lib/acesso";
 import type { Conteudo, TpFormato } from "@/types/database";
 
 const FORMATOS_VALIDOS: TpFormato[] = ["FILME", "SERIE", "DOCUMENTARIO", "AULA"];
@@ -12,16 +15,22 @@ export default async function CatalogoPage({
 }) {
   const params = await searchParams;
 
-  const { rows: conteudos } = await pool.query<Conteudo>('SELECT * FROM "CONTEUDOS"');
+  const sessao = await getSessaoUsuario();
+  const ehAssinante = sessao ? await usuarioTemAssinaturaAtiva(sessao.cd_usuario) : false;
+
+  // Conteúdo exclusivo pra assinantes só aparece no catálogo/busca pra
+  // quem já assina — pra quem não assina, é como se não existisse.
+  const { rows: todosConteudos } = await pool.query<Conteudo>('SELECT * FROM "CONTEUDOS"');
+  const conteudos = ehAssinante
+    ? todosConteudos
+    : todosConteudos.filter((c) => !c.sn_exclusivo_assinantes);
 
   const categoriasSemOrdem = Array.from(
     new Set(conteudos.map((c) => c.nm_categoria).filter(Boolean))
   );
   const categorias = await ordenarCategorias(categoriasSemOrdem);
 
-  const apps = Array.from(
-    new Set(conteudos.map((c) => c.nm_app_origem).filter((a): a is string => Boolean(a)))
-  ).sort();
+  const apps = (await obterAppsVisiveis()).map((a) => a.nm_app);
 
   const formatoParam =
     typeof params.formato === "string" ? params.formato.toUpperCase() : null;

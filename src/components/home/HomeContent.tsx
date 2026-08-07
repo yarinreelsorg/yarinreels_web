@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import type { Conteudo } from "@/types/database";
 import type { ItemContinuarAssistindo } from "@/lib/historico";
+import type { AppNavegacao } from "@/lib/apps-config";
 import Navbar from "@/components/layout/Navbar";
 import UpsellSection from "@/components/layout/UpsellSection";
 import HeroBanner from "@/components/catalog/HeroBanner";
@@ -22,14 +23,16 @@ export default function HomeContent({
   top12,
   cdPlanoPromo,
   continuarAssistindo,
+  exibirPromoInicial,
 }: {
   conteudos: Conteudo[];
   categorias: string[];
-  apps: string[];
+  apps: AppNavegacao[];
   destaques: Conteudo[];
   top12: Conteudo[];
   cdPlanoPromo: string | null;
   continuarAssistindo: ItemContinuarAssistindo[];
+  exibirPromoInicial: boolean;
 }) {
   const [busca, setBusca] = useState("");
   const [, startTransition] = useTransition();
@@ -83,7 +86,9 @@ export default function HomeContent({
 
           {destaques.length > 0 && <HeroBanner destaques={destaques} />}
 
-          <UpsellSection destaques={destaques} cdPlanoPromo={cdPlanoPromo} />
+          {exibirPromoInicial && (
+            <UpsellSection destaques={destaques} cdPlanoPromo={cdPlanoPromo} />
+          )}
 
           {top12.length > 0 && <Top12 itens={top12} />}
 

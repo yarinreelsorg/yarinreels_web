@@ -8,13 +8,12 @@ import CardFilme from "@/components/catalog/CardFilme";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Stagger";
 import { buttonTap } from "@/lib/motion";
 
-const FORMATOS: { label: string; value: TpFormato | null }[] = [
-  { label: "Todos", value: null },
-  { label: "Filmes", value: "FILME" },
-  { label: "Séries", value: "SERIE" },
-  { label: "Documentários", value: "DOCUMENTARIO" },
-  { label: "Aulas", value: "AULA" },
-];
+const ROTULOS_FORMATO: Record<TpFormato, string> = {
+  FILME: "Filmes",
+  SERIE: "Séries",
+  DOCUMENTARIO: "Documentários",
+  AULA: "Aulas",
+};
 
 type Ordenacao = "relevancia" | "recentes" | "az";
 
@@ -77,6 +76,8 @@ export default function CatalogoContent({
     });
   }
 
+  const formatosDisponiveis = Array.from(new Set(conteudos.map((c) => c.tp_formato))).sort();
+
   const termo = busca.trim().toLowerCase();
 
   const filtrados = conteudos.filter((c) => {
@@ -137,23 +138,37 @@ export default function CatalogoContent({
           </select>
         </div>
 
-        <div className="mb-4 flex flex-wrap gap-2">
-          {FORMATOS.map((formato) => (
+        {formatosDisponiveis.length > 1 && (
+          <div className="mb-4 flex flex-wrap gap-2">
             <motion.button
-              key={formato.label}
               type="button"
-              onClick={() => aoMudarFormato(formato.value)}
+              onClick={() => aoMudarFormato(null)}
               {...buttonTap}
               className={`rounded-md border px-4 py-1.5 text-sm font-medium transition-colors ${
-                formatoAtivo === formato.value
+                formatoAtivo === null
                   ? "border-accent bg-accent/15 text-foreground"
                   : "border-border text-secondary hover:border-accent/40 hover:text-foreground"
               }`}
             >
-              {formato.label}
+              Todos
             </motion.button>
-          ))}
-        </div>
+            {formatosDisponiveis.map((formato) => (
+              <motion.button
+                key={formato}
+                type="button"
+                onClick={() => aoMudarFormato(formato)}
+                {...buttonTap}
+                className={`rounded-md border px-4 py-1.5 text-sm font-medium transition-colors ${
+                  formatoAtivo === formato
+                    ? "border-accent bg-accent/15 text-foreground"
+                    : "border-border text-secondary hover:border-accent/40 hover:text-foreground"
+                }`}
+              >
+                {ROTULOS_FORMATO[formato] ?? formato}
+              </motion.button>
+            ))}
+          </div>
+        )}
 
         {categorias.length > 0 && (
           <div className="mb-8 flex flex-wrap gap-2">

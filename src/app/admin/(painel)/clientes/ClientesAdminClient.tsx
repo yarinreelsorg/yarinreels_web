@@ -11,6 +11,7 @@ import { buttonTap } from "@/lib/motion";
 import { useFocoModal } from "@/components/admin/useFocoModal";
 import { useToast } from "@/components/admin/ToastProvider";
 import { baixarCsv } from "@/lib/csv";
+import Avatar from "@/components/ui/Avatar";
 import {
   banirCliente,
   buscarUltimaVisita,
@@ -351,8 +352,8 @@ export default function ClientesAdminClient({
                     >
                       <td className="px-6 py-4 font-mono text-xs font-semibold">
                         {avatares[cliente.nr_id_telegram] && (
-                          <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#050208] text-sm align-middle">
-                            {avatares[cliente.nr_id_telegram]}
+                          <span className="mr-2 inline-flex h-6 w-6 items-center justify-center overflow-hidden rounded-full bg-[#050208] text-sm align-middle">
+                            <Avatar valor={avatares[cliente.nr_id_telegram]} className="h-full w-full" />
                           </span>
                         )}
                         {cliente.nr_id_telegram}

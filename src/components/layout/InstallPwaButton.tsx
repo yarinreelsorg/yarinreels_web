@@ -9,12 +9,40 @@ interface BeforeInstallPromptEvent extends Event {
 
 const CHAVE_DISPENSADO = "yarinreels:pwa-dispensado";
 
+function jaInstalado() {
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    (window.navigator as Navigator & { standalone?: boolean }).standalone === true
+  );
+}
+
+function ehIOS() {
+  return /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+}
+
+function podeMostrar() {
+  if (typeof window === "undefined") return false;
+  if (window.localStorage.getItem(CHAVE_DISPENSADO)) return false;
+  return !jaInstalado();
+}
+
 export default function InstallPwaButton() {
   const [promptEvent, setPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);
+  const [modoIOS, setModoIOS] = useState(false);
   const [visivel, setVisivel] = useState(false);
 
+  // Só dá pra saber se é iOS/já instalado/dispensado depois de montar no
+  // navegador — não existe forma de descobrir isso durante o SSR.
   useEffect(() => {
-    if (window.localStorage.getItem(CHAVE_DISPENSADO)) return;
+    if (!podeMostrar()) return;
+
+    if (ehIOS()) {
+      Promise.resolve().then(() => {
+        setModoIOS(true);
+        setVisivel(true);
+      });
+      return;
+    }
 
     function aoDisponibilizar(e: Event) {
       e.preventDefault();
@@ -48,23 +76,32 @@ export default function InstallPwaButton() {
         </span>
         <div>
           <p className="text-sm font-bold text-foreground">Instalar o Yarinreels</p>
-          <p className="text-xs text-secondary">Acesso rápido direto da tela inicial</p>
+          {modoIOS ? (
+            <p className="text-xs text-secondary">
+              Toque em <span className="font-bold text-foreground">Compartilhar ⬆️</span> e depois
+              em <span className="font-bold text-foreground">&quot;Adicionar à Tela de Início&quot;</span>
+            </p>
+          ) : (
+            <p className="text-xs text-secondary">Acesso rápido direto da tela inicial</p>
+          )}
         </div>
       </div>
       <div className="flex shrink-0 flex-col gap-1.5">
-        <button
-          type="button"
-          onClick={instalar}
-          className="rounded-md bg-primary px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-primary-dark"
-        >
-          Instalar
-        </button>
+        {!modoIOS && (
+          <button
+            type="button"
+            onClick={instalar}
+            className="rounded-md bg-primary px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-primary-dark"
+          >
+            Instalar
+          </button>
+        )}
         <button
           type="button"
           onClick={dispensar}
           className="text-[11px] text-secondary hover:text-foreground"
         >
-          Agora não
+          {modoIOS ? "Entendi" : "Agora não"}
         </button>
       </div>
     </div>

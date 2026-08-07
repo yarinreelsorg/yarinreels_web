@@ -16,6 +16,7 @@ const LINKS = [
   { href: "/admin/combos", label: "Combos", icon: "📦" },
   { href: "/admin/clientes", label: "Clientes", icon: "👥" },
   { href: "/admin/usuarios", label: "Usuários do Site", icon: "🌐" },
+  { href: "/admin/apps", label: "Apps de Navegação", icon: "📲" },
   { href: "/admin/financeiro", label: "Financeiro", icon: "📊" },
   { href: "/admin/recusados", label: "Cartão Recusado", icon: "💳" },
   { href: "/admin/auditoria", label: "Auditoria", icon: "📜" },
