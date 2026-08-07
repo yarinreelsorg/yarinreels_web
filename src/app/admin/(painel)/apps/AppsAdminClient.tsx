@@ -10,6 +10,7 @@ import {
   atualizarOrdemApps,
   criarApp,
   editarApp,
+  enviarLogoApp,
   removerApp,
 } from "./actions";
 
@@ -41,6 +42,29 @@ export default function AppsAdminClient({ appsIniciais }: { appsIniciais: AppNav
 
   const [indiceArrastado, setIndiceArrastado] = useState<number | null>(null);
   const [indiceSobre, setIndiceSobre] = useState<number | null>(null);
+  const [enviandoLogo, setEnviandoLogo] = useState(false);
+
+  const aoEscolherArquivo = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    aoConcluir: (url: string) => void
+  ) => {
+    const arquivo = e.target.files?.[0];
+    e.target.value = "";
+    if (!arquivo) return;
+
+    setEnviandoLogo(true);
+    try {
+      const formData = new FormData();
+      formData.append("arquivo", arquivo);
+      const url = await enviarLogoApp(formData);
+      aoConcluir(url);
+      toast.sucesso("Logo enviada.");
+    } catch (err) {
+      toast.erro(err instanceof Error ? err.message : "Erro ao enviar a logo.");
+    } finally {
+      setEnviandoLogo(false);
+    }
+  };
 
   const aoCriar = async () => {
     if (!nomeNovo.trim()) return;
@@ -146,8 +170,9 @@ export default function AppsAdminClient({ appsIniciais }: { appsIniciais: AppNav
         <p className="text-sm text-[#A78BFA]">
           Gerencia os ícones de app (ReelShort, DramaBox etc.) mostrados no site. O nome aqui
           precisa bater com o campo &quot;App de origem&quot; preenchido no cadastro de cada
-          conteúdo, senão o filtro não encontra nada. No campo de ícone, cole o link de uma
-          imagem (logo oficial do app) ou digite um emoji.
+          conteúdo, senão o filtro não encontra nada. No campo de ícone, clique em
+          &quot;Upload&quot; pra enviar a logo oficial do app (PNG/JPG/WEBP/SVG, até 2MB), cole o
+          link de uma imagem já hospedada, ou digite um emoji.
         </p>
       </div>
 
@@ -162,13 +187,25 @@ export default function AppsAdminClient({ appsIniciais }: { appsIniciais: AppNav
               <label className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">
                 Ícone (emoji ou link da logo)
               </label>
-              <input
-                type="text"
-                value={iconeNovo}
-                onChange={(e) => setIconeNovo(e.target.value)}
-                placeholder="▶️ ou https://..."
-                className="w-40 bg-[#050208] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white"
-              />
+              <div className="flex gap-1.5">
+                <input
+                  type="text"
+                  value={iconeNovo}
+                  onChange={(e) => setIconeNovo(e.target.value)}
+                  placeholder="▶️ ou https://..."
+                  className="w-40 bg-[#050208] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white"
+                />
+                <label className="flex cursor-pointer items-center justify-center rounded-[6px] border border-[rgba(139,92,246,0.3)] bg-[#050208] px-3 text-xs font-bold text-[#A78BFA] hover:text-white hover:border-[#9D4EDD]">
+                  {enviandoLogo ? "..." : "Upload"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    disabled={enviandoLogo}
+                    onChange={(e) => aoEscolherArquivo(e, setIconeNovo)}
+                    className="hidden"
+                  />
+                </label>
+              </div>
             </div>
           </div>
           <div className="flex-1 min-w-[200px]">
@@ -231,8 +268,18 @@ export default function AppsAdminClient({ appsIniciais }: { appsIniciais: AppNav
                       value={iconeEdicao}
                       onChange={(e) => setIconeEdicao(e.target.value)}
                       placeholder="▶️ ou https://..."
-                      className="w-32 bg-[#0D0A1A] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] px-2 py-1.5 text-white"
+                      className="w-28 bg-[#0D0A1A] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] px-2 py-1.5 text-white"
                     />
+                    <label className="flex shrink-0 cursor-pointer items-center justify-center rounded-[6px] border border-[rgba(139,92,246,0.3)] px-2.5 py-1.5 text-xs font-bold text-[#A78BFA] hover:text-white hover:border-[#9D4EDD]">
+                      {enviandoLogo ? "..." : "Upload"}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={enviandoLogo}
+                        onChange={(e) => aoEscolherArquivo(e, setIconeEdicao)}
+                        className="hidden"
+                      />
+                    </label>
                     <input
                       type="text"
                       value={nomeEdicao}

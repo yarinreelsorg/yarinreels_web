@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { put } from "@vercel/blob";
 import { pool } from "@/lib/db";
 import { getSessaoAdmin } from "@/lib/admin-auth";
 import { registrarLog } from "@/lib/auditoria";
@@ -11,6 +12,36 @@ async function exigirSuperAdmin() {
     throw new Error("Apenas super administradores podem gerenciar os apps.");
   }
   return sessao;
+}
+
+const TAMANHO_MAXIMO_LOGO = 2 * 1024 * 1024; // 2MB
+const TIPOS_ACEITOS = ["image/png", "image/jpeg", "image/webp", "image/svg+xml", "image/gif"];
+
+export async function enviarLogoApp(formData: FormData): Promise<string> {
+  await exigirSuperAdmin();
+
+  const arquivo = formData.get("arquivo");
+  if (!(arquivo instanceof File) || arquivo.size === 0) {
+    throw new Error("Selecione um arquivo de imagem.");
+  }
+  if (!TIPOS_ACEITOS.includes(arquivo.type)) {
+    throw new Error("Formato não aceito. Use PNG, JPG, WEBP, SVG ou GIF.");
+  }
+  if (arquivo.size > TAMANHO_MAXIMO_LOGO) {
+    throw new Error("Imagem muito grande — o limite é 2MB.");
+  }
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    throw new Error(
+      "Armazenamento não configurado — falta a variável BLOB_READ_WRITE_TOKEN (crie um Blob Store no painel da Vercel)."
+    );
+  }
+
+  const extensao = arquivo.name.split(".").pop() || "png";
+  const nomeArquivo = `apps-logos/${crypto.randomUUID()}.${extensao}`;
+
+  const blob = await put(nomeArquivo, arquivo, { access: "public" });
+
+  return blob.url;
 }
 
 function revalidarTudo() {
