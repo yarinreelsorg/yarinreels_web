@@ -1,8 +1,12 @@
 import HomeContent from "@/components/home/HomeContent";
 import { pool } from "@/lib/db";
 import { deveExibirPromoInicial, obterCdPlanoPromoInicial } from "@/lib/pagamento";
-import { ordenarCategorias } from "@/lib/categorias-config";
+import {
+  obterCategoriasExclusivasAssinantes,
+  ordenarCategorias,
+} from "@/lib/categorias-config";
 import { getSessaoUsuario } from "@/lib/user-auth";
+import { usuarioTemAssinaturaAtiva } from "@/lib/acesso";
 import { obterContinuarAssistindo } from "@/lib/historico";
 import { obterAppsVisiveis } from "@/lib/apps-config";
 import type { Conteudo } from "@/types/database";
@@ -10,7 +14,7 @@ import type { Conteudo } from "@/types/database";
 export default async function HomePage() {
   // sn_exclusivo_assinantes nunca aparece na home, nem pra quem assina —
   // a ideia é não poluir a tela inicial, não é uma trava de acesso.
-  const { rows: conteudos } = await pool.query<Conteudo>(
+  const { rows: conteudosSemExclusivos } = await pool.query<Conteudo>(
     'SELECT * FROM "CONTEUDOS" WHERE sn_exclusivo_assinantes = false'
   );
   const cdPlanoPromo = await obterCdPlanoPromoInicial();
@@ -18,11 +22,19 @@ export default async function HomePage() {
   const sessao = await getSessaoUsuario();
   const continuarAssistindo = sessao ? await obterContinuarAssistindo(sessao.cd_usuario) : [];
   const exibirPromoInicial = sessao ? await deveExibirPromoInicial(sessao.cd_usuario) : true;
+  const ehAssinante = sessao ? await usuarioTemAssinaturaAtiva(sessao.cd_usuario) : false;
+
+  // Categorias inteiras marcadas "só assinantes": somem do conteúdo (não
+  // só da lista de categorias) pra quem não assina.
+  const categoriasExclusivas = await obterCategoriasExclusivasAssinantes();
+  const conteudos = ehAssinante
+    ? conteudosSemExclusivos
+    : conteudosSemExclusivos.filter((c) => !categoriasExclusivas.includes(c.nm_categoria));
 
   const categoriasSemOrdem = Array.from(
     new Set(conteudos.map((c) => c.nm_categoria).filter(Boolean))
   );
-  const categorias = await ordenarCategorias(categoriasSemOrdem);
+  const categorias = await ordenarCategorias(categoriasSemOrdem, ehAssinante);
 
   const apps = await obterAppsVisiveis();
 

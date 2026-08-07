@@ -26,7 +26,7 @@ export default function ConfiguracoesClient({
   cdAdministradorAtual: string | null;
   papelAtual: TpPapelAdmin;
   taxaCartaoInicial: number;
-  categoriasOrdenadas: { nm_categoria: string; visivel: boolean }[];
+  categoriasOrdenadas: { nm_categoria: string; visivel: boolean; exclusivaAssinantes: boolean }[];
 }) {
   const ehSuperAdmin = papelAtual === "SUPER_ADMIN";
   const toast = useToast();
@@ -72,6 +72,14 @@ export default function ConfiguracoesClient({
     );
   };
 
+  const alternarExclusivaAssinantes = (indice: number) => {
+    setCategorias((atual) =>
+      atual.map((c, i) =>
+        i === indice ? { ...c, exclusivaAssinantes: !c.exclusivaAssinantes } : c
+      )
+    );
+  };
+
   const iniciarRenomear = (nmCategoria: string) => {
     setCategoriaRenomeando(nmCategoria);
     setNovoNome(nmCategoria);
@@ -105,7 +113,8 @@ export default function ConfiguracoesClient({
     try {
       const ordem = categorias.filter((c) => c.visivel).map((c) => c.nm_categoria);
       const ocultas = categorias.filter((c) => !c.visivel).map((c) => c.nm_categoria);
-      await atualizarOrdemCategorias(ordem, ocultas);
+      const exclusivas = categorias.filter((c) => c.exclusivaAssinantes).map((c) => c.nm_categoria);
+      await atualizarOrdemCategorias(ordem, ocultas, exclusivas);
       toast.sucesso("Categorias salvas.");
       setOrdemSalva(true);
       setTimeout(() => setOrdemSalva(false), 2000);
@@ -240,9 +249,10 @@ export default function ConfiguracoesClient({
       <div className="rounded-lg border border-[rgba(139,92,246,0.15)] bg-[#0D0A1A] p-6 shadow-lg">
         <h2 className="text-lg font-bold text-white">Ordem das Categorias</h2>
         <p className="mt-1 text-sm text-[#A78BFA]">
-          Arraste pra reordenar (ou use as setas), clique no olho pra ocultar da home/catálogo, ou
-          no lápis pra renomear (renomeia em todo o catálogo e nos planos). Sem configuração, usa
-          a ordem padrão (Americanas, Brasileiras, +18, resto em ordem alfabética).
+          Arraste pra reordenar (ou use as setas), clique no olho pra ocultar da home/catálogo, no
+          cadeado pra deixar visível só pra quem assina, ou no lápis pra renomear (renomeia em
+          todo o catálogo e nos planos). Sem configuração, usa a ordem padrão (Americanas,
+          Brasileiras, +18, resto em ordem alfabética).
         </p>
 
         {categorias.length === 0 ? (
@@ -310,6 +320,11 @@ export default function ConfiguracoesClient({
                         Oculta
                       </span>
                     )}
+                    {categoria.exclusivaAssinantes && (
+                      <span className="rounded bg-[#7B2FBE]/25 px-1.5 py-0.5 text-[10px] uppercase text-[#C9A6FF]">
+                        Só assinantes
+                      </span>
+                    )}
                   </span>
                 )}
                 <div className="flex shrink-0 items-center gap-1">
@@ -323,6 +338,21 @@ export default function ConfiguracoesClient({
                       ✎
                     </button>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => alternarExclusivaAssinantes(indice)}
+                    aria-label={
+                      categoria.exclusivaAssinantes
+                        ? "Tornar visível pra todo mundo"
+                        : "Tornar exclusiva pra assinantes"
+                    }
+                    title="Exclusiva pra assinantes"
+                    className={`flex h-7 w-7 items-center justify-center rounded-md hover:bg-white/5 cursor-pointer ${
+                      categoria.exclusivaAssinantes ? "text-[#C9A6FF]" : "text-[#A78BFA] hover:text-white"
+                    }`}
+                  >
+                    🔒
+                  </button>
                   <button
                     type="button"
                     onClick={() => alternarVisivel(indice)}

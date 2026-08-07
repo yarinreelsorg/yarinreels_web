@@ -44,7 +44,7 @@ export default function CatalogoContent({
     formatoInicial
   );
   const [appAtivo, setAppAtivo] = useState<string | null>(appInicial);
-  const [ordenacao, setOrdenacao] = useState<Ordenacao>("relevancia");
+  const [ordenacao, setOrdenacao] = useState<Ordenacao>("recentes");
   const [visiveis, setVisiveis] = useState(TAMANHO_PAGINA);
   const [, startTransition] = useTransition();
 

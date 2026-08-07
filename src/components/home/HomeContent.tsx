@@ -48,11 +48,20 @@ export default function HomeContent({
     ? conteudos.filter((c) => c.nm_titulo.toLowerCase().includes(termo))
     : [];
 
+  // Lançamentos primeiro em cada fileira — assim que uma série nova entra
+  // numa categoria, ela assume o topo e empurra as demais pra baixo.
   const porCategoria = new Map<string, Conteudo[]>();
   for (const conteudo of conteudos) {
     const lista = porCategoria.get(conteudo.nm_categoria) ?? [];
     lista.push(conteudo);
     porCategoria.set(conteudo.nm_categoria, lista);
+  }
+  for (const lista of porCategoria.values()) {
+    lista.sort((a, b) => {
+      const dataA = a.dt_lancamento ? new Date(a.dt_lancamento).getTime() : 0;
+      const dataB = b.dt_lancamento ? new Date(b.dt_lancamento).getTime() : 0;
+      return dataB - dataA;
+    });
   }
 
   return (

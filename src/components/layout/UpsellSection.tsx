@@ -1,6 +1,7 @@
 "use client";
 
-import { motion } from "motion/react";
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import type { Conteudo } from "@/types/database";
 import { springExpressivo } from "@/lib/motion";
 import Reveal from "@/components/motion/Reveal";
@@ -11,6 +12,51 @@ const BENEFICIOS = [
   "Todos os conteúdos liberados",
   "Cancele quando quiser",
 ];
+
+const CHAVE_DISPENSADA = "yarinreels:promo-inicial-dispensada";
+const LIMITE_SCROLL_PX = 220;
+
+function PromoFlutuante({ hrefPromo }: { hrefPromo: string }) {
+  const [visivel, setVisivel] = useState(false);
+
+  useEffect(() => {
+    if (window.localStorage.getItem(CHAVE_DISPENSADA)) return;
+
+    // Mostra depois de um instante (não some assim que a página carrega).
+    const idAparecer = setTimeout(() => setVisivel(true), 600);
+
+    function aoRolar() {
+      if (window.scrollY > LIMITE_SCROLL_PX) {
+        setVisivel(false);
+        window.localStorage.setItem(CHAVE_DISPENSADA, "1");
+        window.removeEventListener("scroll", aoRolar);
+      }
+    }
+
+    window.addEventListener("scroll", aoRolar, { passive: true });
+    return () => {
+      clearTimeout(idAparecer);
+      window.removeEventListener("scroll", aoRolar);
+    };
+  }, []);
+
+  return (
+    <AnimatePresence>
+      {visivel && (
+        <motion.a
+          href={hrefPromo}
+          initial={{ opacity: 0, y: -16 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -16 }}
+          whileTap={{ scale: 0.97 }}
+          className="animate-pulse-soft fixed inset-x-4 top-[112px] z-[95] flex items-center justify-center gap-2 rounded-full bg-primary px-4 py-2.5 text-center text-xs font-bold text-white shadow-[0_8px_24px_rgba(194,24,91,0.5)] lg:hidden"
+        >
+          🔥 Assine e assista tudo sem limites — primeiro mês R$ 20
+        </motion.a>
+      )}
+    </AnimatePresence>
+  );
+}
 
 export default function UpsellSection({
   destaques = [],
@@ -26,16 +72,7 @@ export default function UpsellSection({
 
   return (
     <>
-      {/* Mobile: botão discreto, mesma lógica do bot */}
-      <div className="px-4 py-4 sm:px-8 lg:hidden">
-        <motion.a
-          href={hrefPromo}
-          whileTap={{ scale: 0.97 }}
-          className="flex items-center justify-center gap-2 rounded-full bg-primary/15 border border-primary/40 px-4 py-2.5 text-xs font-bold text-primary"
-        >
-          🔥 Assine e assista tudo sem limites — primeiro mês R$ 20
-        </motion.a>
-      </div>
+      <PromoFlutuante hrefPromo={hrefPromo} />
 
       {/* Desktop: seção completa */}
       <section

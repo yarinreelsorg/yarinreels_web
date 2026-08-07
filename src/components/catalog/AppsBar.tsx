@@ -11,7 +11,7 @@ export default function AppsBar({ apps }: { apps: AppNavegacao[] }) {
       {apps.map((app) => (
         <Link
           key={app.cd_app}
-          href={`/catalogo?app=${encodeURIComponent(app.nm_app)}`}
+          href={`/app/${encodeURIComponent(app.nm_app)}`}
           className="flex shrink-0 flex-col items-center gap-1 text-[11px] font-semibold text-secondary transition-colors hover:text-foreground"
         >
           <span className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-xl">

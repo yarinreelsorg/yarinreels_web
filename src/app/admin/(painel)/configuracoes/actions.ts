@@ -127,15 +127,19 @@ export async function atualizarTaxaCartao(formData: FormData) {
   revalidatePath("/checkout");
 }
 
-export async function atualizarOrdemCategorias(ordem: string[], ocultas: string[] = []) {
+export async function atualizarOrdemCategorias(
+  ordem: string[],
+  ocultas: string[] = [],
+  exclusivas: string[] = []
+) {
   await exigirSuperAdmin();
 
-  await salvarConfigCategorias(ordem, ocultas);
+  await salvarConfigCategorias(ordem, ocultas, exclusivas);
 
   await registrarLog({
     tp_acao: "ALTERACAO_CONFIGURACAO",
     nm_entidade: "CONFIGURACAO_CATEGORIAS",
-    ds_detalhes: { ordem, ocultas },
+    ds_detalhes: { ordem, ocultas, exclusivas },
   });
 
   revalidatePath("/admin/configuracoes");

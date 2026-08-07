@@ -1,6 +1,6 @@
 import CatalogoContent from "@/components/catalogo/CatalogoContent";
 import { pool } from "@/lib/db";
-import { ordenarCategorias } from "@/lib/categorias-config";
+import { obterCategoriasExclusivasAssinantes, ordenarCategorias } from "@/lib/categorias-config";
 import { obterAppsVisiveis } from "@/lib/apps-config";
 import { getSessaoUsuario } from "@/lib/user-auth";
 import { usuarioTemAssinaturaAtiva } from "@/lib/acesso";
@@ -18,17 +18,21 @@ export default async function CatalogoPage({
   const sessao = await getSessaoUsuario();
   const ehAssinante = sessao ? await usuarioTemAssinaturaAtiva(sessao.cd_usuario) : false;
 
-  // Conteúdo exclusivo pra assinantes só aparece no catálogo/busca pra
-  // quem já assina — pra quem não assina, é como se não existisse.
+  // Conteúdo exclusivo (individual ou de categoria inteira) pra assinantes
+  // só aparece no catálogo/busca pra quem já assina — pra quem não assina,
+  // é como se não existisse.
+  const categoriasExclusivas = await obterCategoriasExclusivasAssinantes();
   const { rows: todosConteudos } = await pool.query<Conteudo>('SELECT * FROM "CONTEUDOS"');
   const conteudos = ehAssinante
     ? todosConteudos
-    : todosConteudos.filter((c) => !c.sn_exclusivo_assinantes);
+    : todosConteudos.filter(
+        (c) => !c.sn_exclusivo_assinantes && !categoriasExclusivas.includes(c.nm_categoria)
+      );
 
   const categoriasSemOrdem = Array.from(
     new Set(conteudos.map((c) => c.nm_categoria).filter(Boolean))
   );
-  const categorias = await ordenarCategorias(categoriasSemOrdem);
+  const categorias = await ordenarCategorias(categoriasSemOrdem, ehAssinante);
 
   const apps = (await obterAppsVisiveis()).map((a) => a.nm_app);
 

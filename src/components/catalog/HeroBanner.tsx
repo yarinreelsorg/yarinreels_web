@@ -74,7 +74,7 @@ export default function HeroBanner({ destaques }: { destaques: Conteudo[] }) {
               backgroundImage: "linear-gradient(to top, rgba(0,0,0,0.85), transparent)",
             }}
           >
-            <span className="rounded-full bg-primary px-5 py-2 text-xs font-bold text-white shadow-lg sm:text-sm">
+            <span className="rounded-full bg-primary px-3.5 py-1.5 text-[11px] font-bold text-white shadow-lg sm:px-4 sm:text-xs">
               🛒 Comprar
             </span>
           </div>

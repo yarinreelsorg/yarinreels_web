@@ -13,6 +13,20 @@ import {
   removerApp,
 } from "./actions";
 
+function ehUrlImagem(valor: string) {
+  return valor.startsWith("http://") || valor.startsWith("https://");
+}
+
+function IconePreview({ valor, className }: { valor: string; className?: string }) {
+  if (ehUrlImagem(valor)) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={valor} alt="" className={`rounded-md object-cover ${className ?? ""}`} />
+    );
+  }
+  return <span className={className}>{valor || "▶️"}</span>;
+}
+
 export default function AppsAdminClient({ appsIniciais }: { appsIniciais: AppNavegacao[] }) {
   const toast = useToast();
   const [apps, setApps] = useState(appsIniciais);
@@ -132,21 +146,30 @@ export default function AppsAdminClient({ appsIniciais }: { appsIniciais: AppNav
         <p className="text-sm text-[#A78BFA]">
           Gerencia os ícones de app (ReelShort, DramaBox etc.) mostrados no site. O nome aqui
           precisa bater com o campo &quot;App de origem&quot; preenchido no cadastro de cada
-          conteúdo, senão o filtro não encontra nada.
+          conteúdo, senão o filtro não encontra nada. No campo de ícone, cole o link de uma
+          imagem (logo oficial do app) ou digite um emoji.
         </p>
       </div>
 
       <div className="rounded-lg border border-[rgba(139,92,246,0.15)] bg-[#0D0A1A] p-6 shadow-lg">
         <h2 className="text-lg font-bold text-white">Novo app</h2>
         <div className="mt-4 flex flex-wrap items-end gap-3">
-          <div>
-            <label className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">Ícone (emoji)</label>
-            <input
-              type="text"
-              value={iconeNovo}
-              onChange={(e) => setIconeNovo(e.target.value)}
-              className="w-20 bg-[#050208] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white text-center text-lg"
-            />
+          <div className="flex items-end gap-2">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-md bg-[#050208] border border-[rgba(139,92,246,0.15)] text-lg">
+              <IconePreview valor={iconeNovo} className="h-full w-full" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">
+                Ícone (emoji ou link da logo)
+              </label>
+              <input
+                type="text"
+                value={iconeNovo}
+                onChange={(e) => setIconeNovo(e.target.value)}
+                placeholder="▶️ ou https://..."
+                className="w-40 bg-[#050208] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white"
+              />
+            </div>
           </div>
           <div className="flex-1 min-w-[200px]">
             <label className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">Nome</label>
@@ -200,11 +223,15 @@ export default function AppsAdminClient({ appsIniciais }: { appsIniciais: AppNav
               >
                 {editandoId === app.cd_app ? (
                   <div className="flex flex-1 items-center gap-2">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-[#0D0A1A] border border-[rgba(139,92,246,0.15)]">
+                      <IconePreview valor={iconeEdicao} className="h-full w-full" />
+                    </div>
                     <input
                       type="text"
                       value={iconeEdicao}
                       onChange={(e) => setIconeEdicao(e.target.value)}
-                      className="w-14 bg-[#0D0A1A] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] px-2 py-1.5 text-center text-white"
+                      placeholder="▶️ ou https://..."
+                      className="w-32 bg-[#0D0A1A] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] px-2 py-1.5 text-white"
                     />
                     <input
                       type="text"
@@ -233,7 +260,9 @@ export default function AppsAdminClient({ appsIniciais }: { appsIniciais: AppNav
                 ) : (
                   <span className="flex items-center gap-2.5 text-sm text-white">
                     <span className="text-[#A78BFA]/60 select-none">⠿</span>
-                    <span className="text-lg">{app.ds_icone}</span>
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-md text-lg">
+                      <IconePreview valor={app.ds_icone} className="h-full w-full" />
+                    </span>
                     {app.nm_app}
                     {!app.sn_visivel && (
                       <span className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] uppercase text-[#A78BFA]">
