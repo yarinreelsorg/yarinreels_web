@@ -5,10 +5,12 @@ import { AnimatePresence, motion } from "motion/react";
 import type { Administrador, TpPapelAdmin } from "@/types/database";
 import {
   alternarAtivoAdministrador,
+  atualizarLogoSite,
   atualizarOrdemCategorias,
   atualizarPapelAdministrador,
   atualizarTaxaCartao,
   criarAdministrador,
+  enviarLogoSite,
   renomearCategoriaAction,
 } from "./actions";
 import { buttonTap } from "@/lib/motion";
@@ -21,12 +23,14 @@ export default function ConfiguracoesClient({
   papelAtual,
   taxaCartaoInicial,
   categoriasOrdenadas,
+  logoAtual,
 }: {
   administradores: Administrador[];
   cdAdministradorAtual: string | null;
   papelAtual: TpPapelAdmin;
   taxaCartaoInicial: number;
   categoriasOrdenadas: { nm_categoria: string; visivel: boolean; exclusivaAssinantes: boolean }[];
+  logoAtual: string;
 }) {
   const ehSuperAdmin = papelAtual === "SUPER_ADMIN";
   const toast = useToast();
@@ -41,6 +45,42 @@ export default function ConfiguracoesClient({
   const [salvandoTaxa, setSalvandoTaxa] = useState(false);
   const [erroTaxa, setErroTaxa] = useState<string | null>(null);
   const [taxaSalva, setTaxaSalva] = useState(false);
+
+  const [logoUrl, setLogoUrl] = useState(logoAtual);
+  const [enviandoLogo, setEnviandoLogo] = useState(false);
+  const [salvandoLogo, setSalvandoLogo] = useState(false);
+
+  const aoEscolherLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const arquivo = e.target.files?.[0];
+    e.target.value = "";
+    if (!arquivo) return;
+
+    setEnviandoLogo(true);
+    try {
+      const formData = new FormData();
+      formData.append("arquivo", arquivo);
+      const url = await enviarLogoSite(formData);
+      await atualizarLogoSite(url);
+      setLogoUrl(url);
+      toast.sucesso("Logo do site atualizada.");
+    } catch (err) {
+      toast.erro(err instanceof Error ? err.message : "Erro ao enviar a logo.");
+    } finally {
+      setEnviandoLogo(false);
+    }
+  };
+
+  const aoSalvarLogoUrl = async () => {
+    setSalvandoLogo(true);
+    try {
+      await atualizarLogoSite(logoUrl);
+      toast.sucesso("Logo do site atualizada.");
+    } catch (err) {
+      toast.erro(err instanceof Error ? err.message : "Erro ao salvar.");
+    } finally {
+      setSalvandoLogo(false);
+    }
+  };
 
   const [categorias, setCategorias] = useState(categoriasOrdenadas);
   const [salvandoOrdem, setSalvandoOrdem] = useState(false);
@@ -209,6 +249,52 @@ export default function ConfiguracoesClient({
           administradores.
         </div>
       )}
+
+      <div className="rounded-lg border border-[rgba(139,92,246,0.15)] bg-[#0D0A1A] p-6 shadow-lg">
+        <h2 className="text-lg font-bold text-white">Logo do Site</h2>
+        <p className="mt-1 text-sm text-[#A78BFA]">
+          Ícone mostrado ao lado do nome na navbar, em toda a plataforma.
+        </p>
+        <div className="mt-4 flex flex-wrap items-end gap-3">
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#050208] border border-[rgba(139,92,246,0.15)]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={logoUrl} alt="" className="h-full w-full object-cover" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">
+              Link da imagem
+            </label>
+            <div className="flex gap-1.5">
+              <input
+                type="text"
+                value={logoUrl}
+                onChange={(e) => setLogoUrl(e.target.value)}
+                placeholder="https://..."
+                className="w-64 bg-[#050208] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white"
+              />
+              <motion.button
+                type="button"
+                onClick={aoSalvarLogoUrl}
+                disabled={salvandoLogo}
+                {...buttonTap}
+                className="rounded-md bg-[#7B2FBE] hover:bg-[#6D28D9] disabled:opacity-50 px-4 text-sm font-bold text-white transition-colors cursor-pointer"
+              >
+                Salvar
+              </motion.button>
+              <label className="flex cursor-pointer items-center justify-center rounded-[6px] border border-[rgba(139,92,246,0.3)] bg-[#050208] px-3 text-xs font-bold text-[#A78BFA] hover:text-white hover:border-[#9D4EDD]">
+                {enviandoLogo ? "..." : "Upload"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  disabled={enviandoLogo}
+                  onChange={aoEscolherLogo}
+                  className="hidden"
+                />
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div className="rounded-lg border border-[rgba(139,92,246,0.15)] bg-[#0D0A1A] p-6 shadow-lg">
         <h2 className="text-lg font-bold text-white">Pagamento com Cartão</h2>

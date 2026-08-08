@@ -4,8 +4,10 @@ import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
-import { obterUsuarioAtual, sairUsuario } from "./navbar-actions";
+import { obterLogoSite, obterUsuarioAtual, sairUsuario } from "./navbar-actions";
 import Avatar from "@/components/ui/Avatar";
+
+const LOGO_PADRAO = "/icon.svg";
 
 interface UsuarioNavbar {
   nm_nome: string | null;
@@ -44,10 +46,12 @@ function NavbarInner({
   const [buscaLocal, setBuscaLocal] = useState("");
   const [menuAberto, setMenuAberto] = useState(false);
   const [user, setUser] = useState<UsuarioNavbar | null>(null);
+  const [logoUrl, setLogoUrl] = useState(LOGO_PADRAO);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     obterUsuarioAtual().then(setUser);
+    obterLogoSite().then(setLogoUrl);
   }, []);
 
   useEffect(() => {
@@ -93,7 +97,7 @@ function NavbarInner({
       <div className="mx-auto flex max-w-[1600px] flex-col gap-4 lg:flex-row lg:items-center lg:gap-8">
         <h1 className="order-1 flex shrink-0 items-center justify-center gap-2 text-2xl font-black uppercase tracking-[0.2em] text-primary lg:order-none lg:justify-start lg:text-xl">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icon.svg" alt="" className="h-7 w-7 rounded-md lg:h-6 lg:w-6" />
+          <img src={logoUrl} alt="" className="h-7 w-7 rounded-md object-cover lg:h-6 lg:w-6" />
           YarinReels
         </h1>
 

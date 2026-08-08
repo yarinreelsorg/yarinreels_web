@@ -2,6 +2,11 @@
 
 import { pool } from "@/lib/db";
 import { getSessaoUsuario, limparCookieSessao } from "@/lib/user-auth";
+import { obterLogoSite as obterLogoSiteDb } from "@/lib/site-config";
+
+export async function obterLogoSite() {
+  return obterLogoSiteDb();
+}
 
 export async function obterUsuarioAtual() {
   const sessao = await getSessaoUsuario();

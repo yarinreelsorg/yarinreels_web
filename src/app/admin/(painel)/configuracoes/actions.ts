@@ -2,10 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
+import { put } from "@vercel/blob";
 import { pool } from "@/lib/db";
 import { getSessaoAdmin } from "@/lib/admin-auth";
 import { registrarLog } from "@/lib/auditoria";
 import { renomearCategoria, salvarConfigCategorias } from "@/lib/categorias-config";
+import { salvarLogoSite } from "@/lib/site-config";
 import type { TpPapelAdmin } from "@/types/database";
 
 async function exigirSuperAdmin() {
@@ -14,6 +16,50 @@ async function exigirSuperAdmin() {
     throw new Error("Apenas super administradores podem gerenciar acessos.");
   }
   return sessao;
+}
+
+const TAMANHO_MAXIMO_LOGO = 2 * 1024 * 1024; // 2MB
+const TIPOS_ACEITOS_LOGO = ["image/png", "image/jpeg", "image/webp", "image/svg+xml", "image/gif"];
+
+export async function enviarLogoSite(formData: FormData): Promise<string> {
+  await exigirSuperAdmin();
+
+  const arquivo = formData.get("arquivo");
+  if (!(arquivo instanceof File) || arquivo.size === 0) {
+    throw new Error("Selecione um arquivo de imagem.");
+  }
+  if (!TIPOS_ACEITOS_LOGO.includes(arquivo.type)) {
+    throw new Error("Formato não aceito. Use PNG, JPG, WEBP, SVG ou GIF.");
+  }
+  if (arquivo.size > TAMANHO_MAXIMO_LOGO) {
+    throw new Error("Imagem muito grande — o limite é 2MB.");
+  }
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    throw new Error(
+      "Armazenamento não configurado — falta a variável BLOB_READ_WRITE_TOKEN (crie um Blob Store no painel da Vercel)."
+    );
+  }
+
+  const extensao = arquivo.name.split(".").pop() || "png";
+  const nomeArquivo = `site-logo/${crypto.randomUUID()}.${extensao}`;
+
+  const blob = await put(nomeArquivo, arquivo, { access: "public" });
+  return blob.url;
+}
+
+export async function atualizarLogoSite(url: string) {
+  await exigirSuperAdmin();
+
+  await salvarLogoSite(url.trim() || null);
+
+  await registrarLog({
+    tp_acao: "ALTERACAO_CONFIGURACAO",
+    nm_entidade: "CONFIGURACAO_SITE",
+    ds_detalhes: { ds_logo_url: url },
+  });
+
+  revalidatePath("/admin/configuracoes");
+  revalidatePath("/", "layout");
 }
 
 export async function criarAdministrador(formData: FormData) {

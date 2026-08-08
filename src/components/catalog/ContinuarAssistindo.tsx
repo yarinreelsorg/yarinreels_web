@@ -72,7 +72,7 @@ export default function ContinuarAssistindo({
 
             <Link
               href={`/assistir/${item.conteudo.cd_conteudo}`}
-              className="mt-2 block line-clamp-2 min-h-[34px] text-xs font-bold leading-tight text-foreground lg:min-h-[45px] lg:text-base"
+              className="mt-2 h-[34px] overflow-hidden line-clamp-2 text-xs font-bold leading-tight text-foreground lg:h-[45px] lg:text-base"
             >
               {item.conteudo.nm_titulo}
             </Link>

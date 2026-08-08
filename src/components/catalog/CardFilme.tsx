@@ -72,7 +72,10 @@ export default function CardFilme({
           </span>
         </Link>
         <div className="flex min-w-0 flex-1 flex-col justify-center">
-          <Link href={destino} className="line-clamp-2 text-[11px] font-bold leading-tight text-foreground lg:text-base">
+          <Link
+            href={destino}
+            className="h-[30px] overflow-hidden line-clamp-2 text-[11px] font-bold leading-tight text-foreground lg:h-[42px] lg:text-base"
+          >
             {conteudo.nm_titulo}
           </Link>
           {preco && <p className="mt-1 text-[11px] font-extrabold text-secondary lg:text-sm">{preco}</p>}
@@ -102,7 +105,7 @@ export default function CardFilme({
 
       <Link
         href={destino}
-        className="mt-2 block line-clamp-2 min-h-[34px] text-xs font-bold leading-tight text-foreground lg:min-h-[45px] lg:text-base"
+        className="mt-2 h-[34px] overflow-hidden line-clamp-2 text-xs font-bold leading-tight text-foreground lg:h-[45px] lg:text-base"
       >
         {conteudo.nm_titulo}
       </Link>
