@@ -1,6 +1,6 @@
 import { pool } from "@/lib/db";
-import CatalogoAdminClient from "./CatalogoAdminClient";
 import type { Conteudo, TpFormato } from "@/types/database";
+import CatalogoAdminClient from "./CatalogoAdminClient";
 
 export const revalidate = 0;
 
@@ -47,7 +47,7 @@ export default async function CatalogoAdminPage({
   const [conteudosResult, rankingResult, categoriasResult] = await Promise.all([
     pool.query<Conteudo & { total_count: string }>(
       `SELECT *, COUNT(*) OVER() AS total_count FROM "CONTEUDOS" ${whereSql}
-       ORDER BY ${ordenarPor} ${direcaoSql} LIMIT $${limitParam} OFFSET $${offsetParam}`,
+       ORDER BY ${ordenarPor} ${direcaoSql} NULLS LAST LIMIT $${limitParam} OFFSET $${offsetParam}`,
       valores
     ),
     pool.query<{ cd_conteudo: string; total_vendas: number }>("SELECT * FROM vw_ranking_mensal"),
