@@ -1,6 +1,10 @@
 import CatalogoContent from "@/components/catalogo/CatalogoContent";
 import { pool } from "@/lib/db";
-import { obterCategoriasExclusivasAssinantes, ordenarCategorias } from "@/lib/categorias-config";
+import {
+  canonicalizarCategorias,
+  obterCategoriasExclusivasAssinantes,
+  ordenarCategorias,
+} from "@/lib/categorias-config";
 import { obterAppsVisiveis } from "@/lib/apps-config";
 import { getSessaoUsuario } from "@/lib/user-auth";
 import { usuarioTemAssinaturaAtiva } from "@/lib/acesso";
@@ -23,9 +27,14 @@ export default async function CatalogoPage({
   // é como se não existisse.
   const categoriasExclusivas = await obterCategoriasExclusivasAssinantes();
   const { rows: todosConteudos } = await pool.query<Conteudo>('SELECT * FROM "CONTEUDOS"');
+  const canonPorNome = canonicalizarCategorias(todosConteudos.map((c) => c.nm_categoria));
+  const todosConteudosCanonizados = todosConteudos.map((c) => ({
+    ...c,
+    nm_categoria: canonPorNome.get(c.nm_categoria) ?? c.nm_categoria,
+  }));
   const conteudos = ehAssinante
-    ? todosConteudos
-    : todosConteudos.filter(
+    ? todosConteudosCanonizados
+    : todosConteudosCanonizados.filter(
         (c) => !c.sn_exclusivo_assinantes && !categoriasExclusivas.includes(c.nm_categoria)
       );
 

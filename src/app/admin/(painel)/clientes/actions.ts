@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { pool } from "@/lib/db";
 import { DIAS_ALUGUEL, DIAS_VITALICIO, obterIdentidadeParaCompra, somarDias } from "@/lib/acesso";
 import { registrarLog } from "@/lib/auditoria";
+import { formatarDataHora } from "@/lib/data";
 import type { ClienteResumo, TpCompra, Venda } from "@/types/database";
 
 export async function buscarVendasCliente(nrIdTelegram: number): Promise<Venda[]> {
@@ -81,11 +82,11 @@ export async function concederAcesso(formData: FormData, forcar = false) {
     );
 
     if (existentes[0]?.ts_expiracao) {
-      const dataFormatada = new Intl.DateTimeFormat("pt-BR", {
+      const dataFormatada = formatarDataHora(existentes[0].ts_expiracao, {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
-      }).format(new Date(existentes[0].ts_expiracao));
+      });
       throw new Error(
         `DUPLICADO: Este cliente já tem acesso ativo a isso até ${dataFormatada}.`
       );

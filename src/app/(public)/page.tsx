@@ -2,6 +2,7 @@ import HomeContent from "@/components/home/HomeContent";
 import { pool } from "@/lib/db";
 import { deveExibirPromoInicial, obterCdPlanoPromoInicial } from "@/lib/pagamento";
 import {
+  canonicalizarCategorias,
   obterCategoriasExclusivasAssinantes,
   ordenarCategorias,
 } from "@/lib/categorias-config";
@@ -27,9 +28,16 @@ export default async function HomePage() {
   // Categorias inteiras marcadas "só assinantes": somem do conteúdo (não
   // só da lista de categorias) pra quem não assina.
   const categoriasExclusivas = await obterCategoriasExclusivasAssinantes();
+  const canonPorNome = canonicalizarCategorias(
+    conteudosSemExclusivos.map((c) => c.nm_categoria)
+  );
+  const conteudosCanonizados = conteudosSemExclusivos.map((c) => ({
+    ...c,
+    nm_categoria: canonPorNome.get(c.nm_categoria) ?? c.nm_categoria,
+  }));
   const conteudos = ehAssinante
-    ? conteudosSemExclusivos
-    : conteudosSemExclusivos.filter((c) => !categoriasExclusivas.includes(c.nm_categoria));
+    ? conteudosCanonizados
+    : conteudosCanonizados.filter((c) => !categoriasExclusivas.includes(c.nm_categoria));
 
   const categoriasSemOrdem = Array.from(
     new Set(conteudos.map((c) => c.nm_categoria).filter(Boolean))

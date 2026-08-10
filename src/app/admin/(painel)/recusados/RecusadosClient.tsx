@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import type { Conteudo, Plano, TentativaCartaoRecusada } from "@/types/database";
 import { formatarPreco } from "@/lib/catalogo";
+import { formatarDataHora } from "@/lib/data";
 import Pagination from "@/components/admin/Pagination";
 
 export default function RecusadosClient({
@@ -91,13 +92,13 @@ export default function RecusadosClient({
                       className="hover:bg-[rgba(139,92,246,0.05)] transition-colors"
                     >
                       <td className="px-6 py-4 text-xs text-[#A78BFA]/80 whitespace-nowrap">
-                        {new Intl.DateTimeFormat("pt-BR", {
+                        {formatarDataHora(t.ts_criacao, {
                           day: "2-digit",
                           month: "2-digit",
                           year: "numeric",
                           hour: "2-digit",
                           minute: "2-digit",
-                        }).format(new Date(t.ts_criacao))}
+                        })}
                       </td>
                       <td className="px-6 py-4 font-mono text-xs">{t.nr_id_telegram}</td>
                       <td className="px-6 py-4 font-medium max-w-xs truncate">{itemNome}</td>

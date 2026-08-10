@@ -11,6 +11,7 @@ import { buttonTap } from "@/lib/motion";
 import { useFocoModal } from "@/components/admin/useFocoModal";
 import { useToast } from "@/components/admin/ToastProvider";
 import { baixarCsv } from "@/lib/csv";
+import { formatarDataHora } from "@/lib/data";
 import Avatar from "@/components/ui/Avatar";
 import {
   banirCliente,
@@ -333,13 +334,13 @@ export default function ClientesAdminClient({
                 </tr>
               ) : (
                 clientes.map((cliente) => {
-                  const dataUltima = new Intl.DateTimeFormat("pt-BR", {
+                  const dataUltima = formatarDataHora(cliente.ultima_compra, {
                     day: "2-digit",
                     month: "2-digit",
                     year: "numeric",
                     hour: "2-digit",
                     minute: "2-digit",
-                  }).format(new Date(cliente.ultima_compra));
+                  });
 
                   return (
                     <motion.tr
@@ -467,13 +468,13 @@ export default function ClientesAdminClient({
                     {ultimaVisita.ds_ip ?? "—"}
                   </p>
                   <p className="text-[#A78BFA]/60">
-                    {new Intl.DateTimeFormat("pt-BR", {
+                    {formatarDataHora(ultimaVisita.ts_criacao, {
                       day: "2-digit",
                       month: "2-digit",
                       year: "numeric",
                       hour: "2-digit",
                       minute: "2-digit",
-                    }).format(new Date(ultimaVisita.ts_criacao))}
+                    })}
                   </p>
                 </div>
               )}
@@ -505,20 +506,20 @@ export default function ClientesAdminClient({
                           `Conteúdo #${v.cd_conteudo}`;
                       }
 
-                      const dataVenda = new Intl.DateTimeFormat("pt-BR", {
+                      const dataVenda = formatarDataHora(v.ts_criacao, {
                         day: "2-digit",
                         month: "2-digit",
                         year: "numeric",
                         hour: "2-digit",
                         minute: "2-digit",
-                      }).format(new Date(v.ts_criacao));
+                      });
 
                       const dataExpiracao = v.ts_expiracao
-                        ? new Intl.DateTimeFormat("pt-BR", {
+                        ? formatarDataHora(v.ts_expiracao, {
                             day: "2-digit",
                             month: "2-digit",
                             year: "numeric",
-                          }).format(new Date(v.ts_expiracao))
+                          })
                         : null;
 
                       return (

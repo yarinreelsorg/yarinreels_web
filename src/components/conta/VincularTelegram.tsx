@@ -9,7 +9,10 @@ import {
 } from "@/app/(public)/conta/actions";
 import { buttonTap } from "@/lib/motion";
 
-const BOT_USERNAME = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME;
+// Fallback pro username real do bot — se a env var não estiver configurada
+// no ambiente de produção, o link não pode virar "t.me/undefined" (isso faz
+// o Telegram cair na home telegram.org em vez de abrir o bot).
+const BOT_USERNAME = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || "Melreels_bot";
 
 export default function VincularTelegram({
   nrIdTelegramInicial,
@@ -129,34 +132,21 @@ export default function VincularTelegram({
             <p className="text-2xl font-black tracking-[0.2em] text-primary">{codigo}</p>
           </div>
           <p className="text-xs leading-relaxed text-secondary">
-            {BOT_USERNAME ? (
-              <>
-                Envie{" "}
-                <code className="rounded bg-background px-1.5 py-0.5 text-foreground">
-                  /vincular {codigo}
-                </code>{" "}
-                para{" "}
-                <a
-                  href={`https://t.me/${BOT_USERNAME}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-semibold text-primary hover:underline"
-                >
-                  @{BOT_USERNAME}
-                </a>{" "}
-                no Telegram.
-              </>
-            ) : (
-              <>
-                Envie{" "}
-                <code className="rounded bg-background px-1.5 py-0.5 text-foreground">
-                  /vincular {codigo}
-                </code>{" "}
-                para o nosso bot no Telegram.
-              </>
-            )}
-            {" "}Expira em 15 minutos.
+            Envie{" "}
+            <code className="rounded bg-background px-1.5 py-0.5 text-foreground">
+              /vincular {codigo}
+            </code>{" "}
+            para o bot no Telegram. Expira em 15 minutos.
           </p>
+          <motion.a
+            href={`https://t.me/${BOT_USERNAME}?text=${encodeURIComponent(`/vincular ${codigo}`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            {...buttonTap}
+            className="flex w-full items-center justify-center gap-2 rounded-md bg-primary py-2.5 text-xs font-bold text-white transition-colors hover:bg-primary-dark"
+          >
+            ✈️ Abrir Telegram com o código
+          </motion.a>
           <motion.button
             type="button"
             onClick={checar}

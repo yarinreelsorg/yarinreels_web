@@ -4,14 +4,11 @@ import { pool } from "@/lib/db";
 import { getSessaoUsuario } from "@/lib/user-auth";
 import Navbar from "@/components/layout/Navbar";
 import { diasRestantes as calcularDiasRestantes, estaExpirada } from "@/lib/catalogo";
+import { formatarDataHora } from "@/lib/data";
 import type { Plano, Venda } from "@/types/database";
 
 function formatarData(iso: string) {
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  }).format(new Date(iso));
+  return formatarDataHora(iso, { day: "2-digit", month: "long", year: "numeric" });
 }
 
 export default async function ContaAssinaturaPage() {

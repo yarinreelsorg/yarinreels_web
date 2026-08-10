@@ -9,6 +9,37 @@ function normalizar(categoria: string) {
     .trim();
 }
 
+/**
+ * Categorias cadastradas via bot ou admin podem divergir só por espaço,
+ * maiúscula/minúscula ou acento (ex: "Dorama" vs "DORAMA " vs "dorama") —
+ * isso faz a mesma categoria virar duas fileiras/entradas de filtro
+ * diferentes. Agrupa por forma normalizada e usa a variante mais comum
+ * como nome de exibição, sem precisar corrigir o cadastro no banco.
+ */
+export function canonicalizarCategorias(nomes: (string | null | undefined)[]): Map<string, string> {
+  const contagemPorChave = new Map<string, Map<string, number>>();
+  for (const nome of nomes) {
+    if (!nome) continue;
+    const chave = normalizar(nome);
+    const contagem = contagemPorChave.get(chave) ?? new Map<string, number>();
+    contagem.set(nome, (contagem.get(nome) ?? 0) + 1);
+    contagemPorChave.set(chave, contagem);
+  }
+
+  const canonicoPorChave = new Map<string, string>();
+  for (const [chave, contagem] of contagemPorChave) {
+    const maisComum = [...contagem.entries()].sort((a, b) => b[1] - a[1])[0][0];
+    canonicoPorChave.set(chave, maisComum);
+  }
+
+  const canonicoPorNomeOriginal = new Map<string, string>();
+  for (const nome of nomes) {
+    if (!nome) continue;
+    canonicoPorNomeOriginal.set(nome, canonicoPorChave.get(normalizar(nome))!);
+  }
+  return canonicoPorNomeOriginal;
+}
+
 const GRUPO_AMERICANA = ["americana", "americano", "americanas", "americanos"];
 const GRUPO_BRASILEIRA = ["brasileira", "brasileiro", "brasileiras", "brasileiros"];
 const GRUPO_ADULTO = ["+18", "18", "mais de 18", "mais de 18 anos", "adulto"];

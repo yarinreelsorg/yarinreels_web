@@ -1,5 +1,6 @@
 import { pool } from "@/lib/db";
 import { formatarPreco } from "@/lib/catalogo";
+import { chaveDiaBrasil, formatarDataHora } from "@/lib/data";
 import type { Conteudo, Venda, Plano } from "@/types/database";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Stagger";
 import Reveal from "@/components/motion/Reveal";
@@ -74,7 +75,9 @@ export default async function DashboardPage() {
     .sort((a, b) => new Date(b.ts_criacao).getTime() - new Date(a.ts_criacao).getTime())
     .slice(0, 10);
 
-  // Faturamento aprovado dos últimos 14 dias
+  // Faturamento aprovado dos últimos 14 dias (agrupado pelo dia calendário
+  // em Brasília, não no fuso do servidor — senão vendas perto da meia-noite
+  // caem no dia errado do gráfico).
   const DIAS_GRAFICO = 14;
   const diasGrafico = Array.from({ length: DIAS_GRAFICO }, (_, i) => {
     const d = new Date(agora);
@@ -83,19 +86,12 @@ export default async function DashboardPage() {
   });
 
   const faturamentoPorDia = diasGrafico.map((dia) => {
+    const chaveDia = chaveDiaBrasil(dia);
     const total = vendas
-      .filter((v) => {
-        if (v.tp_status !== "APROVADA") return false;
-        const d = new Date(v.ts_criacao);
-        return (
-          d.getFullYear() === dia.getFullYear() &&
-          d.getMonth() === dia.getMonth() &&
-          d.getDate() === dia.getDate()
-        );
-      })
+      .filter((v) => v.tp_status === "APROVADA" && chaveDiaBrasil(v.ts_criacao) === chaveDia)
       .reduce((s, v) => s + getValorAproximado(v), 0);
     return {
-      label: new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit" }).format(dia),
+      label: formatarDataHora(dia, { day: "2-digit", month: "2-digit" }),
       total,
     };
   });
@@ -224,13 +220,13 @@ export default async function DashboardPage() {
                       `Conteúdo #${venda.cd_conteudo}`;
                   }
 
-                  const dataVenda = new Intl.DateTimeFormat("pt-BR", {
+                  const dataVenda = formatarDataHora(venda.ts_criacao, {
                     day: "2-digit",
                     month: "2-digit",
                     year: "numeric",
                     hour: "2-digit",
                     minute: "2-digit",
-                  }).format(new Date(venda.ts_criacao));
+                  });
 
                   return (
                     <tr key={venda.cd_venda} className="hover:bg-[rgba(139,92,246,0.05)] transition-colors">

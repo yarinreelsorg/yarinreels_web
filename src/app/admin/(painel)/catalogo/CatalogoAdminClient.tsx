@@ -20,6 +20,7 @@ import { useFocoModal } from "@/components/admin/useFocoModal";
 import { useToast } from "@/components/admin/ToastProvider";
 import { baixarCsv } from "@/lib/csv";
 import { buttonTap } from "@/lib/motion";
+import { formatarDataHora } from "@/lib/data";
 
 interface Filtros {
   busca: string;
@@ -442,7 +443,7 @@ export default function CatalogoAdminClient({
                     </td>
                     <td className="px-6 py-4 text-xs text-[#A78BFA]/80">
                       {conteudo.dt_lancamento
-                        ? new Intl.DateTimeFormat("pt-BR").format(new Date(conteudo.dt_lancamento))
+                        ? formatarDataHora(conteudo.dt_lancamento)
                         : "—"}
                     </td>
                     <td className="px-6 py-4">

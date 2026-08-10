@@ -159,11 +159,11 @@ export default function FilmeContent({
               </p>
             )}
 
-            <div className="mt-6 flex flex-wrap items-center gap-3">
+            <div className="mt-6 flex flex-wrap items-center gap-2.5">
               <motion.div {...buttonTap}>
                 <Link
                   href={`/assistir/${conteudo.cd_conteudo}`}
-                  className="rounded-md bg-primary px-7 py-3.5 text-sm font-bold text-white transition-colors hover:bg-primary-dark sm:text-base"
+                  className="rounded-md bg-primary px-5 py-2 text-xs font-bold text-white transition-colors hover:bg-primary-dark sm:text-sm"
                 >
                   ▶ Assistir
                 </Link>
@@ -172,14 +172,14 @@ export default function FilmeContent({
                 cdConteudo={conteudo.cd_conteudo}
                 favoritadoInicial={favoritado}
                 logado={logado}
-                className="rounded-md border border-secondary/40 px-7 py-3.5 text-sm font-bold text-foreground transition-colors hover:border-foreground sm:text-base"
+                className="rounded-md border border-secondary/40 px-5 py-2 text-xs font-bold text-foreground transition-colors hover:border-foreground sm:text-sm"
               />
               {trailerId && (
                 <motion.button
                   type="button"
                   onClick={() => setTrailerAberto(true)}
                   {...buttonTap}
-                  className="rounded-md border border-secondary/40 px-7 py-3.5 text-sm font-bold text-foreground transition-colors hover:border-foreground sm:text-base"
+                  className="rounded-md border border-secondary/40 px-5 py-2 text-xs font-bold text-foreground transition-colors hover:border-foreground sm:text-sm"
                 >
                   🎬 Trailer
                 </motion.button>
@@ -249,6 +249,7 @@ export default function FilmeContent({
           titulo="Mais como este"
           itens={similares}
           verTudoHref={`/catalogo?categoria=${encodeURIComponent(conteudo.nm_categoria)}`}
+          discreto
         />
       )}
 

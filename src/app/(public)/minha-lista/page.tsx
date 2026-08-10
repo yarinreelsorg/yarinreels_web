@@ -10,6 +10,7 @@ import { SecaoTitulo, EstadoVazio } from "@/components/catalog/SecaoTitulo";
 import Reveal from "@/components/motion/Reveal";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Stagger";
 import { diasRestantes, estaExpirada } from "@/lib/catalogo";
+import { formatarDataHora } from "@/lib/data";
 import type { Conteudo, Plano, TpCompra, Venda } from "@/types/database";
 
 export const revalidate = 0;
@@ -159,11 +160,11 @@ export default async function MinhaListaPage() {
                 <p className="mt-0.5 text-sm text-secondary">
                   Libera <span className="font-semibold text-[#A78BFA]">{planoAtivo.nm_categoria}</span>{" "}
                   · vale até{" "}
-                  {new Intl.DateTimeFormat("pt-BR", {
+                  {formatarDataHora(assinaturaAtiva.ts_expiracao as string, {
                     day: "2-digit",
                     month: "2-digit",
                     year: "numeric",
-                  }).format(new Date(assinaturaAtiva.ts_expiracao as string))}
+                  })}
                 </p>
               </div>
               <Link

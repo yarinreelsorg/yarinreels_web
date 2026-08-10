@@ -9,6 +9,7 @@ import { useFocoModal } from "@/components/admin/useFocoModal";
 import { useToast } from "@/components/admin/ToastProvider";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import { alternarAtivoCupom, criarCupom, editarCupom, removerCupom } from "./actions";
+import { formatarDataHora } from "@/lib/data";
 
 export default function CuponsAdminClient({ cuponsInicial }: { cuponsInicial: Cupom[] }) {
   const toast = useToast();
@@ -162,7 +163,7 @@ export default function CuponsAdminClient({ cuponsInicial }: { cuponsInicial: Cu
                     </td>
                     <td className="px-6 py-4 text-xs">
                       {cupom.dt_validade
-                        ? new Intl.DateTimeFormat("pt-BR").format(new Date(cupom.dt_validade))
+                        ? formatarDataHora(cupom.dt_validade)
                         : "Sem validade"}
                     </td>
                     <td className="px-6 py-4">

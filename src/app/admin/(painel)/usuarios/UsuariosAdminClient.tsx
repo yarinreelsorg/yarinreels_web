@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Usuario } from "@/types/database";
 import Avatar from "@/components/ui/Avatar";
+import { formatarDataHora } from "@/lib/data";
 
 export default function UsuariosAdminClient({
   usuarios,
@@ -84,7 +85,7 @@ export default function UsuariosAdminClient({
                     )}
                   </td>
                   <td className="p-3 text-[#A78BFA]">
-                    {new Intl.DateTimeFormat("pt-BR").format(new Date(usuario.ts_criacao))}
+                    {formatarDataHora(usuario.ts_criacao)}
                   </td>
                   <td className="p-3 text-right">
                     <a

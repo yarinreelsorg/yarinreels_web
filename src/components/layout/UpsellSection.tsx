@@ -40,19 +40,32 @@ function PromoFlutuante({ hrefPromo }: { hrefPromo: string }) {
     };
   }, []);
 
+  function dispensar() {
+    setVisivel(false);
+    window.localStorage.setItem(CHAVE_DISPENSADA, "1");
+  }
+
   return (
     <AnimatePresence>
       {visivel && (
-        <motion.a
-          href={hrefPromo}
+        <motion.div
           initial={{ opacity: 0, y: -16 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -16 }}
-          whileTap={{ scale: 0.97 }}
-          className="animate-pulse-soft fixed inset-x-4 top-[112px] z-[95] flex items-center justify-center gap-2 rounded-full bg-primary px-4 py-2.5 text-center text-xs font-bold text-white shadow-[0_8px_24px_rgba(194,24,91,0.5)] lg:hidden"
+          className="animate-pulse-soft fixed inset-x-4 top-[112px] z-[95] flex items-center gap-2 rounded-full bg-primary py-2.5 pl-4 pr-2 text-white shadow-[0_8px_24px_rgba(194,24,91,0.5)] lg:hidden"
         >
-          🔥 Assine e assista tudo sem limites — primeiro mês R$ 20
-        </motion.a>
+          <a href={hrefPromo} className="flex-1 text-center text-xs font-bold">
+            🔥 Assine e assista tudo sem limites — primeiro mês R$ 20
+          </a>
+          <button
+            type="button"
+            onClick={dispensar}
+            aria-label="Fechar"
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white/90 hover:bg-white/20"
+          >
+            ×
+          </button>
+        </motion.div>
       )}
     </AnimatePresence>
   );

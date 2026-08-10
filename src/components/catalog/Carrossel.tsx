@@ -12,10 +12,12 @@ export default function Carrossel({
   titulo,
   itens,
   verTudoHref,
+  discreto = false,
 }: {
   titulo: string;
   itens: Conteudo[];
   verTudoHref?: string;
+  discreto?: boolean;
 }) {
   const trilhoRef = useRef<HTMLDivElement>(null);
 
@@ -32,9 +34,17 @@ export default function Carrossel({
   }
 
   return (
-    <section className="relative py-5">
+    <section className={discreto ? "relative py-3" : "relative py-5"}>
       <div className="mb-3 flex items-center justify-between px-4 sm:px-8">
-        <h2 className="text-[17px] font-black text-foreground">{titulo}</h2>
+        <h2
+          className={
+            discreto
+              ? "text-[13px] font-bold text-secondary"
+              : "text-[17px] font-black text-foreground"
+          }
+        >
+          {titulo}
+        </h2>
         {verTudoHref && (
           <Link
             href={verTudoHref}

@@ -31,6 +31,16 @@ export default function InstallPwaButton() {
   const [modoIOS, setModoIOS] = useState(false);
   const [visivel, setVisivel] = useState(false);
 
+  // O Chrome (principalmente no desktop) só considera o site instalável —
+  // e só dispara "beforeinstallprompt" — se existir um service worker
+  // registrado com handler de "fetch". Sem isso, o botão nunca aparece,
+  // mesmo com manifest correto.
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+  }, []);
+
   // Só dá pra saber se é iOS/já instalado/dispensado depois de montar no
   // navegador — não existe forma de descobrir isso durante o SSR.
   useEffect(() => {

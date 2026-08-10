@@ -14,6 +14,7 @@ import {
   renomearCategoriaAction,
 } from "./actions";
 import { buttonTap } from "@/lib/motion";
+import { formatarDataHora } from "@/lib/data";
 import { useFocoModal } from "@/components/admin/useFocoModal";
 import { useToast } from "@/components/admin/ToastProvider";
 
@@ -547,13 +548,13 @@ export default function ConfiguracoesClient({
                     </td>
                     <td className="px-6 py-4 text-xs text-[#A78BFA]/80">
                       {admin.ts_ultimo_login
-                        ? new Intl.DateTimeFormat("pt-BR", {
+                        ? formatarDataHora(admin.ts_ultimo_login, {
                             day: "2-digit",
                             month: "2-digit",
                             year: "numeric",
                             hour: "2-digit",
                             minute: "2-digit",
-                          }).format(new Date(admin.ts_ultimo_login))
+                          })
                         : "Nunca"}
                     </td>
                     {ehSuperAdmin && (

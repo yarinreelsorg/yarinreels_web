@@ -64,6 +64,14 @@ export default function HomeContent({
     });
   }
 
+  // Fileira "Lançamentos": mais recentes de todo o catálogo, sempre a
+  // primeira fileira de categoria — dá destaque a conteúdo novo antes das
+  // categorias fixas (Americanas, Brasileiras etc).
+  const lancamentos = [...conteudos]
+    .filter((c) => c.dt_lancamento)
+    .sort((a, b) => new Date(b.dt_lancamento!).getTime() - new Date(a.dt_lancamento!).getTime())
+    .slice(0, 20);
+
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar busca={busca} onBuscaChange={aoMudarBusca} />
@@ -104,6 +112,9 @@ export default function HomeContent({
           <ContinuarAssistindo itens={continuarAssistindo} />
 
           <div className="flex flex-col">
+            {lancamentos.length > 0 && (
+              <Carrossel titulo="Lançamentos" itens={lancamentos} />
+            )}
             {categorias.map((categoria) => (
               <Carrossel
                 key={categoria}

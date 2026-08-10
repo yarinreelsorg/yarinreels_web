@@ -8,6 +8,7 @@ import Pagination from "@/components/admin/Pagination";
 import { useToast } from "@/components/admin/ToastProvider";
 import { restaurarConteudo } from "../catalogo/actions";
 import { restaurarPlano } from "../planos/actions";
+import { formatarDataHora } from "@/lib/data";
 
 const ROTULO_ACAO: Record<string, string> = {
   CRIACAO: "Criação",
@@ -143,13 +144,13 @@ export default function AuditoriaClient({
                       className="hover:bg-[rgba(139,92,246,0.05)] transition-colors align-top"
                     >
                       <td className="px-6 py-4 text-xs text-[#A78BFA]/80 whitespace-nowrap">
-                        {new Intl.DateTimeFormat("pt-BR", {
+                        {formatarDataHora(log.ts_criacao, {
                           day: "2-digit",
                           month: "2-digit",
                           year: "numeric",
                           hour: "2-digit",
                           minute: "2-digit",
-                        }).format(new Date(log.ts_criacao))}
+                        })}
                       </td>
                       <td className="px-6 py-4 font-medium">{log.nm_administrador}</td>
                       <td className="px-6 py-4">
