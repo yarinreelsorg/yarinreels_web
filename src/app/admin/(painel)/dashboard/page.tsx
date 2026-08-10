@@ -85,16 +85,20 @@ export default async function DashboardPage() {
     return d;
   });
 
-  const faturamentoPorDia = diasGrafico.map((dia) => {
-    const chaveDia = chaveDiaBrasil(dia);
-    const total = vendas
-      .filter((v) => v.tp_status === "APROVADA" && chaveDiaBrasil(v.ts_criacao) === chaveDia)
-      .reduce((s, v) => s + getValorAproximado(v), 0);
-    return {
-      label: formatarDataHora(dia, { day: "2-digit", month: "2-digit" }),
-      total,
-    };
-  });
+  // Uma passada só pelas vendas (em vez de filtrar a lista inteira pra cada
+  // um dos 14 dias) — com milhares de vendas, o filtro repetido virava
+  // centenas de milhares de comparações por carregamento do dashboard.
+  const totalPorChaveDia = new Map<string, number>();
+  for (const v of vendas) {
+    if (v.tp_status !== "APROVADA") continue;
+    const chaveDia = chaveDiaBrasil(v.ts_criacao);
+    totalPorChaveDia.set(chaveDia, (totalPorChaveDia.get(chaveDia) ?? 0) + getValorAproximado(v));
+  }
+
+  const faturamentoPorDia = diasGrafico.map((dia) => ({
+    label: formatarDataHora(dia, { day: "2-digit", month: "2-digit" }),
+    total: totalPorChaveDia.get(chaveDiaBrasil(dia)) ?? 0,
+  }));
   const maxFaturamentoDia = Math.max(1, ...faturamentoPorDia.map((d) => d.total));
 
   return (
