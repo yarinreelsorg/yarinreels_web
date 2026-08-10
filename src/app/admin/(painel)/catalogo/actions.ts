@@ -45,11 +45,23 @@ function validarPreco(valor: number | null, campo: string) {
 function extrairCampos(formData: FormData) {
   const ds_url_bunny = parseString(formData.get("ds_url_bunny"));
   const ds_file_id_telegram = parseString(formData.get("ds_file_id_telegram"));
+  const ds_url_bunny_legendado = parseString(formData.get("ds_url_bunny_legendado"));
+  const ds_file_id_telegram_legendado = parseString(formData.get("ds_file_id_telegram_legendado"));
+  const tp_fonte_prioritaria = (parseString(formData.get("tp_fonte_prioritaria")) ??
+    "LOCAL") as TpFontePrioritaria;
   const vl_aluguel = parseNumber(formData.get("vl_aluguel"));
   const vl_vitalicio = parseNumber(formData.get("vl_vitalicio"));
 
   validarUrlBunny(ds_url_bunny);
-  validarTelegramFileId(ds_file_id_telegram);
+  validarUrlBunny(ds_url_bunny_legendado);
+  // Esse campo só precisa ser um file_id de verdade quando a fonte é
+  // TELEGRAM — quando a fonte é LOCAL, ele guarda o nome do arquivo local
+  // (com espaços, acentos, ".mp4" etc), que a regex de file_id rejeitava,
+  // quebrando o salvamento de QUALQUER edição em conteúdo LOCAL.
+  if (tp_fonte_prioritaria === "TELEGRAM") {
+    validarTelegramFileId(ds_file_id_telegram);
+    validarTelegramFileId(ds_file_id_telegram_legendado);
+  }
   validarPreco(vl_aluguel, "Valor de aluguel");
   validarPreco(vl_vitalicio, "Valor vitalício");
 
@@ -65,7 +77,9 @@ function extrairCampos(formData: FormData) {
     ds_url_poster: parseString(formData.get("ds_url_poster")),
     ds_url_bunny,
     ds_file_id_telegram,
-    tp_fonte_prioritaria: (parseString(formData.get("tp_fonte_prioritaria")) ?? "LOCAL") as TpFontePrioritaria,
+    ds_url_bunny_legendado,
+    ds_file_id_telegram_legendado,
+    tp_fonte_prioritaria,
     sn_destaque: formData.get("sn_destaque") === "on" || formData.get("sn_destaque") === "true",
     dt_lancamento: parseString(formData.get("dt_lancamento")),
     nm_app_origem: parseString(formData.get("nm_app_origem")),
@@ -82,8 +96,9 @@ export async function adicionarConteudo(cdConteudo: string, formData: FormData) 
     `INSERT INTO "CONTEUDOS"
        (cd_conteudo, nm_titulo, nm_categoria, tp_formato, nm_idioma, ds_generos, ds_descricao,
         vl_aluguel, vl_vitalicio, ds_url_poster, ds_url_bunny, ds_file_id_telegram,
+        ds_url_bunny_legendado, ds_file_id_telegram_legendado,
         tp_fonte_prioritaria, sn_destaque, dt_lancamento, nm_app_origem, sn_exclusivo_assinantes, nr_views)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,0)`,
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,0)`,
     [
       cdConteudo,
       campos.nm_titulo,
@@ -97,6 +112,8 @@ export async function adicionarConteudo(cdConteudo: string, formData: FormData) 
       campos.ds_url_poster,
       campos.ds_url_bunny,
       campos.ds_file_id_telegram,
+      campos.ds_url_bunny_legendado,
+      campos.ds_file_id_telegram_legendado,
       campos.tp_fonte_prioritaria,
       campos.sn_destaque,
       campos.dt_lancamento,
@@ -123,9 +140,10 @@ export async function editarConteudo(id: string, formData: FormData) {
     `UPDATE "CONTEUDOS" SET
        nm_titulo = $1, nm_categoria = $2, tp_formato = $3, nm_idioma = $4, ds_generos = $5,
        ds_descricao = $6, vl_aluguel = $7, vl_vitalicio = $8, ds_url_poster = $9,
-       ds_url_bunny = $10, ds_file_id_telegram = $11, tp_fonte_prioritaria = $12,
-       sn_destaque = $13, dt_lancamento = $14, nm_app_origem = $15, sn_exclusivo_assinantes = $16
-     WHERE cd_conteudo = $17`,
+       ds_url_bunny = $10, ds_file_id_telegram = $11, ds_url_bunny_legendado = $12,
+       ds_file_id_telegram_legendado = $13, tp_fonte_prioritaria = $14,
+       sn_destaque = $15, dt_lancamento = $16, nm_app_origem = $17, sn_exclusivo_assinantes = $18
+     WHERE cd_conteudo = $19`,
     [
       campos.nm_titulo,
       campos.nm_categoria,
@@ -138,6 +156,8 @@ export async function editarConteudo(id: string, formData: FormData) {
       campos.ds_url_poster,
       campos.ds_url_bunny,
       campos.ds_file_id_telegram,
+      campos.ds_url_bunny_legendado,
+      campos.ds_file_id_telegram_legendado,
       campos.tp_fonte_prioritaria,
       campos.sn_destaque,
       campos.dt_lancamento,

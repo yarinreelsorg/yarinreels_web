@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { pool } from "@/lib/db";
 import { getSessaoUsuario } from "@/lib/user-auth";
 import { obterIdsTelegramElegiveis, verificarAcessoConteudo, type StatusAcesso } from "@/lib/acesso";
+import { obterCarenciaAssinanteHoras } from "@/lib/site-config";
 import type { Conteudo, Episodio } from "@/types/database";
 import AssistirClient from "./AssistirClient";
 
@@ -31,8 +32,11 @@ export default async function AssistirPage({
   if (!sessao) {
     statusAcesso = "sem_login";
   } else {
-    const idsElegiveis = await obterIdsTelegramElegiveis(sessao.cd_usuario);
-    acesso = await verificarAcessoConteudo(idsElegiveis, conteudo);
+    const [idsElegiveis, carenciaHoras] = await Promise.all([
+      obterIdsTelegramElegiveis(sessao.cd_usuario),
+      obterCarenciaAssinanteHoras(),
+    ]);
+    acesso = await verificarAcessoConteudo(idsElegiveis, conteudo, carenciaHoras);
     statusAcesso = acesso.liberado ? "liberado" : "negado";
   }
 
@@ -58,6 +62,7 @@ export default async function AssistirPage({
       episodios={episodios}
       episodioAtual={episodioAtual}
       statusAcesso={statusAcesso}
+      emCarencia={!acesso.liberado && !!acesso.emCarencia}
     />
   );
 }

@@ -47,14 +47,20 @@ export default async function HomePage() {
   const apps = await obterAppsVisiveis();
 
   const destacados = conteudos.filter((c) => c.sn_destaque);
-  const destaques = (destacados.length > 0 ? destacados : conteudos)
-    .slice()
-    .sort((a, b) => b.nr_views - a.nr_views)
-    .slice(0, 5);
+  const destaques =
+    destacados.length > 0
+      ? [...destacados]
+          .sort((a, b) => (a.nr_ordem_destaque ?? 0) - (b.nr_ordem_destaque ?? 0))
+          .slice(0, 5)
+      : [...conteudos].sort((a, b) => b.nr_views - a.nr_views).slice(0, 5);
 
-  const top12 = [...conteudos]
-    .sort((a, b) => b.nr_views - a.nr_views)
-    .slice(0, 12);
+  const top12Manual = conteudos.filter((c) => c.sn_top12);
+  const top12 =
+    top12Manual.length > 0
+      ? [...top12Manual]
+          .sort((a, b) => (a.nr_ordem_top12 ?? 0) - (b.nr_ordem_top12 ?? 0))
+          .slice(0, 12)
+      : [...conteudos].sort((a, b) => b.nr_views - a.nr_views).slice(0, 12);
 
   return (
     <HomeContent

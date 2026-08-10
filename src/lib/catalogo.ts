@@ -47,28 +47,57 @@ const BASE_URL_MEDIA_LOCAL = "https://media.melreels.com.br/filmes/";
  *   pelo file_id) — retorna null, o que faz o player cair no aviso de
  *   "disponível só pelo bot".
  */
-export function resolverUrlVideo(item: {
-  tp_fonte_prioritaria: string;
-  ds_url_bunny: string | null;
-  ds_file_id_telegram: string | null;
-  nm_titulo: string;
-}): string | null {
+export type TrilhaAudio = "dublado" | "legendado";
+
+export function resolverUrlVideo(
+  item: {
+    tp_fonte_prioritaria: string;
+    ds_url_bunny: string | null;
+    ds_file_id_telegram: string | null;
+    ds_url_bunny_legendado?: string | null;
+    ds_file_id_telegram_legendado?: string | null;
+    nm_titulo: string;
+  },
+  trilha: TrilhaAudio = "dublado"
+): string | null {
   // Dado legado do bot grava esse campo com casing inconsistente
   // ("LOCAL", "local", etc) — normaliza antes de comparar.
   const fonte = (item.tp_fonte_prioritaria || "").toUpperCase();
 
+  // Faixa legendada é opcional — se não foi cadastrada pra esse item, cai
+  // de volta pra faixa padrão (dublado) em vez de quebrar a reprodução.
+  const urlBunny =
+    (trilha === "legendado" ? item.ds_url_bunny_legendado : null) || item.ds_url_bunny;
+  const fileIdTelegram =
+    (trilha === "legendado" ? item.ds_file_id_telegram_legendado : null) ||
+    item.ds_file_id_telegram;
+
   if (fonte === "BUNNY") {
-    return item.ds_url_bunny && item.ds_url_bunny.startsWith("http") ? item.ds_url_bunny : null;
+    return urlBunny && urlBunny.startsWith("http") ? urlBunny : null;
   }
 
   if (fonte === "LOCAL") {
-    const nomeBase = (item.ds_file_id_telegram || item.nm_titulo || "").trim();
+    const nomeBase = (fileIdTelegram || item.nm_titulo || "").trim();
     if (!nomeBase) return null;
     const arquivo = nomeBase.toLowerCase().endsWith(".mp4") ? nomeBase : `${nomeBase}.mp4`;
     return `${BASE_URL_MEDIA_LOCAL}${encodeURIComponent(arquivo)}`;
   }
 
   return null;
+}
+
+/** Uma faixa legendada só existe de verdade se tiver um valor DIFERENTE do
+ * dublado — value idêntico normalmente significa que ninguém cadastrou a
+ * versão legendada ainda. */
+export function temTrilhaLegendada(item: {
+  tp_fonte_prioritaria: string;
+  ds_url_bunny_legendado?: string | null;
+  ds_file_id_telegram_legendado?: string | null;
+}): boolean {
+  const fonte = (item.tp_fonte_prioritaria || "").toUpperCase();
+  if (fonte === "BUNNY") return !!item.ds_url_bunny_legendado?.trim();
+  if (fonte === "LOCAL") return !!item.ds_file_id_telegram_legendado?.trim();
+  return false;
 }
 
 export function diasRestantes(tsExpiracao: string) {

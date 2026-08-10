@@ -34,8 +34,15 @@ export type Conteudo = {
   ds_url_poster: string | null;
   ds_file_id_telegram: string | null;
   ds_url_bunny: string | null;
+  /** Faixa alternativa (legendado) — quando ausente, o player usa a faixa
+   * padrão (ds_url_bunny/ds_file_id_telegram, tratada como "dublado"). */
+  ds_url_bunny_legendado: string | null;
+  ds_file_id_telegram_legendado: string | null;
   tp_fonte_prioritaria: TpFontePrioritaria;
   sn_destaque: boolean;
+  nr_ordem_destaque: number | null;
+  sn_top12: boolean;
+  nr_ordem_top12: number | null;
   nr_views: number;
   nm_app_origem: string | null;
   sn_exclusivo_assinantes: boolean;
@@ -57,6 +64,8 @@ export type ConteudoInsert = {
   ds_url_poster?: string | null;
   ds_file_id_telegram?: string | null;
   ds_url_bunny?: string | null;
+  ds_url_bunny_legendado?: string | null;
+  ds_file_id_telegram_legendado?: string | null;
   tp_fonte_prioritaria?: TpFontePrioritaria;
   sn_destaque?: boolean;
   nr_views?: number;
@@ -79,6 +88,8 @@ export type ConteudoUpdate = {
   ds_url_poster?: string | null;
   ds_file_id_telegram?: string | null;
   ds_url_bunny?: string | null;
+  ds_url_bunny_legendado?: string | null;
+  ds_file_id_telegram_legendado?: string | null;
   tp_fonte_prioritaria?: TpFontePrioritaria;
   sn_destaque?: boolean;
   nr_views?: number;
@@ -93,6 +104,8 @@ export type Episodio = {
   nm_titulo: string;
   ds_file_id_telegram: string | null;
   ds_url_bunny: string | null;
+  ds_url_bunny_legendado: string | null;
+  ds_file_id_telegram_legendado: string | null;
 };
 
 export type EpisodioUpdate = {
@@ -100,6 +113,8 @@ export type EpisodioUpdate = {
   nm_titulo?: string;
   ds_file_id_telegram?: string | null;
   ds_url_bunny?: string | null;
+  ds_url_bunny_legendado?: string | null;
+  ds_file_id_telegram_legendado?: string | null;
 };
 
 export type TpMetodoPagamento = "PIX" | "CARTAO";

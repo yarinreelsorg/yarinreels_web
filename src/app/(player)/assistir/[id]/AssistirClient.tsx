@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { motion } from "motion/react";
 import type { Conteudo, Episodio } from "@/types/database";
 import VideoPlayer from "@/components/player/VideoPlayer";
-import { formatarPreco, resolverUrlVideo } from "@/lib/catalogo";
+import { formatarPreco, resolverUrlVideo, temTrilhaLegendada, type TrilhaAudio } from "@/lib/catalogo";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Stagger";
 import { registrarProgressoAssistindo } from "@/lib/historico-actions";
 
@@ -22,20 +23,31 @@ export default function AssistirClient({
   episodios,
   episodioAtual,
   statusAcesso,
+  emCarencia = false,
 }: {
   conteudo: Conteudo;
   episodios: Episodio[];
   episodioAtual: Episodio | null;
   statusAcesso: StatusAcessoPagina;
+  /** Lançamento recente ainda na janela de carência — assinatura não libera,
+   * só compra avulsa (aluguel/vitalício). */
+  emCarencia?: boolean;
 }) {
-  const urlVideo = episodioAtual
-    ? resolverUrlVideo({
+  const [trilha, setTrilha] = useState<TrilhaAudio>("dublado");
+
+  const itemFonte = episodioAtual
+    ? {
         tp_fonte_prioritaria: conteudo.tp_fonte_prioritaria,
         ds_url_bunny: episodioAtual.ds_url_bunny,
         ds_file_id_telegram: episodioAtual.ds_file_id_telegram,
+        ds_url_bunny_legendado: episodioAtual.ds_url_bunny_legendado,
+        ds_file_id_telegram_legendado: episodioAtual.ds_file_id_telegram_legendado,
         nm_titulo: episodioAtual.nm_titulo,
-      })
-    : resolverUrlVideo(conteudo);
+      }
+    : conteudo;
+
+  const urlVideo = resolverUrlVideo(itemFonte, trilha);
+  const temLegendado = temTrilhaLegendada(itemFonte);
   const tocavel = !!urlVideo;
   const idProgresso = episodioAtual ? episodioAtual.cd_episodio : conteudo.cd_conteudo;
 
@@ -47,8 +59,24 @@ export default function AssistirClient({
     <div className="flex min-h-screen flex-col bg-[#050208]">
       {tocavel && statusAcesso === "liberado" ? (
         <div className="relative h-[100dvh] w-full bg-black">
+          {temLegendado && (
+            <div className="absolute right-3 top-3 z-20 flex overflow-hidden rounded-full border border-white/20 bg-black/70 text-xs font-bold backdrop-blur-sm">
+              {(["dublado", "legendado"] as const).map((opcao) => (
+                <button
+                  key={opcao}
+                  type="button"
+                  onClick={() => setTrilha(opcao)}
+                  className={`px-3 py-1.5 capitalize transition-colors ${
+                    trilha === opcao ? "bg-primary text-white" : "text-white/70 hover:text-white"
+                  }`}
+                >
+                  {opcao}
+                </button>
+              ))}
+            </div>
+          )}
           <VideoPlayer
-            key={idProgresso}
+            key={`${idProgresso}-${trilha}`}
             src={urlVideo as string}
             poster={conteudo.ds_url_poster}
             idProgresso={idProgresso}
@@ -103,7 +131,20 @@ export default function AssistirClient({
                 </Link>
               </BloqueioAcesso>
             ) : statusAcesso === "negado" ? (
-              <BloqueioAcesso icone="🛒" titulo="Você ainda não tem acesso a este conteúdo">
+              <BloqueioAcesso
+                icone={emCarencia ? "⏳" : "🛒"}
+                titulo={
+                  emCarencia
+                    ? "Lançamento recente — disponível só por compra avulsa"
+                    : "Você ainda não tem acesso a este conteúdo"
+                }
+              >
+                {emCarencia && (
+                  <p className="max-w-sm text-xs text-[#A78BFA]/70">
+                    A assinatura libera esse título em breve. Por enquanto, só quem compra
+                    aluguel ou vitalício assiste.
+                  </p>
+                )}
                 <div className="flex flex-wrap items-center justify-center gap-3">
                   {conteudo.vl_aluguel && (
                     <span className="rounded-md border border-[rgba(139,92,246,0.3)] px-4 py-2 text-xs font-semibold text-[#A78BFA]">

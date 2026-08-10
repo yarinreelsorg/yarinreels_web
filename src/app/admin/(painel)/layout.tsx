@@ -11,6 +11,7 @@ import { ToastProvider } from "@/components/admin/ToastProvider";
 const LINKS = [
   { href: "/admin/dashboard", label: "Dashboard", icon: "🏠" },
   { href: "/admin/catalogo", label: "Catálogo", icon: "🎬" },
+  { href: "/admin/destaques", label: "Destaques da Home", icon: "⭐" },
   { href: "/admin/planos", label: "Planos", icon: "🗂️" },
   { href: "/admin/cupons", label: "Cupons", icon: "🏷️" },
   { href: "/admin/combos", label: "Combos", icon: "📦" },

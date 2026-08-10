@@ -7,7 +7,7 @@ import { pool } from "@/lib/db";
 import { getSessaoAdmin } from "@/lib/admin-auth";
 import { registrarLog } from "@/lib/auditoria";
 import { renomearCategoria, salvarConfigCategorias } from "@/lib/categorias-config";
-import { salvarLogoSite } from "@/lib/site-config";
+import { salvarCarenciaAssinanteHoras, salvarLogoSite } from "@/lib/site-config";
 import type { TpPapelAdmin } from "@/types/database";
 
 async function exigirSuperAdmin() {
@@ -60,6 +60,24 @@ export async function atualizarLogoSite(url: string) {
 
   revalidatePath("/admin/configuracoes");
   revalidatePath("/", "layout");
+}
+
+export async function atualizarCarenciaAssinante(horas: number) {
+  await exigirSuperAdmin();
+
+  if (!Number.isFinite(horas) || horas < 0) {
+    throw new Error("Informe um número de horas válido.");
+  }
+
+  await salvarCarenciaAssinanteHoras(Math.round(horas));
+
+  await registrarLog({
+    tp_acao: "ALTERACAO_CONFIGURACAO",
+    nm_entidade: "CONFIGURACAO_SITE",
+    ds_detalhes: { nr_horas_carencia_assinante: horas },
+  });
+
+  revalidatePath("/admin/configuracoes");
 }
 
 export async function criarAdministrador(formData: FormData) {

@@ -87,8 +87,8 @@ export default function CatalogoAdminClient({
     if (proximo.busca) params.set("busca", proximo.busca);
     if (proximo.categoria) params.set("categoria", proximo.categoria);
     if (proximo.formato) params.set("formato", proximo.formato);
-    if (proximo.ordenarPor !== "nm_titulo") params.set("sort", proximo.ordenarPor);
-    if (proximo.direcao !== "asc") params.set("dir", proximo.direcao);
+    if (proximo.ordenarPor !== "dt_lancamento") params.set("sort", proximo.ordenarPor);
+    if (proximo.direcao !== "desc") params.set("dir", proximo.direcao);
     if (proximo.pagina > 1) params.set("page", String(proximo.pagina));
     const query = params.toString();
     router.push(query ? `${pathname}?${query}` : pathname);
@@ -662,7 +662,11 @@ export default function CatalogoAdminClient({
                     <option value="DramaBox" />
                     <option value="ShortMax" />
                     <option value="MoboReels" />
+                    <option value="DramaWave" />
                   </datalist>
+                  <p className="mt-1 text-[11px] text-secondary">
+                    Digite livremente — as sugestões são só um atalho, não uma lista fechada.
+                  </p>
                 </div>
 
                 <div>
@@ -769,6 +773,43 @@ export default function CatalogoAdminClient({
                       defaultValue={conteudoEdicao?.ds_file_id_telegram || ""}
                       className="w-full bg-[#0D0A1A] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white"
                     />
+                  </div>
+
+                  <div className="rounded-md border border-dashed border-[rgba(139,92,246,0.25)] p-3">
+                    <p className="mb-3 text-xs font-semibold uppercase text-[#A78BFA]">
+                      Versão Legendada (opcional)
+                    </p>
+                    <p className="mb-3 text-[11px] text-[#A78BFA]/70">
+                      Preencha só se essa novela tiver as duas versões. Deixe em branco pra usar
+                      só o dublado — o cliente escolhe a faixa no player quando os dois existirem.
+                    </p>
+                    <div className="space-y-3">
+                      <div>
+                        <label htmlFor="ds_url_bunny_legendado" className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">
+                          URL Bunny Video (Legendado)
+                        </label>
+                        <input
+                          type="text"
+                          id="ds_url_bunny_legendado"
+                          name="ds_url_bunny_legendado"
+                          placeholder="https://..."
+                          defaultValue={conteudoEdicao?.ds_url_bunny_legendado || ""}
+                          className="w-full bg-[#0D0A1A] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="ds_file_id_telegram_legendado" className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">
+                          Telegram File ID (Legendado)
+                        </label>
+                        <input
+                          type="text"
+                          id="ds_file_id_telegram_legendado"
+                          name="ds_file_id_telegram_legendado"
+                          defaultValue={conteudoEdicao?.ds_file_id_telegram_legendado || ""}
+                          className="w-full bg-[#0D0A1A] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white"
+                        />
+                      </div>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">

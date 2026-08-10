@@ -28,8 +28,10 @@ export async function adicionarEpisodio(cdConteudo: string, formData: FormData) 
   const cd_episodio = crypto.randomUUID();
 
   await pool.query(
-    `INSERT INTO "EPISODIOS" (cd_episodio, cd_conteudo, nr_episodio, nm_titulo, ds_url_bunny, ds_file_id_telegram)
-     VALUES ($1, $2, $3, $4, $5, $6)`,
+    `INSERT INTO "EPISODIOS"
+       (cd_episodio, cd_conteudo, nr_episodio, nm_titulo, ds_url_bunny, ds_file_id_telegram,
+        ds_url_bunny_legendado, ds_file_id_telegram_legendado)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
     [
       cd_episodio,
       cdConteudo,
@@ -37,6 +39,8 @@ export async function adicionarEpisodio(cdConteudo: string, formData: FormData) 
       nm_titulo,
       parseString(formData.get("ds_url_bunny")),
       parseString(formData.get("ds_file_id_telegram")),
+      parseString(formData.get("ds_url_bunny_legendado")),
+      parseString(formData.get("ds_file_id_telegram_legendado")),
     ]
   );
 
@@ -59,13 +63,16 @@ export async function editarEpisodio(cdEpisodio: string, formData: FormData) {
   if (!nr_episodio || nr_episodio < 1) throw new Error("Informe um número de episódio válido.");
 
   await pool.query(
-    `UPDATE "EPISODIOS" SET nr_episodio = $1, nm_titulo = $2, ds_url_bunny = $3, ds_file_id_telegram = $4
-     WHERE cd_episodio = $5`,
+    `UPDATE "EPISODIOS" SET nr_episodio = $1, nm_titulo = $2, ds_url_bunny = $3, ds_file_id_telegram = $4,
+       ds_url_bunny_legendado = $5, ds_file_id_telegram_legendado = $6
+     WHERE cd_episodio = $7`,
     [
       nr_episodio,
       nm_titulo,
       parseString(formData.get("ds_url_bunny")),
       parseString(formData.get("ds_file_id_telegram")),
+      parseString(formData.get("ds_url_bunny_legendado")),
+      parseString(formData.get("ds_file_id_telegram_legendado")),
       cdEpisodio,
     ]
   );

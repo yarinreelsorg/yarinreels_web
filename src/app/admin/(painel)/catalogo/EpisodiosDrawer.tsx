@@ -245,6 +245,35 @@ export default function EpisodiosDrawer({
                           className="w-full bg-[#050208] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white"
                         />
                       </div>
+                      <div className="rounded-md border border-dashed border-[rgba(139,92,246,0.25)] p-3">
+                        <p className="mb-2 text-xs font-semibold uppercase text-[#A78BFA]">
+                          Versão Legendada (opcional)
+                        </p>
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">
+                              URL Bunny Video (Legendado)
+                            </label>
+                            <input
+                              type="text"
+                              name="ds_url_bunny_legendado"
+                              defaultValue={episodioEdicao?.ds_url_bunny_legendado ?? ""}
+                              className="w-full bg-[#050208] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">
+                              Telegram File ID (Legendado)
+                            </label>
+                            <input
+                              type="text"
+                              name="ds_file_id_telegram_legendado"
+                              defaultValue={episodioEdicao?.ds_file_id_telegram_legendado ?? ""}
+                              className="w-full bg-[#050208] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white"
+                            />
+                          </div>
+                        </div>
+                      </div>
                       <div className="mt-2 flex items-center justify-end gap-3 border-t border-[rgba(139,92,246,0.15)] pt-4">
                         <button
                           type="button"

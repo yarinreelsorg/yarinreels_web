@@ -126,7 +126,19 @@ export type MotivoAcesso = "ALUGUEL" | "VITALICIO" | "ASSINATURA";
 
 export type StatusAcesso =
   | { liberado: true; motivo: MotivoAcesso; expiraEm: string }
-  | { liberado: false };
+  | { liberado: false; emCarencia?: boolean };
+
+/**
+ * Lançamento ainda dentro da janela de carência (configurável no admin) —
+ * acesso por assinatura fica bloqueado por um tempo pra evitar que
+ * assinante grave e pirateie no dia do lançamento, e pra dar tempo de
+ * vender avulso antes. Acesso por aluguel/vitalício nunca é afetado.
+ */
+function dentroDaCarencia(dtLancamento: string | null, carenciaHoras: number) {
+  if (!carenciaHoras || !dtLancamento) return false;
+  const limiteMs = new Date(dtLancamento).getTime() + carenciaHoras * 60 * 60 * 1000;
+  return Date.now() < limiteMs;
+}
 
 /**
  * Confere no servidor se algum dos nr_id_telegram do cliente (identidade
@@ -136,7 +148,8 @@ export type StatusAcesso =
  */
 export async function verificarAcessoConteudo(
   nrIdsTelegram: number[],
-  conteudo: { cd_conteudo: string; nm_categoria: string }
+  conteudo: { cd_conteudo: string; nm_categoria: string; dt_lancamento: string | null },
+  carenciaHoras = 0
 ): Promise<StatusAcesso> {
   if (nrIdsTelegram.length === 0) return { liberado: false };
 
@@ -178,12 +191,14 @@ export async function verificarAcessoConteudo(
     };
   }
 
+  const emCarencia = dentroDaCarencia(conteudo.dt_lancamento, carenciaHoras);
+
   const assinaturas = vendas.filter(
     (v): v is VendaAcesso & { cd_plano: string; ts_expiracao: string } =>
       v.tp_compra === "ASSINATURA" && !!v.cd_plano && !!v.ts_expiracao
   );
 
-  if (assinaturas.length > 0) {
+  if (assinaturas.length > 0 && !emCarencia) {
     const { rows: planos } = await pool.query<{ cd_plano: string; nm_categoria: string }>(
       'SELECT cd_plano, nm_categoria FROM "PLANOS" WHERE cd_plano = ANY($1::uuid[])',
       [assinaturas.map((v) => v.cd_plano)]
@@ -197,5 +212,5 @@ export async function verificarAcessoConteudo(
     }
   }
 
-  return { liberado: false };
+  return { liberado: false, emCarencia };
 }

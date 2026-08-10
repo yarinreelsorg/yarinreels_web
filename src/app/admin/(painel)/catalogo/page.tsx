@@ -19,8 +19,8 @@ export default async function CatalogoAdminPage({
   const formato = typeof params.formato === "string" ? (params.formato as TpFormato) : "";
   const ordenarPor = CAMPOS_ORDENACAO.includes(params.sort as CampoOrdenacao)
     ? (params.sort as CampoOrdenacao)
-    : "nm_titulo";
-  const direcao = params.dir === "desc" ? "desc" : "asc";
+    : "dt_lancamento";
+  const direcao = typeof params.dir === "string" ? (params.dir === "asc" ? "asc" : "desc") : "desc";
   const pagina = Math.max(1, Number(params.page) || 1);
 
   const condicoes: string[] = [];

@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import type { Administrador, TpPapelAdmin } from "@/types/database";
 import {
   alternarAtivoAdministrador,
+  atualizarCarenciaAssinante,
   atualizarLogoSite,
   atualizarOrdemCategorias,
   atualizarPapelAdministrador,
@@ -25,6 +26,7 @@ export default function ConfiguracoesClient({
   taxaCartaoInicial,
   categoriasOrdenadas,
   logoAtual,
+  carenciaHorasInicial,
 }: {
   administradores: Administrador[];
   cdAdministradorAtual: string | null;
@@ -32,6 +34,7 @@ export default function ConfiguracoesClient({
   taxaCartaoInicial: number;
   categoriasOrdenadas: { nm_categoria: string; visivel: boolean; exclusivaAssinantes: boolean }[];
   logoAtual: string;
+  carenciaHorasInicial: number;
 }) {
   const ehSuperAdmin = papelAtual === "SUPER_ADMIN";
   const toast = useToast();
@@ -50,6 +53,25 @@ export default function ConfiguracoesClient({
   const [logoUrl, setLogoUrl] = useState(logoAtual);
   const [enviandoLogo, setEnviandoLogo] = useState(false);
   const [salvandoLogo, setSalvandoLogo] = useState(false);
+
+  const [carenciaHoras, setCarenciaHoras] = useState(String(carenciaHorasInicial));
+  const [salvandoCarencia, setSalvandoCarencia] = useState(false);
+  const [carenciaSalva, setCarenciaSalva] = useState(false);
+
+  const aoSalvarCarencia = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSalvandoCarencia(true);
+    setCarenciaSalva(false);
+    try {
+      await atualizarCarenciaAssinante(Number(carenciaHoras));
+      setCarenciaSalva(true);
+      toast.sucesso("Janela de carência salva.");
+    } catch (err) {
+      toast.erro(err instanceof Error ? err.message : "Erro ao salvar.");
+    } finally {
+      setSalvandoCarencia(false);
+    }
+  };
 
   const aoEscolherLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const arquivo = e.target.files?.[0];
@@ -330,6 +352,44 @@ export default function ConfiguracoesClient({
             </motion.button>
           )}
           {erroTaxa && <p className="w-full text-sm text-red-400">{erroTaxa}</p>}
+        </form>
+      </div>
+
+      <div className="rounded-lg border border-[rgba(139,92,246,0.15)] bg-[#0D0A1A] p-6 shadow-lg">
+        <h2 className="text-lg font-bold text-white">Carência de Lançamento pra Assinantes</h2>
+        <p className="mt-1 text-sm text-[#A78BFA]">
+          Por quantas horas, a partir do lançamento, um título fica bloqueado pra quem só tem
+          assinatura (sem comprar avulso) — evita que assinante grave e pirateie no dia do
+          lançamento, e dá tempo de vender aluguel/vitalício antes. Compra avulsa (aluguel ou
+          vitalício) nunca é afetada. Use 0 pra desativar.
+        </p>
+        <form onSubmit={aoSalvarCarencia} className="mt-4 flex flex-wrap items-end gap-3">
+          <div>
+            <label htmlFor="nr_horas_carencia" className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">
+              Horas de carência
+            </label>
+            <input
+              type="number"
+              id="nr_horas_carencia"
+              name="nr_horas_carencia"
+              step="1"
+              min="0"
+              value={carenciaHoras}
+              onChange={(e) => setCarenciaHoras(e.target.value)}
+              disabled={!ehSuperAdmin}
+              className="w-40 bg-[#050208] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white disabled:opacity-50"
+            />
+          </div>
+          {ehSuperAdmin && (
+            <motion.button
+              type="submit"
+              disabled={salvandoCarencia}
+              {...buttonTap}
+              className="rounded-md bg-[#7B2FBE] hover:bg-[#6D28D9] disabled:opacity-50 px-5 py-2.5 text-sm font-bold text-white transition-colors cursor-pointer"
+            >
+              {salvandoCarencia ? "Salvando..." : carenciaSalva ? "Salvo!" : "Salvar"}
+            </motion.button>
+          )}
         </form>
       </div>
 
