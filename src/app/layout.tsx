@@ -17,7 +17,10 @@ export const metadata: Metadata = {
   title: "Yarinreels",
   description: "Streaming de filmes, séries, doramas e documentários",
   icons: {
-    icon: "/icon.svg",
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+    ],
+    shortcut: "/icon.svg",
     apple: "/icon.svg",
   },
 };
