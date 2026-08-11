@@ -1,18 +1,20 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { registrarVisita, salvarOrigemVisitante } from "@/lib/visitas";
 
 const INTERVALO_HEARTBEAT_MS = 60_000;
 
-/**
- * Componente invisível que registra visitas/presença pro painel admin
- * (usuários online agora, total de visitas, dispositivo). Fica de fora
- * das rotas /admin de propósito — não queremos contar o próprio admin
- * navegando no painel como "visita" do site.
- */
 export default function VisitaTracker() {
+  return (
+    <Suspense fallback={null}>
+      <VisitaTrackerInner />
+    </Suspense>
+  );
+}
+
+function VisitaTrackerInner() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const rastreavel = !pathname.startsWith("/admin");

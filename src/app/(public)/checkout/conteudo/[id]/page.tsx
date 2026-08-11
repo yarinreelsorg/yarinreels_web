@@ -6,6 +6,9 @@ import { obterTaxaCartao } from "@/lib/pagamento";
 import Navbar from "@/components/layout/Navbar";
 import { MetodoPagamentoConteudo } from "@/components/checkout/MetodoPagamento";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function CheckoutConteudoPage({
   params,
   searchParams,

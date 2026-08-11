@@ -11,6 +11,9 @@ function formatarData(iso: string) {
   return formatarDataHora(iso, { day: "2-digit", month: "long", year: "numeric" });
 }
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function ContaAssinaturaPage() {
   const sessao = await getSessaoUsuario();
   if (!sessao) redirect("/login");

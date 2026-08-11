@@ -2,6 +2,9 @@ import Link from "next/link";
 import { getSessaoUsuario } from "@/lib/user-auth";
 import { obterIdsTelegramElegiveis, obterBanimentoUsuario } from "@/lib/acesso";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function BloqueadoPage() {
   const sessao = await getSessaoUsuario();
   let mensagem = "Sua conta foi suspensa permanentemente. Entre em contato com o suporte caso acredite ter havido um engano.";

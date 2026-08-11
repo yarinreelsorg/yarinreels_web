@@ -6,6 +6,9 @@ import Navbar from "@/components/layout/Navbar";
 import VincularTelegram from "@/components/conta/VincularTelegram";
 import SeletorAvatar from "@/components/conta/SeletorAvatar";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function ContaPage() {
   const sessao = await getSessaoUsuario();
   if (!sessao) redirect("/login");
