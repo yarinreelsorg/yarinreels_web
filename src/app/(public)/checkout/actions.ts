@@ -6,11 +6,13 @@ import { getSessaoUsuario } from "@/lib/user-auth";
 import {
   DIAS_ALUGUEL,
   DIAS_VITALICIO,
+  obterBanimentoUsuario,
   obterIdentidadeParaCompra,
   obterIdsTelegramElegiveis,
   somarDias,
 } from "@/lib/acesso";
 import { obterTaxaCartao } from "@/lib/pagamento";
+import { obterOrigemVisitante } from "@/lib/visitas";
 import {
   consultarCobrancaPix,
   criarCobrancaCartao,
@@ -23,6 +25,40 @@ async function usuarioAutenticado() {
   const sessao = await getSessaoUsuario();
   if (!sessao) throw new Error("Você precisa estar logado.");
   return sessao;
+}
+
+async function validarBanimentoCheckout(
+  cd_usuario: string,
+  acao: "COMPRA_GERAL" | "ASSINATURA_PLANO" | "PROMOCAO" = "COMPRA_GERAL"
+) {
+  const ids = await obterIdsTelegramElegiveis(cd_usuario);
+  const banInfo = await obterBanimentoUsuario(ids);
+  if (!banInfo.banido) return;
+
+  const msg =
+    banInfo.ds_mensagem_bloqueio?.trim() ||
+    "Sua conta está impossibilitada de realizar novas compras no momento.";
+
+  if (banInfo.tp_banimento === "TOTAL") {
+    throw new Error(`Acesso Bloqueado: ${msg}`);
+  }
+
+  if (banInfo.tp_banimento === "COMPRAS") {
+    throw new Error(`Compras Bloqueadas: ${msg}`);
+  }
+
+  if (banInfo.tp_banimento === "PERSONALIZADO") {
+    const acoes = banInfo.ds_acoes_bloqueadas || [];
+    if (acoes.includes("NOVAS_COMPRAS")) {
+      throw new Error(`Novas Compras Bloqueadas: ${msg}`);
+    }
+    if (acao === "ASSINATURA_PLANO" && acoes.includes("PLANOS")) {
+      throw new Error(`Assinatura de Planos Bloqueada: ${msg}`);
+    }
+    if (acao === "PROMOCAO" && acoes.includes("PROMOCOES")) {
+      throw new Error(`Uso de Promoções Bloqueado: ${msg}`);
+    }
+  }
 }
 
 // Versão do texto de /termos em vigor — bump isso sempre que o texto mudar,
@@ -106,6 +142,7 @@ export async function iniciarCheckoutPixConteudo(
   tp_compra: "ALUGUEL" | "VITALICIO"
 ): Promise<CheckoutPixResultado> {
   const sessao = await usuarioAutenticado();
+  await validarBanimentoCheckout(sessao.cd_usuario, "COMPRA_GERAL");
 
   const { rows: conteudos } = await pool.query<{
     nm_titulo: string;
@@ -130,12 +167,14 @@ export async function iniciarCheckoutPixConteudo(
     `${tp_compra === "ALUGUEL" ? "Aluguel" : "Vitalício"}: ${conteudo.nm_titulo}`
   );
 
+  const ds_origem = await obterOrigemVisitante();
+
   const { rows: vendas } = await pool.query<{ cd_venda: string }>(
     `INSERT INTO "VENDAS"
-       (nr_id_telegram, tp_compra, tp_status, cd_conteudo, cd_plano, ds_txid, vl_pago, tp_metodo_pagamento)
-     VALUES ($1, $2, 'PENDENTE', $3, NULL, $4, $5, 'PIX')
+       (nr_id_telegram, tp_compra, tp_status, cd_conteudo, cd_plano, ds_txid, vl_pago, tp_metodo_pagamento, ds_origem)
+     VALUES ($1, $2, 'PENDENTE', $3, NULL, $4, $5, 'PIX', $6)
      RETURNING cd_venda`,
-    [nr_id_telegram, tp_compra, cd_conteudo, cobranca.txid, valor]
+    [nr_id_telegram, tp_compra, cd_conteudo, cobranca.txid, valor, ds_origem]
   );
   const venda = vendas[0];
   if (!venda) throw new Error("Erro ao criar a compra.");
@@ -145,6 +184,7 @@ export async function iniciarCheckoutPixConteudo(
 
 export async function iniciarCheckoutPixPlano(cd_plano: string): Promise<CheckoutPixResultado> {
   const sessao = await usuarioAutenticado();
+  await validarBanimentoCheckout(sessao.cd_usuario, "ASSINATURA_PLANO");
 
   const { rows: planos } = await pool.query<{ nm_plano: string; vl_plano: number }>(
     'SELECT nm_plano, vl_plano FROM "PLANOS" WHERE cd_plano = $1 LIMIT 1',
@@ -160,12 +200,14 @@ export async function iniciarCheckoutPixPlano(cd_plano: string): Promise<Checkou
 
   const cobranca = await criarCobrancaPix(plano.vl_plano, `Assinatura: ${plano.nm_plano}`);
 
+  const ds_origem = await obterOrigemVisitante();
+
   const { rows: vendas } = await pool.query<{ cd_venda: string }>(
     `INSERT INTO "VENDAS"
-       (nr_id_telegram, tp_compra, tp_status, cd_conteudo, cd_plano, ds_txid, vl_pago, tp_metodo_pagamento)
-     VALUES ($1, 'ASSINATURA', 'PENDENTE', NULL, $2, $3, $4, 'PIX')
+       (nr_id_telegram, tp_compra, tp_status, cd_conteudo, cd_plano, ds_txid, vl_pago, tp_metodo_pagamento, ds_origem)
+     VALUES ($1, 'ASSINATURA', 'PENDENTE', NULL, $2, $3, $4, 'PIX', $5)
      RETURNING cd_venda`,
-    [nr_id_telegram, cd_plano, cobranca.txid, plano.vl_plano]
+    [nr_id_telegram, cd_plano, cobranca.txid, plano.vl_plano, ds_origem]
   );
   const venda = vendas[0];
   if (!venda) throw new Error("Erro ao criar a compra.");
@@ -257,11 +299,12 @@ async function finalizarCompraCartao(
 
   const dias = await calcularDiasValidade(tp_compra, cd_plano);
   const tp_status = resultado.status === "APROVADO" ? "APROVADA" : "PENDENTE";
+  const ds_origem = await obterOrigemVisitante();
 
   await pool.query(
     `INSERT INTO "VENDAS"
-       (nr_id_telegram, tp_compra, tp_status, cd_conteudo, cd_plano, ds_txid, ts_expiracao, vl_pago, tp_metodo_pagamento)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'CARTAO')`,
+       (nr_id_telegram, tp_compra, tp_status, cd_conteudo, cd_plano, ds_txid, ts_expiracao, vl_pago, tp_metodo_pagamento, ds_origem)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'CARTAO', $9)`,
     [
       nr_id_telegram,
       tp_compra,
@@ -271,6 +314,7 @@ async function finalizarCompraCartao(
       resultado.chargeId ?? null,
       tp_status === "APROVADA" ? somarDias(dias) : null,
       total,
+      ds_origem,
     ]
   );
 
@@ -285,6 +329,7 @@ export async function iniciarCheckoutCartaoConteudo(
   installments?: number
 ): Promise<CheckoutCartaoResultado> {
   const sessao = await usuarioAutenticado();
+  await validarBanimentoCheckout(sessao.cd_usuario, "COMPRA_GERAL");
 
   const { rows: conteudos } = await pool.query<{
     nm_titulo: string;
@@ -321,6 +366,7 @@ export async function iniciarCheckoutCartaoPlano(
   installments?: number
 ): Promise<CheckoutCartaoResultado> {
   const sessao = await usuarioAutenticado();
+  await validarBanimentoCheckout(sessao.cd_usuario, "ASSINATURA_PLANO");
 
   const { rows: planos } = await pool.query<{ nm_plano: string; vl_plano: number }>(
     'SELECT nm_plano, vl_plano FROM "PLANOS" WHERE cd_plano = $1 LIMIT 1',

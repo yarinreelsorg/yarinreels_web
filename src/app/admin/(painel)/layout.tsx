@@ -10,6 +10,7 @@ import { ToastProvider } from "@/components/admin/ToastProvider";
 
 const LINKS = [
   { href: "/admin/dashboard", label: "Dashboard", icon: "🏠" },
+  { href: "/admin/relatorios", label: "Relatórios", icon: "📈" },
   { href: "/admin/catalogo", label: "Catálogo", icon: "🎬" },
   { href: "/admin/destaques", label: "Destaques da Home", icon: "⭐" },
   { href: "/admin/planos", label: "Planos", icon: "🗂️" },

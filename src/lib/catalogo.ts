@@ -1,9 +1,27 @@
 export function formatarPreco(valor: number | null) {
-  if (valor === null) return null;
+  if (valor === null || valor <= 0) return null;
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
   }).format(valor);
+}
+
+/**
+  * Retorna o preço principal a ser exibido na capa/card do conteúdo:
+  * Prioriza o valor de aluguel se for válido (>0). Se nulo ou zerado,
+  * busca o valor do plano vitalício.
+  */
+export function obterPrecoCapa(conteudo: {
+  vl_aluguel?: number | null;
+  vl_vitalicio?: number | null;
+}): number | null {
+  if (typeof conteudo.vl_aluguel === "number" && conteudo.vl_aluguel > 0) {
+    return conteudo.vl_aluguel;
+  }
+  if (typeof conteudo.vl_vitalicio === "number" && conteudo.vl_vitalicio > 0) {
+    return conteudo.vl_vitalicio;
+  }
+  return null;
 }
 
 /**

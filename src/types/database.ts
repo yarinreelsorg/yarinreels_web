@@ -136,6 +136,8 @@ export type Venda = {
   /** Nulo em vendas feitas pelo bot/manualmente pelo admin — só o
    * checkout do site preenche essa coluna. */
   tp_metodo_pagamento: TpMetodoPagamento | null;
+  /** Origem/Canal do Telegram do qual a venda partiu. */
+  ds_origem: string | null;
 };
 
 export type VendaInsert = {
@@ -149,6 +151,7 @@ export type VendaInsert = {
   ts_expiracao?: string | null;
   vl_pago?: number | null;
   tp_metodo_pagamento?: TpMetodoPagamento | null;
+  ds_origem?: string | null;
 };
 
 export type VendaUpdate = {
@@ -156,6 +159,7 @@ export type VendaUpdate = {
   ds_txid?: string | null;
   ts_expiracao?: string | null;
   vl_pago?: number | null;
+  ds_origem?: string | null;
 };
 
 export type TentativaCartaoRecusada = {
@@ -202,8 +206,15 @@ export type PlanoUpdate = {
   nr_dias_validade?: number;
 };
 
+export type TpBanimento = "TOTAL" | "COMPRAS" | "PERSONALIZADO";
+
 export type Ban = {
   nr_id_telegram: number;
+  tp_banimento: TpBanimento;
+  ds_acoes_bloqueadas: string[];
+  ds_motivo: string | null;
+  ds_mensagem_bloqueio: string | null;
+  ts_criacao?: string;
 };
 
 export type RankingMensal = {

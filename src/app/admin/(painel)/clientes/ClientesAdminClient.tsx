@@ -14,14 +14,14 @@ import { baixarCsv } from "@/lib/csv";
 import { formatarDataHora } from "@/lib/data";
 import Avatar from "@/components/ui/Avatar";
 import {
-  banirCliente,
   buscarUltimaVisita,
   buscarVendasCliente,
   concederAcesso,
   desbanirCliente,
   exportarClientesCsv,
+  obterDetalhesBanimento,
+  salvarBanimentoCliente,
   revogarAcesso,
-  verificarBanido,
 } from "./actions";
 
 interface Filtros {
@@ -62,6 +62,19 @@ export default function ClientesAdminClient({
   const [carregandoVendas, setCarregandoVendas] = useState(false);
   const [exportando, setExportando] = useState(false);
   const [banido, setBanido] = useState(false);
+  const [detalhesBan, setDetalhesBan] = useState<{
+    banido: boolean;
+    tp_banimento: "TOTAL" | "COMPRAS" | "PERSONALIZADO";
+    ds_acoes_bloqueadas: string[];
+    ds_motivo: string | null;
+    ds_mensagem_bloqueio: string | null;
+  } | null>(null);
+  const [modalBanAberto, setModalBanAberto] = useState(false);
+  const [tpBanForm, setTpBanForm] = useState<"TOTAL" | "COMPRAS" | "PERSONALIZADO">("TOTAL");
+  const [acoesForm, setAcoesForm] = useState<string[]>([]);
+  const [motivoForm, setMotivoForm] = useState("");
+  const [mensagemForm, setMensagemForm] = useState("");
+
   const [alterandoBan, setAlterandoBan] = useState(false);
   const [revogandoId, setRevogandoId] = useState<string | null>(null);
   const [ultimaVisita, setUltimaVisita] = useState<{
@@ -162,13 +175,14 @@ export default function ClientesAdminClient({
     setSelectedTelegramId(nrIdTelegram);
     setCarregandoVendas(true);
     try {
-      const [vendas, estaBanido, visita] = await Promise.all([
+      const [vendas, infoBan, visita] = await Promise.all([
         buscarVendasCliente(nrIdTelegram),
-        verificarBanido(nrIdTelegram),
+        obterDetalhesBanimento(nrIdTelegram),
         buscarUltimaVisita(nrIdTelegram),
       ]);
       setVendasCliente(vendas);
-      setBanido(estaBanido);
+      setDetalhesBan(infoBan);
+      setBanido(!!infoBan?.banido);
       setUltimaVisita(visita);
     } catch {
       toast.erro("Erro ao carregar histórico do cliente.");
@@ -177,21 +191,61 @@ export default function ClientesAdminClient({
     }
   };
 
-  const aoAlternarBan = async () => {
+  const abrirModalBan = () => {
+    if (detalhesBan) {
+      setTpBanForm(detalhesBan.tp_banimento);
+      setAcoesForm(detalhesBan.ds_acoes_bloqueadas);
+      setMotivoForm(detalhesBan.ds_motivo ?? "");
+      setMensagemForm(detalhesBan.ds_mensagem_bloqueio ?? "");
+    } else {
+      setTpBanForm("TOTAL");
+      setAcoesForm([]);
+      setMotivoForm("");
+      setMensagemForm("");
+    }
+    setModalBanAberto(true);
+  };
+
+  const aoSalvarBan = async () => {
     if (selectedTelegramId === null) return;
     setAlterandoBan(true);
     try {
-      if (banido) {
-        await desbanirCliente(selectedTelegramId);
-        setBanido(false);
-        toast.sucesso("Cliente desbanido.");
-      } else {
-        await banirCliente(selectedTelegramId);
-        setBanido(true);
-        toast.sucesso("Cliente banido — acesso bloqueado imediatamente.");
-      }
+      await salvarBanimentoCliente({
+        nrIdTelegram: selectedTelegramId,
+        tpBanimento: tpBanForm,
+        dsAcoesBloqueadas: acoesForm,
+        dsMotivo: motivoForm,
+        dsMensagemBloqueio: mensagemForm,
+      });
+      const novoInfo = {
+        banido: true,
+        tp_banimento: tpBanForm,
+        ds_acoes_bloqueadas: acoesForm,
+        ds_motivo: motivoForm,
+        ds_mensagem_bloqueio: mensagemForm,
+      };
+      setBanido(true);
+      setDetalhesBan(novoInfo);
+      setModalBanAberto(false);
+      toast.sucesso("Nível de banimento aplicado com sucesso.");
     } catch (err) {
-      toast.erro(err instanceof Error ? err.message : "Erro ao atualizar banimento.");
+      toast.erro(err instanceof Error ? err.message : "Erro ao salvar banimento.");
+    } finally {
+      setAlterandoBan(false);
+    }
+  };
+
+  const aoDesbanir = async () => {
+    if (selectedTelegramId === null) return;
+    if (!window.confirm("Desbanir este cliente e remover todas as restrições?")) return;
+    setAlterandoBan(true);
+    try {
+      await desbanirCliente(selectedTelegramId);
+      setBanido(false);
+      setDetalhesBan(null);
+      toast.sucesso("Cliente desbanido com sucesso.");
+    } catch (err) {
+      toast.erro(err instanceof Error ? err.message : "Erro ao desbanir cliente.");
     } finally {
       setAlterandoBan(false);
     }
@@ -431,9 +485,23 @@ export default function ClientesAdminClient({
                     Telegram ID: {selectedTelegramId}
                   </p>
                   {banido && (
-                    <span className="mt-1.5 inline-flex items-center rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] font-bold text-red-400 border border-red-500/20">
-                      🚫 BANIDO
-                    </span>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {detalhesBan?.tp_banimento === "TOTAL" && (
+                        <span className="inline-flex items-center rounded-full bg-red-500/10 px-2.5 py-0.5 text-[10px] font-bold text-red-400 border border-red-500/20">
+                          🚫 Banimento Máximo (Permanente)
+                        </span>
+                      )}
+                      {detalhesBan?.tp_banimento === "COMPRAS" && (
+                        <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-bold text-amber-400 border border-amber-500/20">
+                          🛒 Banimento de Compras (Parcial)
+                        </span>
+                      )}
+                      {detalhesBan?.tp_banimento === "PERSONALIZADO" && (
+                        <span className="inline-flex items-center rounded-full bg-purple-500/10 px-2.5 py-0.5 text-[10px] font-bold text-purple-400 border border-purple-500/20">
+                          ⚙️ Banimento Personalizado
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
                 <button
@@ -445,18 +513,26 @@ export default function ClientesAdminClient({
                 </button>
               </div>
 
-              <button
-                type="button"
-                disabled={alterandoBan || carregandoVendas}
-                onClick={aoAlternarBan}
-                className={`mb-6 w-full rounded-md border px-4 py-2 text-sm font-bold transition-colors cursor-pointer disabled:opacity-50 ${
-                  banido
-                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
-                    : "border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20"
-                }`}
-              >
-                {alterandoBan ? "Atualizando..." : banido ? "✓ Desbanir Cliente" : "🚫 Banir Cliente"}
-              </button>
+              <div className="mb-6 flex gap-2">
+                <button
+                  type="button"
+                  onClick={abrirModalBan}
+                  className="flex-1 rounded-md border border-purple-500/30 bg-purple-500/10 px-4 py-2 text-xs font-bold text-purple-300 hover:bg-purple-500/20 transition-colors cursor-pointer"
+                >
+                  ⚙️ {banido ? "Editar Punição" : "Configurar Banimento"}
+                </button>
+
+                {banido && (
+                  <button
+                    type="button"
+                    disabled={alterandoBan}
+                    onClick={aoDesbanir}
+                    className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-xs font-bold text-emerald-400 hover:bg-emerald-500/20 transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    ✓ Desbanir
+                  </button>
+                )}
+              </div>
 
               {ultimaVisita && (
                 <div className="mb-6 rounded-lg border border-[rgba(139,92,246,0.1)] bg-[#050208]/60 p-3 text-xs">
@@ -794,6 +870,135 @@ export default function ClientesAdminClient({
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal Níveis de Banimento */}
+      <AnimatePresence>
+        {modalBanAberto && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-[8px] p-4"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.94, y: 16 }}
+              className="w-full max-w-lg rounded-lg border border-[rgba(139,92,246,0.2)] bg-[#0D0A1A] p-6 shadow-2xl space-y-4"
+            >
+              <div className="flex items-center justify-between border-b border-[rgba(139,92,246,0.15)] pb-3">
+                <h3 className="text-lg font-bold text-white">Configurar Nível de Banimento</h3>
+                <button
+                  type="button"
+                  onClick={() => setModalBanAberto(false)}
+                  className="text-[#A78BFA] hover:text-white text-xl cursor-pointer"
+                >
+                  &times;
+                </button>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">
+                  Tipo / Nível de Punição
+                </label>
+                <select
+                  value={tpBanForm}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  onChange={(e) => setTpBanForm(e.target.value as any)}
+                  className="w-full bg-[#050208] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white text-sm"
+                >
+                  <option value="TOTAL">🚫 Banimento Máximo (Permanente) - Bloqueia acesso ao app</option>
+                  <option value="COMPRAS">🛒 Banimento de Compras (Parcial) - Permite assistir compras anteriores</option>
+                  <option value="PERSONALIZADO">⚙️ Banimento Personalizado - Bloqueia ações especificadas</option>
+                </select>
+              </div>
+
+              {tpBanForm === "PERSONALIZADO" && (
+                <div className="space-y-2 rounded-md border border-[rgba(139,92,246,0.2)] bg-[#050208]/60 p-3">
+                  <p className="text-xs font-semibold text-[#A78BFA] uppercase">Ações Bloqueadas:</p>
+                  <label className="flex items-center gap-2 text-xs text-white cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={acoesForm.includes("NOVAS_COMPRAS")}
+                      onChange={(e) => {
+                        if (e.target.checked) setAcoesForm([...acoesForm, "NOVAS_COMPRAS"]);
+                        else setAcoesForm(acoesForm.filter((a) => a !== "NOVAS_COMPRAS"));
+                      }}
+                    />
+                    Impedir qualquer nova compra
+                  </label>
+                  <label className="flex items-center gap-2 text-xs text-white cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={acoesForm.includes("PLANOS")}
+                      onChange={(e) => {
+                        if (e.target.checked) setAcoesForm([...acoesForm, "PLANOS"]);
+                        else setAcoesForm(acoesForm.filter((a) => a !== "PLANOS"));
+                      }}
+                    />
+                    Impedir assinatura de novos planos
+                  </label>
+                  <label className="flex items-center gap-2 text-xs text-white cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={acoesForm.includes("PROMOCOES")}
+                      onChange={(e) => {
+                        if (e.target.checked) setAcoesForm([...acoesForm, "PROMOCOES"]);
+                        else setAcoesForm(acoesForm.filter((a) => a !== "PROMOCOES"));
+                      }}
+                    />
+                    Impedir cupons / combos / promoções
+                  </label>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">
+                  Motivo do Banimento (Nota interna do Admin)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ex: Tentativa de estorno no Pix"
+                  value={motivoForm}
+                  onChange={(e) => setMotivoForm(e.target.value)}
+                  className="w-full bg-[#050208] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">
+                  Mensagem de Bloqueio exibida para o Cliente
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="Ex: Sua conta foi suspensa por descumprimento dos termos..."
+                  value={mensagemForm}
+                  onChange={(e) => setMensagemForm(e.target.value)}
+                  className="w-full bg-[#050208] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white text-sm resize-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-[rgba(139,92,246,0.15)]">
+                <button
+                  type="button"
+                  onClick={() => setModalBanAberto(false)}
+                  className="rounded-md border border-[rgba(255,255,255,0.2)] px-4 py-2 text-sm font-bold text-white hover:bg-white/5 cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  disabled={alterandoBan}
+                  onClick={aoSalvarBan}
+                  className="rounded-md bg-red-600 hover:bg-red-700 px-5 py-2 text-sm font-bold text-white disabled:opacity-50 cursor-pointer"
+                >
+                  {alterandoBan ? "Salvando..." : "Salvar Punição"}
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}

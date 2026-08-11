@@ -132,22 +132,70 @@ export async function verificarBanido(nrIdTelegram: number): Promise<boolean> {
   return Number(rows[0]?.total ?? 0) > 0;
 }
 
-export async function banirCliente(nrIdTelegram: number) {
-  try {
-    await pool.query('INSERT INTO "BANS" (nr_id_telegram) VALUES ($1)', [String(nrIdTelegram)]);
-  } catch (err) {
-    if (!(err && typeof err === "object" && "code" in err && err.code === "23505")) {
-      throw err;
-    }
-  }
+export async function obterDetalhesBanimento(nrIdTelegram: number) {
+  const { rows } = await pool.query<{
+    tp_banimento: "TOTAL" | "COMPRAS" | "PERSONALIZADO" | null;
+    ds_acoes_bloqueadas: string[] | null;
+    ds_motivo: string | null;
+    ds_mensagem_bloqueio: string | null;
+  }>(
+    'SELECT tp_banimento, ds_acoes_bloqueadas, ds_motivo, ds_mensagem_bloqueio FROM "BANS" WHERE nr_id_telegram = $1 LIMIT 1',
+    [String(nrIdTelegram)]
+  );
+
+  if (!rows[0]) return null;
+
+  return {
+    banido: true,
+    tp_banimento: rows[0].tp_banimento ?? "TOTAL",
+    ds_acoes_bloqueadas: rows[0].ds_acoes_bloqueadas ?? [],
+    ds_motivo: rows[0].ds_motivo ?? null,
+    ds_mensagem_bloqueio: rows[0].ds_mensagem_bloqueio ?? null,
+  };
+}
+
+export async function salvarBanimentoCliente({
+  nrIdTelegram,
+  tpBanimento,
+  dsAcoesBloqueadas = [],
+  dsMotivo,
+  dsMensagemBloqueio,
+}: {
+  nrIdTelegram: number;
+  tpBanimento: "TOTAL" | "COMPRAS" | "PERSONALIZADO";
+  dsAcoesBloqueadas?: string[];
+  dsMotivo?: string;
+  dsMensagemBloqueio?: string;
+}) {
+  await pool.query(
+    `INSERT INTO "BANS" (nr_id_telegram, tp_banimento, ds_acoes_bloqueadas, ds_motivo, ds_mensagem_bloqueio)
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT (nr_id_telegram) DO UPDATE SET
+       tp_banimento = EXCLUDED.tp_banimento,
+       ds_acoes_bloqueadas = EXCLUDED.ds_acoes_bloqueadas,
+       ds_motivo = EXCLUDED.ds_motivo,
+       ds_mensagem_bloqueio = EXCLUDED.ds_mensagem_bloqueio`,
+    [
+      String(nrIdTelegram),
+      tpBanimento,
+      dsAcoesBloqueadas,
+      dsMotivo?.trim() || null,
+      dsMensagemBloqueio?.trim() || null,
+    ]
+  );
 
   await registrarLog({
     tp_acao: "BANIMENTO",
     nm_entidade: "BANS",
     cd_entidade: String(nrIdTelegram),
+    ds_detalhes: { tpBanimento, dsAcoesBloqueadas, dsMotivo, dsMensagemBloqueio },
   });
 
   revalidatePath("/admin/clientes");
+}
+
+export async function banirCliente(nrIdTelegram: number) {
+  return salvarBanimentoCliente({ nrIdTelegram, tpBanimento: "TOTAL" });
 }
 
 export async function desbanirCliente(nrIdTelegram: number) {

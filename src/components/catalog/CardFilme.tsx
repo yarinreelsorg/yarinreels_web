@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { formatarPreco } from "@/lib/catalogo";
+import { formatarPreco, obterPrecoCapa } from "@/lib/catalogo";
 
 type Variant = "carrossel" | "top12" | "grid";
 
@@ -31,7 +31,7 @@ export default function CardFilme({
   badge?: string;
 }) {
   const [carregada, setCarregada] = useState(false);
-  const preco = formatarPreco(conteudo.vl_aluguel ?? conteudo.vl_vitalicio);
+  const preco = formatarPreco(obterPrecoCapa(conteudo));
   const destino = href ?? `/filme/${conteudo.cd_conteudo}`;
 
   const poster = (sizeClasses: string, className: string) => (

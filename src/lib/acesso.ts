@@ -140,6 +140,39 @@ function dentroDaCarencia(dtLancamento: string | null, carenciaHoras: number) {
   return Date.now() < limiteMs;
 }
 
+export interface InfoBanimento {
+  banido: boolean;
+  tp_banimento?: "TOTAL" | "COMPRAS" | "PERSONALIZADO";
+  ds_acoes_bloqueadas?: string[];
+  ds_motivo?: string | null;
+  ds_mensagem_bloqueio?: string | null;
+}
+
+export async function obterBanimentoUsuario(nrIdsTelegram: number[]): Promise<InfoBanimento> {
+  if (nrIdsTelegram.length === 0) return { banido: false };
+
+  const { rows } = await pool.query<{
+    tp_banimento: "TOTAL" | "COMPRAS" | "PERSONALIZADO" | null;
+    ds_acoes_bloqueadas: string[] | null;
+    ds_motivo: string | null;
+    ds_mensagem_bloqueio: string | null;
+  }>(
+    'SELECT tp_banimento, ds_acoes_bloqueadas, ds_motivo, ds_mensagem_bloqueio FROM "BANS" WHERE nr_id_telegram = ANY($1::text[]) LIMIT 1',
+    [nrIdsTelegram.map(String)]
+  );
+
+  const ban = rows[0];
+  if (!ban) return { banido: false };
+
+  return {
+    banido: true,
+    tp_banimento: ban.tp_banimento ?? "TOTAL",
+    ds_acoes_bloqueadas: ban.ds_acoes_bloqueadas ?? [],
+    ds_motivo: ban.ds_motivo,
+    ds_mensagem_bloqueio: ban.ds_mensagem_bloqueio,
+  };
+}
+
 /**
  * Confere no servidor se algum dos nr_id_telegram do cliente (identidade
  * web e/ou conta real do Telegram vinculada) tem uma VENDA aprovada e
@@ -153,11 +186,12 @@ export async function verificarAcessoConteudo(
 ): Promise<StatusAcesso> {
   if (nrIdsTelegram.length === 0) return { liberado: false };
 
-  const { rows: banidos } = await pool.query(
-    'SELECT 1 FROM "BANS" WHERE nr_id_telegram = ANY($1::text[])',
-    [nrIdsTelegram.map(String)]
-  );
-  if (banidos.length > 0) return { liberado: false };
+  const banInfo = await obterBanimentoUsuario(nrIdsTelegram);
+  // Banimento TOTAL impede visualização do acervo.
+  // Banimento de COMPRAS ou PERSONALIZADO permite assistir o que já foi comprado antes!
+  if (banInfo.banido && banInfo.tp_banimento === "TOTAL") {
+    return { liberado: false };
+  }
 
   const agora = new Date().toISOString();
 

@@ -5,7 +5,33 @@ import { pool } from "@/lib/db";
 import { getSessaoUsuario } from "@/lib/user-auth";
 
 const COOKIE_SESSAO = "visitor_session";
+const COOKIE_ORIGEM = "visitor_origem";
 const JANELA_ONLINE_MINUTOS = 5;
+
+export async function salvarOrigemVisitante(origem: string) {
+  if (!origem) return;
+  try {
+    const cookieStore = await cookies();
+    cookieStore.set(COOKIE_ORIGEM, origem.trim(), {
+      maxAge: 60 * 60 * 24 * 30,
+      path: "/",
+      sameSite: "lax",
+    });
+  } catch {
+    // ignore
+  }
+}
+
+export async function obterOrigemVisitante(): Promise<string> {
+  try {
+    const cookieStore = await cookies();
+    const origem = cookieStore.get(COOKIE_ORIGEM)?.value;
+    if (origem && origem.trim()) return origem.trim();
+  } catch {
+    // ignore
+  }
+  return "Direto / Telegram";
+}
 
 function detectarDispositivo(userAgent: string): string {
   const ua = userAgent.toLowerCase();

@@ -16,10 +16,7 @@ export default async function CheckoutConteudoPage({
   const { id } = await params;
   const { tipo } = await searchParams;
 
-  const tpCompra = tipo === "VITALICIO" ? "VITALICIO" : "ALUGUEL";
-
   const sessao = await getSessaoUsuario();
-  if (!sessao) redirect(`/login?redirect_to=/checkout/conteudo/${id}?tipo=${tpCompra}`);
 
   const { rows } = await pool.query<{
     nm_titulo: string;
@@ -32,8 +29,18 @@ export default async function CheckoutConteudoPage({
 
   if (!conteudo) notFound();
 
+  const temAluguel = typeof conteudo.vl_aluguel === "number" && conteudo.vl_aluguel > 0;
+  const temVitalicio = typeof conteudo.vl_vitalicio === "number" && conteudo.vl_vitalicio > 0;
+
+  let tpCompra: "ALUGUEL" | "VITALICIO" = tipo === "VITALICIO" ? "VITALICIO" : "ALUGUEL";
+  if (tpCompra === "ALUGUEL" && !temAluguel && temVitalicio) {
+    tpCompra = "VITALICIO";
+  }
+
+  if (!sessao) redirect(`/login?redirect_to=/checkout/conteudo/${id}?tipo=${tpCompra}`);
+
   const valor = tpCompra === "ALUGUEL" ? conteudo.vl_aluguel : conteudo.vl_vitalicio;
-  if (!valor) notFound();
+  if (!valor || valor <= 0) notFound();
 
   const taxaCartao = await obterTaxaCartao();
 
