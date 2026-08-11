@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { motion } from "motion/react";
 import {
   desvincularTelegram,
   gerarCodigoVinculacao,
   verificarVinculacao,
 } from "@/app/(public)/conta/actions";
 import { buttonTap } from "@/lib/motion";
+import { motion } from "motion/react";
+import { useEffect, useRef, useState } from "react";
 
 // Fallback pro username real do bot — se a env var não estiver configurada
 // no ambiente de produção, o link não pode virar "t.me/undefined" (isso faz
@@ -139,14 +139,12 @@ export default function VincularTelegram({
             para o bot no Telegram. Expira em 15 minutos.
           </p>
           <motion.a
-            href={`https://t.me/${BOT_USERNAME}?text=${encodeURIComponent(`/vincular ${codigo}`)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            {...buttonTap}
-            className="flex w-full items-center justify-center gap-2 rounded-md bg-primary py-2.5 text-xs font-bold text-white transition-colors hover:bg-primary-dark"
-          >
-            ✈️ Abrir Telegram com o código
-          </motion.a>
+  href={`tg://resolve?domain=${BOT_USERNAME}&text=${encodeURIComponent(`/vincular ${codigo}`)}`}
+  {...buttonTap}
+  className="flex w-full items-center justify-center gap-2 rounded-md bg-primary py-2.5 text-xs font-bold text-white transition-colors hover:bg-primary-dark"
+>
+  ✈️ Abrir Telegram com o código
+</motion.a>
           <motion.button
             type="button"
             onClick={checar}
