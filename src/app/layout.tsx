@@ -18,10 +18,11 @@ export const metadata: Metadata = {
   description: "Streaming de filmes, séries, doramas e documentários",
   icons: {
     icon: [
-      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon.png", type: "image/png" },
+      { url: "https://kwyza48uooavr0fw.public.blob.vercel-storage.com/site-logo/0387660c-c202-4ddb-92c4-c3656312f3b2.jpg" },
     ],
-    shortcut: "/icon.svg",
-    apple: "/icon.svg",
+    shortcut: "/icon.png",
+    apple: "/icon.png",
   },
 };
 
