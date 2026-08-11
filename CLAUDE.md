@@ -17,7 +17,7 @@ Yarinreels Web é uma plataforma de streaming profissional (estilo Netflix) cons
 
 ## Architecture
 
-Next.js 14 App Router (`src/app/`), TypeScript strict, Tailwind CSS v4.
+Next.js 16 App Router (`src/app/`), React 19, TypeScript strict, Tailwind CSS v4.
 
 - Path alias `@/*` → `src/*`
 - `reactCompiler: true` no `next.config.ts` — não usar `useMemo`/`useCallback`/`React.memo` manualmente
@@ -29,9 +29,16 @@ Next.js 14 App Router (`src/app/`), TypeScript strict, Tailwind CSS v4.
 - Autenticação própria (sem BaaS): sessão de admin em `src/lib/admin-auth.ts` (tabela `ADMINISTRADORES`), sessão de usuário público em `src/lib/user-auth.ts` (tabela `USUARIOS`) — ambas JWT via `jose` em cookie httpOnly
 - Validar acesso sempre no servidor antes de retornar URL de vídeo
 
+## Code Conventions
+
+- **Nomenclatura em português** em todo o domínio: funções (`obterCarenciaAssinanteHoras`, `verificarAcessoConteudo`), variáveis, colunas de banco. Prefixos de coluna: `cd_` (id/uuid), `nm_` (nome), `ds_` (texto/descrição), `tp_` (enum/tipo), `sn_` (booleano), `nr_` (número), `vl_` (valor monetário), `ts_`/`dt_` (timestamp/data).
+- **Módulo do admin = trio de arquivos** em `src/app/admin/(painel)/<modulo>/`: `page.tsx` (Server Component, busca dados) + `<Modulo>AdminClient.tsx` (`"use client"`, recebe dados via props) + `actions.ts` (`"use server"`, mutações). `loading.tsx` opcional. Veja `catalogo/`, `cupons/`, `destaques/`, `planos/` como referência.
+- Componentes: sempre `export default function NomeComponente(...)`. Libs (`src/lib/*.ts`): exports nomeados, `import "server-only"` no topo quando o módulo só pode rodar no servidor.
+- Migrations em `supabase/migrations/YYYYMMDD_descricao.sql`, `create table if not exists` / `add column if not exists` (idempotentes). Não há CLI/runner configurado — aplicadas manualmente contra `DATABASE_URL` (ver histórico de commits pra exemplos de script one-off).
+
 ## Stack
 
-- **Frontend:** Next.js 14 App Router, React, Tailwind CSS v4
+- **Frontend:** Next.js 16 App Router, React 19, Tailwind CSS v4
 - **Banco:** PostgreSQL direto via `pg` (`DATABASE_URL`) — mesmo banco físico do bot legado, sem passar pela API da Supabase
 - **Auth:** própria (bcrypt + JWT em cookie httpOnly) — sem Magic Link por enquanto
 - **Pagamentos:** Efí Bank via `sdk-node-apis-efi` (Pix + cartão)

@@ -61,6 +61,7 @@ export default function CatalogoAdminClient({
   const [categoriaSelecionada, setCategoriaSelecionada] = useState("");
   const [novaCategoria, setNovaCategoria] = useState("");
   const [urlPoster, setUrlPoster] = useState("");
+  const [appOrigemValor, setAppOrigemValor] = useState("");
   const [salvando, setSalvando] = useState(false);
 
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
@@ -75,6 +76,7 @@ export default function CatalogoAdminClient({
     setModalAberto(false);
     setConteudoEdicao(null);
     setUrlPoster("");
+    setAppOrigemValor("");
   };
 
   const modalRef = useFocoModal<HTMLDivElement>(modalAberto, fecharModal);
@@ -120,6 +122,7 @@ export default function CatalogoAdminClient({
     setCategoriaSelecionada(categoriasDisponiveis[0] || "CRIAR_NOVA");
     setNovaCategoria("");
     setUrlPoster("");
+    setAppOrigemValor("");
     setModalAberto(true);
   };
 
@@ -130,6 +133,7 @@ export default function CatalogoAdminClient({
     setCategoriaSelecionada(conteudo.nm_categoria);
     setNovaCategoria("");
     setUrlPoster(conteudo.ds_url_poster || "");
+    setAppOrigemValor(conteudo.nm_app_origem || "");
     setModalAberto(true);
   };
 
@@ -646,27 +650,29 @@ export default function CatalogoAdminClient({
 
                 <div>
                   <label htmlFor="nm_app_origem" className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">
-                    App de origem
+                    App de origem — digite qualquer nome, não é uma lista fechada
                   </label>
                   <input
                     type="text"
                     id="nm_app_origem"
                     name="nm_app_origem"
-                    list="lista-apps-origem"
-                    placeholder="ReelShort, DramaBox..."
-                    defaultValue={conteudoEdicao?.nm_app_origem || ""}
+                    placeholder="Digite o nome do app (ex: ReelShort, DramaWave, ou um novo)"
+                    value={appOrigemValor}
+                    onChange={(e) => setAppOrigemValor(e.target.value)}
                     className="w-full bg-[#0D0A1A] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white"
                   />
-                  <datalist id="lista-apps-origem">
-                    <option value="ReelShort" />
-                    <option value="DramaBox" />
-                    <option value="ShortMax" />
-                    <option value="MoboReels" />
-                    <option value="DramaWave" />
-                  </datalist>
-                  <p className="mt-1 text-[11px] text-secondary">
-                    Digite livremente — as sugestões são só um atalho, não uma lista fechada.
-                  </p>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {["ReelShort", "DramaBox", "ShortMax", "MoboReels", "DramaWave"].map((app) => (
+                      <button
+                        key={app}
+                        type="button"
+                        onClick={() => setAppOrigemValor(app)}
+                        className="rounded-full border border-[rgba(139,92,246,0.3)] px-2.5 py-1 text-[11px] text-[#A78BFA] transition-colors hover:border-[#9D4EDD] hover:text-white"
+                      >
+                        {app}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <div>
