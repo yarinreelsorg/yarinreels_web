@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
-export default function LpPage() {
-  redirect("/landing");
+export default function LpPageAlias() {
+  redirect("/");
 }
