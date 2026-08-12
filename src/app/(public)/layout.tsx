@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import BottomNav from "@/components/layout/BottomNav";
 import InstallPwaButton from "@/components/layout/InstallPwaButton";
+import Footer from "@/components/layout/Footer";
 import { getSessaoUsuario } from "@/lib/user-auth";
 import { obterBanimentoUsuario, obterIdsTelegramElegiveis } from "@/lib/acesso";
 
@@ -22,10 +23,12 @@ export default async function PublicLayout({
   }
 
   return (
-    <div className="pb-[75px] lg:pb-0">
-      {children}
+    <div className="flex min-h-screen flex-col pb-[75px] lg:pb-0">
+      <main className="flex-1">{children}</main>
+      <Footer />
       <BottomNav />
       <InstallPwaButton />
     </div>
   );
 }
+

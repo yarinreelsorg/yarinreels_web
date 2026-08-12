@@ -17,6 +17,7 @@ interface UsuarioNavbar {
 
 const LINKS = [
   { label: "Início", href: "/" },
+  { label: "Conheça", href: "/landing" },
   { label: "Catálogo", href: "/catalogo" },
   { label: "Minha Lista", href: "/minha-lista" },
   { label: "Assinar", href: "/assinaturas" },
