@@ -7,7 +7,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { obterLogoSite, obterUsuarioAtual, sairUsuario } from "./navbar-actions";
 import Avatar from "@/components/ui/Avatar";
 
-const LOGO_PADRAO = "/icon.svg";
+const LOGO_PADRAO = "/icon.png";
 
 interface UsuarioNavbar {
   nm_nome: string | null;

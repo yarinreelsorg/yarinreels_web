@@ -23,8 +23,10 @@ export default function AuthCard({
       >
         <Link
           href="/"
-          className="mb-8 block text-center text-xl font-bold tracking-tight text-foreground"
+          className="mb-8 flex items-center justify-center gap-2.5 text-2xl font-black tracking-wider text-foreground"
         >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icon.png" alt="Logo" className="h-9 w-9 rounded-md object-cover shrink-0" />
           Yarinreels
         </Link>
 

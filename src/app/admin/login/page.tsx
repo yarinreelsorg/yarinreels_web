@@ -15,8 +15,10 @@ export default function AdminLoginPage() {
         transition={{ type: "spring", stiffness: 280, damping: 26 }}
         className="w-full max-w-sm"
       >
-        <div className="mb-8 text-center text-xl font-black tracking-wider text-white">
-          Yarin<span className="text-[#9D4EDD]">Reels</span>{" "}
+        <div className="mb-8 flex items-center justify-center gap-2.5 text-xl font-black tracking-wider text-white">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icon.png" alt="Logo" className="h-9 w-9 rounded-md object-cover" />
+          <span>Yarin<span className="text-[#9D4EDD]">Reels</span></span>
           <span className="ml-1 rounded bg-[#7B2FBE] px-1.5 py-0.5 text-xs font-bold uppercase text-white">
             Admin
           </span>

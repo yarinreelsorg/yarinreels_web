@@ -335,7 +335,8 @@ export default function VideoPlayer({
               <p className="text-xs font-medium text-white/60">Você está assistindo</p>
               {titulo && (
                 <h2 className="mt-1 flex items-center gap-2 text-xl font-black text-white sm:text-2xl">
-                  <span className="text-primary tracking-wide">YR</span>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/icon.png" alt="Logo" className="h-7 w-7 rounded-md object-cover shrink-0" />
                   {titulo}
                 </h2>
               )}
@@ -428,7 +429,8 @@ export default function VideoPlayer({
 
               {(titulo || subtitulo) && (
                 <span className="ml-1 flex min-w-0 flex-1 items-center gap-1.5 truncate text-xs font-semibold text-white/70 sm:text-sm">
-                  <span className="shrink-0 font-black text-primary">YR</span>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/icon.png" alt="Logo" className="h-5 w-5 rounded-sm object-cover shrink-0" />
                   {titulo}
                   {subtitulo ? ` · ${subtitulo}` : ""}
                 </span>

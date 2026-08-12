@@ -1,7 +1,7 @@
 import "server-only";
 import { pool } from "./db";
 
-export const LOGO_PADRAO = "/icon.svg";
+export const LOGO_PADRAO = "/icon.png";
 
 export async function obterLogoSite(): Promise<string> {
   const { rows } = await pool.query<{ ds_logo_url: string | null }>(

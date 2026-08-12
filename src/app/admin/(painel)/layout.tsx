@@ -36,8 +36,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="min-h-screen bg-[#050208] text-[#F1F0FF] lg:flex">
       {/* Barra superior mobile */}
       <div className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-[rgba(139,92,246,0.15)] bg-[#0D0A1A] px-4 lg:hidden">
-        <Link href="/" className="text-lg font-black tracking-wider text-white hover:opacity-90">
-          Yarin<span className="text-[#9D4EDD]">Reels</span> <span className="text-xs bg-[#7B2FBE] px-1.5 py-0.5 rounded text-white font-bold ml-1 uppercase">Admin</span>
+        <Link href="/" className="flex items-center gap-2 text-lg font-black tracking-wider text-white hover:opacity-90">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icon.png" alt="Logo" className="h-7 w-7 rounded-md object-cover shrink-0" />
+          <span>Yarin<span className="text-[#9D4EDD]">Reels</span></span>
+          <span className="text-xs bg-[#7B2FBE] px-1.5 py-0.5 rounded text-white font-bold ml-1 uppercase">Admin</span>
         </Link>
         <button
           type="button"
@@ -70,8 +73,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       >
         {/* Logo YarinReels no topo */}
         <div className="h-20 px-6 flex items-center border-b border-[rgba(139,92,246,0.15)]">
-          <Link href="/" className="text-xl font-black tracking-wider text-white hover:opacity-90">
-            Yarin<span className="text-[#9D4EDD]">Reels</span> <span className="text-xs bg-[#7B2FBE] px-1.5 py-0.5 rounded text-white font-bold ml-1 uppercase">Admin</span>
+          <Link href="/" className="flex items-center gap-2 text-xl font-black tracking-wider text-white hover:opacity-90">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/icon.png" alt="Logo" className="h-7 w-7 rounded-md object-cover shrink-0" />
+            <span>Yarin<span className="text-[#9D4EDD]">Reels</span></span>
+            <span className="text-xs bg-[#7B2FBE] px-1.5 py-0.5 rounded text-white font-bold ml-1 uppercase">Admin</span>
           </Link>
         </div>
 
