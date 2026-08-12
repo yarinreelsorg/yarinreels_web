@@ -156,8 +156,14 @@ export default function VincularTelegram({
 
   const aoAbrirTelegram = () => {
     if (!codigo) return;
-    const appUrl = `tg://resolve?domain=${BOT_USERNAME}&start=vincular_${codigo}`;
-    const webUrl = `https://t.me/${BOT_USERNAME}?start=vincular_${codigo}`;
+    // "start=" é o parâmetro oficial de deep-link de bot do Telegram, mas
+    // ele dispara automaticamente "/start <payload>" — o bot legado só
+    // entende o comando "/vincular CODIGO" literal (não tem handler pra
+    // "/start"), então usa "text=" pra só PRÉ-PREENCHER a caixa de
+    // mensagem com o comando certo; o usuário ainda precisa apertar enviar.
+    const comando = encodeURIComponent(`/vincular ${codigo}`);
+    const appUrl = `tg://resolve?domain=${BOT_USERNAME}&text=${comando}`;
+    const webUrl = `https://t.me/${BOT_USERNAME}?text=${comando}`;
 
     window.location.href = appUrl;
     setTimeout(() => {
