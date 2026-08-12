@@ -12,7 +12,7 @@ import { useEffect, useRef, useState } from "react";
 // Fallback pro username real do bot — se a env var não estiver configurada
 // no ambiente de produção, o link não pode virar "t.me/undefined" (isso faz
 // o Telegram cair na home telegram.org em vez de abrir o bot).
-const BOT_USERNAME = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || "Melreels_bot";
+const BOT_USERNAME = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || "YarinTV";
 
 export default function VincularTelegram({
   nrIdTelegramInicial,
@@ -23,6 +23,7 @@ export default function VincularTelegram({
   const [codigo, setCodigo] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(false);
   const [verificando, setVerificando] = useState(false);
+  const [copiado, setCopiado] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const intervaloRef = useRef<number | null>(null);
 
@@ -62,6 +63,7 @@ export default function VincularTelegram({
   const aoGerarCodigo = async () => {
     setCarregando(true);
     setErro(null);
+    setCopiado(false);
     try {
       const resultado = await gerarCodigoVinculacao();
       setCodigo(resultado.codigo);
@@ -72,6 +74,15 @@ export default function VincularTelegram({
     } finally {
       setCarregando(false);
     }
+  };
+
+  const aoCopiarComando = () => {
+    if (!codigo) return;
+    const comando = `/vincular ${codigo}`;
+    navigator.clipboard.writeText(comando).then(() => {
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 3000);
+    }).catch(() => {});
   };
 
   const aoDesvincular = async () => {
@@ -136,24 +147,39 @@ export default function VincularTelegram({
             <code className="rounded bg-background px-1.5 py-0.5 text-foreground">
               /vincular {codigo}
             </code>{" "}
-            para o bot no Telegram. Expira em 15 minutos.
+            para o bot no Telegram (@{BOT_USERNAME}). Expira em 15 minutos.
           </p>
-          <motion.a
-  href={`tg://resolve?domain=${BOT_USERNAME}&text=${encodeURIComponent(`/vincular ${codigo}`)}`}
-  {...buttonTap}
-  className="flex w-full items-center justify-center gap-2 rounded-md bg-primary py-2.5 text-xs font-bold text-white transition-colors hover:bg-primary-dark"
->
-  ✈️ Abrir Telegram com o código
-</motion.a>
-          <motion.button
-            type="button"
-            onClick={checar}
-            disabled={verificando}
-            {...buttonTap}
-            className="w-full rounded-md border border-border py-2 text-xs font-bold text-foreground transition-colors hover:border-foreground/40 disabled:opacity-50"
-          >
-            {verificando ? "Verificando..." : "Já enviei, verificar agora"}
-          </motion.button>
+
+          <div className="flex flex-col gap-2">
+            <motion.a
+              href={`https://t.me/${BOT_USERNAME}?start=${codigo}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              {...buttonTap}
+              className="flex w-full items-center justify-center gap-2 rounded-md bg-primary py-2.5 text-xs font-bold text-white transition-colors hover:bg-primary-dark"
+            >
+              ✈️ Abrir Telegram (@{BOT_USERNAME})
+            </motion.a>
+
+            <motion.button
+              type="button"
+              onClick={aoCopiarComando}
+              {...buttonTap}
+              className="w-full rounded-md border border-primary/40 bg-primary/10 py-2 text-xs font-bold text-primary transition-colors hover:bg-primary/20"
+            >
+              {copiado ? "✅ Comando Copiado!" : `📋 Copiar "/vincular ${codigo}"`}
+            </motion.button>
+
+            <motion.button
+              type="button"
+              onClick={checar}
+              disabled={verificando}
+              {...buttonTap}
+              className="w-full rounded-md border border-border py-2 text-xs font-bold text-foreground transition-colors hover:border-foreground/40 disabled:opacity-50"
+            >
+              {verificando ? "Verificando..." : "Já enviei, verificar agora"}
+            </motion.button>
+          </div>
         </motion.div>
       ) : (
         <motion.button

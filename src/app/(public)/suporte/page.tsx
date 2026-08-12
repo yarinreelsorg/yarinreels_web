@@ -62,7 +62,7 @@ export default function SuportePage() {
 
           <div className="mt-6 flex flex-col gap-3">
             <a
-              href="https://t.me/Melreels_bot"
+              href="https://t.me/YarinTV"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-between gap-3 rounded-md border border-border bg-background px-5 py-3.5 transition-colors hover:border-primary/50"

@@ -29,7 +29,7 @@ export default async function BloqueadoPage() {
 
         <div className="mt-8 flex flex-col gap-3">
           <a
-            href="https://t.me/SuporteYarinReels"
+            href="https://t.me/YarinTV"
             target="_blank"
             rel="noopener noreferrer"
             className="rounded-md bg-red-600 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-red-700"
