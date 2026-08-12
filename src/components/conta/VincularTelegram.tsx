@@ -262,11 +262,13 @@ export default function VincularTelegram({
 
           <div className="flex flex-col gap-2">
             <motion.a
-              href={`tg://resolve?domain=${BOT_USERNAME}&text=${encodeURIComponent(`/vincular ${codigo}`)}`}
+              href={`https://t.me/${BOT_USERNAME}?start=vincular_${codigo}`}
+              target="_blank"
+              rel="noopener noreferrer"
               {...buttonTap}
               className="flex w-full items-center justify-center gap-2 rounded-md bg-primary py-2.5 text-xs font-bold text-white transition-colors hover:bg-primary-dark"
             >
-              ✈️ Abrir Telegram com /vincular {codigo}
+              ✈️ Abrir no Telegram (@{BOT_USERNAME})
             </motion.a>
 
             <motion.button
