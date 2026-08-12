@@ -108,6 +108,17 @@ export async function obterAvataresPublicos() {
   return [];
 }
 
+export async function obterVideoSuporteAction() {
+  try {
+    const { rows } = await pool.query<{ ds_url_video_suporte: string | null }>(
+      'SELECT ds_url_video_suporte FROM "CONFIGURACAO_SITE" LIMIT 1'
+    );
+    return rows[0]?.ds_url_video_suporte ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function desvincularTelegram() {
   const sessao = await usuarioAutenticado();
 

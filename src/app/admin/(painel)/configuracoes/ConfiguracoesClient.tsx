@@ -10,6 +10,7 @@ import {
   atualizarOrdemCategorias,
   atualizarPapelAdministrador,
   atualizarTaxaCartao,
+  atualizarVideoSuporte,
   criarAdministrador,
   enviarLogoSite,
   renomearCategoriaAction,
@@ -27,6 +28,7 @@ export default function ConfiguracoesClient({
   categoriasOrdenadas,
   logoAtual,
   carenciaHorasInicial,
+  videoSuporteInicial = "",
 }: {
   administradores: Administrador[];
   cdAdministradorAtual: string | null;
@@ -35,6 +37,7 @@ export default function ConfiguracoesClient({
   categoriasOrdenadas: { nm_categoria: string; visivel: boolean; exclusivaAssinantes: boolean }[];
   logoAtual: string;
   carenciaHorasInicial: number;
+  videoSuporteInicial?: string;
 }) {
   const ehSuperAdmin = papelAtual === "SUPER_ADMIN";
   const toast = useToast();
@@ -57,6 +60,22 @@ export default function ConfiguracoesClient({
   const [carenciaHoras, setCarenciaHoras] = useState(String(carenciaHorasInicial));
   const [salvandoCarencia, setSalvandoCarencia] = useState(false);
   const [carenciaSalva, setCarenciaSalva] = useState(false);
+
+  const [videoSuporte, setVideoSuporte] = useState(videoSuporteInicial);
+  const [salvandoVideoSuporte, setSalvandoVideoSuporte] = useState(false);
+
+  const aoSalvarVideoSuporte = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSalvandoVideoSuporte(true);
+    try {
+      await atualizarVideoSuporte(videoSuporte);
+      toast.sucesso("Vídeo tutorial de suporte salvo com sucesso!");
+    } catch (err) {
+      toast.erro(err instanceof Error ? err.message : "Erro ao salvar vídeo de suporte.");
+    } finally {
+      setSalvandoVideoSuporte(false);
+    }
+  };
 
   const aoSalvarCarencia = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -317,6 +336,41 @@ export default function ConfiguracoesClient({
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="rounded-lg border border-[rgba(139,92,246,0.15)] bg-[#0D0A1A] p-6 shadow-lg">
+        <h2 className="text-lg font-bold text-white flex items-center gap-2">
+          🎥 Vídeo Tutorial do Suporte / Vinculação
+        </h2>
+        <p className="mt-1 text-sm text-[#A78BFA]">
+          Cole a URL de um vídeo (MP4, Bunny CDN, YouTube, Vimeo etc). Quando preenchido, o botão &quot;Pedir ajuda para o suporte&quot; abrirá um modal exibindo este vídeo explicativo e o botão para falar no Telegram. Se deixado em branco, o botão abrirá diretamente o Telegram @YarinTV.
+        </p>
+        <form onSubmit={aoSalvarVideoSuporte} className="mt-4 flex flex-col sm:flex-row items-start sm:items-end gap-3">
+          <div className="flex-1 w-full">
+            <label htmlFor="ds_url_video_suporte" className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">
+              URL do Vídeo Explicativo
+            </label>
+            <input
+              type="url"
+              id="ds_url_video_suporte"
+              placeholder="https://exemplo.com/tutorial-suporte.mp4"
+              value={videoSuporte}
+              onChange={(e) => setVideoSuporte(e.target.value)}
+              disabled={!ehSuperAdmin}
+              className="w-full bg-[#050208] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white disabled:opacity-50 text-xs font-mono"
+            />
+          </div>
+          {ehSuperAdmin && (
+            <motion.button
+              type="submit"
+              disabled={salvandoVideoSuporte}
+              {...buttonTap}
+              className="rounded-md bg-[#7B2FBE] hover:bg-[#6D28D9] disabled:opacity-50 px-5 py-2.5 text-sm font-bold text-white transition-colors cursor-pointer shrink-0"
+            >
+              {salvandoVideoSuporte ? "Salvando..." : "Salvar Vídeo"}
+            </motion.button>
+          )}
+        </form>
       </div>
 
       <div className="rounded-lg border border-[rgba(139,92,246,0.15)] bg-[#0D0A1A] p-6 shadow-lg">

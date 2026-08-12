@@ -271,3 +271,19 @@ export async function atualizarPapelAdministrador(
 
   revalidatePath("/admin/configuracoes");
 }
+
+export async function atualizarVideoSuporte(url: string) {
+  await exigirSuperAdmin();
+
+  const { salvarVideoSuporteSite } = await import("@/lib/site-config");
+  await salvarVideoSuporteSite(url);
+
+  await registrarLog({
+    tp_acao: "ALTERACAO_CONFIGURACAO",
+    nm_entidade: "CONFIGURACAO_SITE",
+    ds_detalhes: { ds_url_video_suporte: url },
+  });
+
+  revalidatePath("/admin/configuracoes");
+  revalidatePath("/conta");
+}

@@ -3,16 +3,60 @@
 import {
   desvincularTelegram,
   gerarCodigoVinculacao,
+  obterVideoSuporteAction,
   verificarVinculacao,
 } from "@/app/(public)/conta/actions";
 import { buttonTap } from "@/lib/motion";
 import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 
-// Fallback pro username real do bot — se a env var não estiver configurada
-// no ambiente de produção, o link não pode virar "t.me/undefined" (isso faz
-// o Telegram cair na home telegram.org em vez de abrir o bot).
 const BOT_USERNAME = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || "Melreels_bot";
+
+function VideoPlayer({ url }: { url: string }) {
+  if (!url) return null;
+  const isYoutube = url.includes("youtube.com") || url.includes("youtu.be");
+  const isVimeo = url.includes("vimeo.com");
+
+  if (isYoutube) {
+    let embedUrl = url;
+    if (url.includes("watch?v=")) {
+      const id = url.split("watch?v=")[1]?.split("&")[0];
+      embedUrl = `https://www.youtube.com/embed/${id}`;
+    } else if (url.includes("youtu.be/")) {
+      const id = url.split("youtu.be/")[1]?.split("?")[0];
+      embedUrl = `https://www.youtube.com/embed/${id}`;
+    }
+    return (
+      <iframe
+        src={embedUrl}
+        className="w-full aspect-video rounded-lg border border-border shadow-lg"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+      />
+    );
+  }
+
+  if (isVimeo) {
+    const id = url.split("vimeo.com/")[1]?.split("?")[0];
+    return (
+      <iframe
+        src={`https://player.vimeo.com/video/${id}`}
+        className="w-full aspect-video rounded-lg border border-border shadow-lg"
+        allow="autoplay; fullscreen; picture-in-picture"
+        allowFullScreen
+      />
+    );
+  }
+
+  return (
+    <video
+      src={url}
+      controls
+      autoPlay
+      className="w-full rounded-lg max-h-[380px] bg-black border border-border shadow-lg"
+    />
+  );
+}
 
 export default function VincularTelegram({
   nrIdTelegramInicial,
@@ -25,9 +69,15 @@ export default function VincularTelegram({
   const [verificando, setVerificando] = useState(false);
   const [copiado, setCopiado] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [videoSuporteUrl, setVideoSuporteUrl] = useState<string | null>(null);
+  const [modalVideoAberto, setModalVideoAberto] = useState(false);
   const intervaloRef = useRef<number | null>(null);
 
   useEffect(() => {
+    obterVideoSuporteAction().then((url) => {
+      if (url && url.trim()) setVideoSuporteUrl(url.trim());
+    }).catch(() => {});
+
     return () => {
       if (intervaloRef.current) window.clearInterval(intervaloRef.current);
     };
@@ -99,6 +149,14 @@ export default function VincularTelegram({
     }
   };
 
+  const aoClicarPedirAjuda = () => {
+    if (videoSuporteUrl) {
+      setModalVideoAberto(true);
+    } else {
+      window.open("https://t.me/YarinTV", "_blank");
+    }
+  };
+
   if (nrIdTelegram) {
     return (
       <div className="rounded-lg border border-border bg-surface p-5">
@@ -122,16 +180,56 @@ export default function VincularTelegram({
             Desvincular
           </button>
 
-          <motion.a
-            href="https://t.me/YarinTV"
-            target="_blank"
-            rel="noopener noreferrer"
+          <motion.button
+            type="button"
+            onClick={aoClicarPedirAjuda}
             {...buttonTap}
-            className="inline-flex items-center gap-1.5 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-400 hover:bg-emerald-500/20 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-400 hover:bg-emerald-500/20 transition-colors cursor-pointer"
           >
             💬 Suporte Telegram
-          </motion.a>
+          </motion.button>
         </div>
+
+        {modalVideoAberto && videoSuporteUrl && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4">
+            <div className="w-full max-w-lg rounded-xl border border-border bg-surface p-6 shadow-2xl space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-bold text-foreground">🎥 Tutorial de Ajuda do Suporte</h3>
+                <button
+                  type="button"
+                  onClick={() => setModalVideoAberto(false)}
+                  className="text-secondary hover:text-foreground text-sm font-bold cursor-pointer"
+                >
+                  ✕ Fechar
+                </button>
+              </div>
+
+              <VideoPlayer url={videoSuporteUrl} />
+
+              <p className="text-xs text-secondary leading-relaxed">
+                Assista ao vídeo explicativo acima. Se ainda precisar de ajuda, toque no botão abaixo para falar diretamente com nosso atendimento.
+              </p>
+
+              <div className="flex gap-2">
+                <a
+                  href="https://t.me/YarinTV"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 rounded-md bg-emerald-500 hover:bg-emerald-600 py-2.5 text-center text-xs font-bold text-white transition-colors"
+                >
+                  💬 Falar no Telegram (@YarinTV)
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setModalVideoAberto(false)}
+                  className="rounded-md border border-border px-4 py-2.5 text-xs font-bold text-secondary hover:text-foreground cursor-pointer"
+                >
+                  Fechar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -207,16 +305,56 @@ export default function VincularTelegram({
 
       <div className="mt-5 border-t border-border/60 pt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <span className="text-xs text-secondary">Dúvidas ou problemas com a vinculação?</span>
-        <motion.a
-          href="https://t.me/YarinTV"
-          target="_blank"
-          rel="noopener noreferrer"
+        <motion.button
+          type="button"
+          onClick={aoClicarPedirAjuda}
           {...buttonTap}
-          className="inline-flex items-center justify-center gap-2 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-4 py-2 text-xs font-bold text-emerald-400 hover:bg-emerald-500/20 transition-colors shrink-0"
+          className="inline-flex items-center justify-center gap-2 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-4 py-2 text-xs font-bold text-emerald-400 hover:bg-emerald-500/20 transition-colors shrink-0 cursor-pointer"
         >
           💬 Pedir Ajuda para o Suporte
-        </motion.a>
+        </motion.button>
       </div>
+
+      {modalVideoAberto && videoSuporteUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg rounded-xl border border-border bg-surface p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-foreground">🎥 Tutorial de Ajuda do Suporte</h3>
+              <button
+                type="button"
+                onClick={() => setModalVideoAberto(false)}
+                className="text-secondary hover:text-foreground text-sm font-bold cursor-pointer"
+              >
+                ✕ Fechar
+              </button>
+            </div>
+
+            <VideoPlayer url={videoSuporteUrl} />
+
+            <p className="text-xs text-secondary leading-relaxed">
+              Assista ao vídeo explicativo acima. Se ainda precisar de ajuda, toque no botão abaixo para falar diretamente com nosso atendimento no Telegram.
+            </p>
+
+            <div className="flex gap-2">
+              <a
+                href="https://t.me/YarinTV"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 rounded-md bg-emerald-500 hover:bg-emerald-600 py-2.5 text-center text-xs font-bold text-white transition-colors"
+              >
+                💬 Falar no Telegram (@YarinTV)
+              </a>
+              <button
+                type="button"
+                onClick={() => setModalVideoAberto(false)}
+                className="rounded-md border border-border px-4 py-2.5 text-xs font-bold text-secondary hover:text-foreground cursor-pointer"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

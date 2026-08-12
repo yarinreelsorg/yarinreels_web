@@ -50,3 +50,29 @@ export async function salvarCarenciaAssinanteHoras(horas: number) {
     ]);
   }
 }
+
+export async function obterVideoSuporteSite(): Promise<string | null> {
+  const { rows } = await pool.query<{ ds_url_video_suporte: string | null }>(
+    'SELECT ds_url_video_suporte FROM "CONFIGURACAO_SITE" LIMIT 1'
+  );
+  return rows[0]?.ds_url_video_suporte ?? null;
+}
+
+export async function salvarVideoSuporteSite(url: string | null) {
+  const { rows: existente } = await pool.query<{ cd_configuracao: string }>(
+    'SELECT cd_configuracao FROM "CONFIGURACAO_SITE" LIMIT 1'
+  );
+
+  const urlLimpa = url && url.trim() ? url.trim() : null;
+
+  if (existente[0]) {
+    await pool.query(
+      'UPDATE "CONFIGURACAO_SITE" SET ds_url_video_suporte = $1 WHERE cd_configuracao = $2',
+      [urlLimpa, existente[0].cd_configuracao]
+    );
+  } else {
+    await pool.query('INSERT INTO "CONFIGURACAO_SITE" (ds_url_video_suporte) VALUES ($1)', [
+      urlLimpa,
+    ]);
+  }
+}
