@@ -149,11 +149,32 @@ export default function VincularTelegram({
     }
   };
 
+  const aoAbrirTelegram = () => {
+    if (!codigo) return;
+    const appUrl = `tg://resolve?domain=${BOT_USERNAME}&start=vincular_${codigo}`;
+    const webUrl = `https://t.me/${BOT_USERNAME}?start=vincular_${codigo}`;
+
+    window.location.href = appUrl;
+    setTimeout(() => {
+      window.location.href = webUrl;
+    }, 1200);
+  };
+
+  const aoAbrirCanalSuporte = () => {
+    const appUrl = "tg://resolve?domain=YarinTV";
+    const webUrl = "https://t.me/YarinTV";
+
+    window.location.href = appUrl;
+    setTimeout(() => {
+      window.location.href = webUrl;
+    }, 1200);
+  };
+
   const aoClicarPedirAjuda = () => {
     if (videoSuporteUrl) {
       setModalVideoAberto(true);
     } else {
-      window.open("https://t.me/YarinTV", "_blank");
+      aoAbrirCanalSuporte();
     }
   };
 
@@ -261,15 +282,14 @@ export default function VincularTelegram({
           </p>
 
           <div className="flex flex-col gap-2">
-            <motion.a
-              href={`https://t.me/${BOT_USERNAME}?start=vincular_${codigo}`}
-              target="_blank"
-              rel="noopener noreferrer"
+            <motion.button
+              type="button"
+              onClick={aoAbrirTelegram}
               {...buttonTap}
-              className="flex w-full items-center justify-center gap-2 rounded-md bg-primary py-2.5 text-xs font-bold text-white transition-colors hover:bg-primary-dark"
+              className="flex w-full items-center justify-center gap-2 rounded-md bg-primary py-2.5 text-xs font-bold text-white transition-colors hover:bg-primary-dark cursor-pointer"
             >
               ✈️ Abrir no Telegram (@{BOT_USERNAME})
-            </motion.a>
+            </motion.button>
 
             <motion.button
               type="button"
@@ -338,14 +358,13 @@ export default function VincularTelegram({
             </p>
 
             <div className="flex gap-2">
-              <a
-                href="https://t.me/YarinTV"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 rounded-md bg-emerald-500 hover:bg-emerald-600 py-2.5 text-center text-xs font-bold text-white transition-colors"
+              <button
+                type="button"
+                onClick={aoAbrirCanalSuporte}
+                className="flex-1 rounded-md bg-emerald-500 hover:bg-emerald-600 py-2.5 text-center text-xs font-bold text-white transition-colors cursor-pointer"
               >
                 💬 Falar no Telegram (@YarinTV)
-              </a>
+              </button>
               <button
                 type="button"
                 onClick={() => setModalVideoAberto(false)}
