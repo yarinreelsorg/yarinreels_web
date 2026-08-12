@@ -12,7 +12,7 @@ import { useEffect, useRef, useState } from "react";
 // Fallback pro username real do bot — se a env var não estiver configurada
 // no ambiente de produção, o link não pode virar "t.me/undefined" (isso faz
 // o Telegram cair na home telegram.org em vez de abrir o bot).
-const BOT_USERNAME = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || "YarinTV";
+const BOT_USERNAME = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || "Melreels_bot";
 
 export default function VincularTelegram({
   nrIdTelegramInicial,
@@ -164,13 +164,11 @@ export default function VincularTelegram({
 
           <div className="flex flex-col gap-2">
             <motion.a
-              href={`https://t.me/${BOT_USERNAME}?start=${codigo}`}
-              target="_blank"
-              rel="noopener noreferrer"
+              href={`tg://resolve?domain=${BOT_USERNAME}&text=${encodeURIComponent(`/vincular ${codigo}`)}`}
               {...buttonTap}
               className="flex w-full items-center justify-center gap-2 rounded-md bg-primary py-2.5 text-xs font-bold text-white transition-colors hover:bg-primary-dark"
             >
-              ✈️ Abrir Telegram (@{BOT_USERNAME})
+              ✈️ Abrir Telegram com /vincular {codigo}
             </motion.a>
 
             <motion.button
