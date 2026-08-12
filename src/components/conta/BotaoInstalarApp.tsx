@@ -26,13 +26,12 @@ export default function BotaoInstalarApp() {
       window.matchMedia("(display-mode: standalone)").matches ||
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (window.navigator as any).standalone === true;
-
-    if (ehStandalone) {
-      setJaInstaladoState(true);
-    }
-
     const ios = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
-    setModoIOS(ios);
+
+    Promise.resolve().then(() => {
+      if (ehStandalone) setJaInstaladoState(true);
+      setModoIOS(ios);
+    });
 
     function aoDisponibilizar(e: Event) {
       e.preventDefault();

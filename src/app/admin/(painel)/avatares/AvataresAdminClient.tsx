@@ -218,7 +218,7 @@ export default function AvataresAdminClient({
             <span className="text-4xl">🖼️</span>
             <h3 className="mt-3 text-lg font-bold text-white">Nenhum avatar cadastrado nesta categoria</h3>
             <p className="mt-1 text-xs text-[#A78BFA]">
-              Clique no botão "Criar Novo Avatar" acima para adicionar novas opções com fotos customizadas.
+              Clique no botão &quot;Criar Novo Avatar&quot; acima para adicionar novas opções com fotos customizadas.
             </p>
           </div>
         ) : (

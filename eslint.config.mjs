@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Scripts one-off de seed/manutenção, não fazem parte do app Next.js.
+    "download-avatares.js",
   ]),
 ]);
 
