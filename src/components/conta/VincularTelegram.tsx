@@ -112,14 +112,26 @@ export default function VincularTelegram({
         <p className="mt-1 text-xs text-secondary">
           Suas compras feitas pelo bot aparecem automaticamente na sua conta.
         </p>
-        <button
-          type="button"
-          onClick={aoDesvincular}
-          disabled={carregando}
-          className="mt-4 text-xs font-semibold text-red-400 hover:text-red-300 disabled:opacity-50"
-        >
-          Desvincular
-        </button>
+        <div className="mt-4 flex items-center justify-between gap-3 border-t border-border/60 pt-4">
+          <button
+            type="button"
+            onClick={aoDesvincular}
+            disabled={carregando}
+            className="text-xs font-semibold text-red-400 hover:text-red-300 disabled:opacity-50 cursor-pointer"
+          >
+            Desvincular
+          </button>
+
+          <motion.a
+            href="https://t.me/YarinTV"
+            target="_blank"
+            rel="noopener noreferrer"
+            {...buttonTap}
+            className="inline-flex items-center gap-1.5 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-400 hover:bg-emerald-500/20 transition-colors"
+          >
+            💬 Suporte Telegram
+          </motion.a>
+        </div>
       </div>
     );
   }
@@ -194,6 +206,19 @@ export default function VincularTelegram({
       )}
 
       {erro && <p className="mt-3 text-xs text-red-400">{erro}</p>}
+
+      <div className="mt-5 border-t border-border/60 pt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <span className="text-xs text-secondary">Dúvidas ou problemas com a vinculação?</span>
+        <motion.a
+          href="https://t.me/YarinTV"
+          target="_blank"
+          rel="noopener noreferrer"
+          {...buttonTap}
+          className="inline-flex items-center justify-center gap-2 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-4 py-2 text-xs font-bold text-emerald-400 hover:bg-emerald-500/20 transition-colors shrink-0"
+        >
+          💬 Pedir Ajuda para o Suporte
+        </motion.a>
+      </div>
     </div>
   );
 }

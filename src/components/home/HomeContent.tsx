@@ -113,7 +113,11 @@ export default function HomeContent({
 
           <div className="flex flex-col">
             {lancamentos.length > 0 && (
-              <Carrossel titulo="Lançamentos" itens={lancamentos} />
+              <Carrossel
+                titulo="Lançamentos"
+                itens={lancamentos}
+                verTudoHref="/catalogo?ordem=recentes"
+              />
             )}
             {categorias.map((categoria) => (
               <Carrossel

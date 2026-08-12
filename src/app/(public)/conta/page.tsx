@@ -5,6 +5,7 @@ import { pool } from "@/lib/db";
 import Navbar from "@/components/layout/Navbar";
 import VincularTelegram from "@/components/conta/VincularTelegram";
 import SeletorAvatar from "@/components/conta/SeletorAvatar";
+import BotaoInstalarApp from "@/components/conta/BotaoInstalarApp";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -41,7 +42,7 @@ export default async function ContaPage() {
           <VincularTelegram nrIdTelegramInicial={sessao.nr_id_telegram} />
         </div>
 
-        <div className="mt-8 flex flex-wrap gap-3">
+        <div className="mt-8 flex flex-wrap items-center gap-3">
           <Link
             href="/conta/assinatura"
             className="rounded-md border border-border px-5 py-2.5 text-sm font-bold text-foreground transition-colors hover:border-foreground/40"
@@ -54,6 +55,8 @@ export default async function ContaPage() {
           >
             Minha lista
           </Link>
+
+          <BotaoInstalarApp />
         </div>
       </section>
     </div>
