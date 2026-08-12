@@ -10,7 +10,12 @@ import { buttonTap } from "@/lib/motion";
 import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 
-const BOT_USERNAME = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || "Melreels_bot";
+// .trim() + remove "@" na frente — engano comum ao colar o username na env
+// var (ex: "@Melreels_bot" em vez de "Melreels_bot") faz o Telegram acusar
+// "Nome de Usuário não encontrado" porque t.me/@algo não resolve.
+const BOT_USERNAME = (process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || "Melreels_bot")
+  .trim()
+  .replace(/^@/, "");
 
 function VideoPlayer({ url }: { url: string }) {
   if (!url) return null;
