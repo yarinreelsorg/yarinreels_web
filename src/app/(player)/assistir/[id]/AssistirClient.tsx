@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import type { Conteudo, Episodio } from "@/types/database";
 import VideoPlayer from "@/components/player/VideoPlayer";
@@ -54,6 +54,17 @@ export default function AssistirClient({
   const subtitulo = episodioAtual
     ? `Ep. ${episodioAtual.nr_episodio} · ${episodioAtual.nm_titulo}`
     : (ROTULO_FORMATO[conteudo.tp_formato] ?? conteudo.tp_formato);
+
+  // Heartbeat de reproducao (Radar SESSOES)
+  useEffect(() => {
+    if (statusAcesso !== "liberado") return;
+    const cdConteudo = conteudo.cd_conteudo;
+    fetch("/api/heartbeat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cd_conteudo: cdConteudo }),
+    }).catch(() => {});
+  }, [statusAcesso, conteudo.cd_conteudo]);
 
   return (
     <div className="flex min-h-screen flex-col bg-[#050208]">

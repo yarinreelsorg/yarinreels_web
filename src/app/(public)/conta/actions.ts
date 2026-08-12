@@ -77,12 +77,35 @@ export async function verificarVinculacao() {
 export async function atualizarAvatar(avatar: string) {
   const sessao = await usuarioAutenticado();
 
-  await pool.query('UPDATE "USUARIOS" SET ds_avatar = $1, ts_atualizacao = now() WHERE cd_usuario = $2', [
+  await pool.query('UPDATE "USUARIOS" SET ds_avatar = $1 WHERE cd_usuario = $2', [
     avatar,
     sessao.cd_usuario,
   ]);
 
   revalidatePath("/conta");
+  revalidatePath("/admin/clientes");
+  revalidatePath("/admin/usuarios");
+}
+
+export async function obterAvataresPublicos() {
+  try {
+    const { rows } = await pool.query<{
+      cd_avatar: string;
+      nm_avatar: string;
+      nm_categoria: string;
+      ds_url_foto: string;
+    }>('SELECT * FROM "AVATARES" WHERE fl_ativo = true ORDER BY nr_ordem ASC, ts_criacao DESC');
+
+    if (rows.length > 0) {
+      return rows.map((r) => ({
+        id: r.cd_avatar,
+        nome: r.nm_avatar,
+        categoria: r.nm_categoria,
+        url: r.ds_url_foto,
+      }));
+    }
+  } catch {}
+  return [];
 }
 
 export async function desvincularTelegram() {

@@ -4,7 +4,7 @@ import { Suspense, useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { registrarVisita, salvarOrigemVisitante } from "@/lib/visitas";
 
-const INTERVALO_HEARTBEAT_MS = 60_000;
+const INTERVALO_HEARTBEAT_MS = 30_000;
 
 export default function VisitaTracker() {
   return (
@@ -12,6 +12,25 @@ export default function VisitaTracker() {
       <VisitaTrackerInner />
     </Suspense>
   );
+}
+
+function obterNomeDispositivo(): string {
+  if (typeof window === "undefined") return "Desconhecido";
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const tgPlatform = (window as any).Telegram?.WebApp?.platform;
+  if (tgPlatform === "ios") return "🍎 iPhone";
+  if (tgPlatform === "android") return "🤖 Android";
+  if (tgPlatform === "tdesktop") return "💻 PC Windows";
+  if (tgPlatform === "web") return "🌐 Navegador Web";
+
+  const ua = navigator.userAgent.toLowerCase();
+  if (/iphone|ipad|ipod/.test(ua)) return "🍎 iPhone";
+  if (/android/.test(ua)) return "🤖 Android";
+  if (/windows/.test(ua)) return "💻 PC Windows";
+  if (/macintosh|mac os x/.test(ua)) return "🍏 Mac";
+
+  return "🌐 Navegador Web";
 }
 
 function VisitaTrackerInner() {
@@ -41,8 +60,27 @@ function VisitaTrackerInner() {
       if (tgParam) salvarOrigemVisitante(String(tgParam));
     }
 
+    // Registrar visita estática (dashboard admin tradicional)
     registrarVisita(pathname);
-    const id = setInterval(() => registrarVisita(pathname), INTERVALO_HEARTBEAT_MS);
+
+    // Heartbeat de presença em tempo real (Radar SESSOES)
+    const dispositivo = obterNomeDispositivo();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const tgUserId = (window as any).Telegram?.WebApp?.initDataUnsafe?.user?.id;
+
+    const dispararHeartbeat = () => {
+      fetch("/api/heartbeat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nr_id_telegram: tgUserId || undefined,
+          dispositivo,
+        }),
+      }).catch(() => {});
+    };
+
+    dispararHeartbeat();
+    const id = setInterval(dispararHeartbeat, INTERVALO_HEARTBEAT_MS);
     return () => clearInterval(id);
   }, [pathname, searchParams, rastreavel]);
 

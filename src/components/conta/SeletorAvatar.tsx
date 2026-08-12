@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { atualizarAvatar } from "@/app/(public)/conta/actions";
+import { atualizarAvatar, obterAvataresPublicos } from "@/app/(public)/conta/actions";
 import {
   AVATARES_DISPONIVEIS,
   CATEGORIAS_AVATAR,
@@ -19,7 +19,20 @@ export default function SeletorAvatar({ avatarAtual }: { avatarAtual: string | n
   const [categoriaAtiva, setCategoriaAtiva] = useState<string>("TODAS");
   const [urlFoto, setUrlFoto] = useState("");
   const [erroUrl, setErroUrl] = useState<string | null>(null);
+  const [avataresLista, setAvataresLista] = useState<AvatarOpcao[]>(AVATARES_DISPONIVEIS);
   const modalRef = useFocoModal<HTMLDivElement>(aberto, () => setAberto(false));
+
+  useEffect(() => {
+    if (!aberto) return;
+    obterAvataresPublicos().then((dinamicos) => {
+      if (dinamicos && dinamicos.length > 0) {
+        // Junta avatares cadastrados pelo admin no banco com os avatares estáticos
+        const ids = new Set(dinamicos.map((d) => d.url));
+        const estaticosRestantes = AVATARES_DISPONIVEIS.filter((e) => !ids.has(e.url));
+        setAvataresLista([...dinamicos, ...estaticosRestantes]);
+      }
+    });
+  }, [aberto]);
 
   const escolher = async (novoAvatar: string) => {
     setSalvando(true);
@@ -48,8 +61,8 @@ export default function SeletorAvatar({ avatarAtual }: { avatarAtual: string | n
 
   const avataresFiltrados =
     categoriaAtiva === "TODAS"
-      ? AVATARES_DISPONIVEIS
-      : AVATARES_DISPONIVEIS.filter((item) => item.categoria === categoriaAtiva);
+      ? avataresLista
+      : avataresLista.filter((item) => item.categoria === categoriaAtiva);
 
   return (
     <>

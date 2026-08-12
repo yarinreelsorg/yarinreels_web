@@ -130,8 +130,42 @@ export async function carregarDadosRelatorios(filtros: FiltrosRelatorio) {
     return 0;
   };
 
-  // Filtragem de status e origem
-  const vendasFiltradas = vendas.filter((v) => {
+  // Identificação de QR Codes substituídos/abandonados
+  // Se o usuário tem uma venda APROVADA para um item, vendas PENDENTE anteriores daquele item foram QR codes abandonados.
+  // Se ele tem múltiplas vendas PENDENTE para o mesmo item sem ter pago nenhuma, só a última conta como tentativa ativa.
+  const chaveAprovadas = new Set<string>();
+  for (const v of vendas) {
+    if (v.tp_status === "APROVADA") {
+      const itemKey = `${v.nr_id_telegram}_${v.cd_conteudo || v.cd_plano || v.tp_compra}`;
+      chaveAprovadas.add(itemKey);
+    }
+  }
+
+  const pendentesRecentesMap = new Map<string, string>(); // itemKey -> id da pendente mais recente
+  for (const v of vendas) {
+    if (v.tp_status === "PENDENTE") {
+      const itemKey = `${v.nr_id_telegram}_${v.cd_conteudo || v.cd_plano || v.tp_compra}`;
+      if (!pendentesRecentesMap.has(itemKey)) {
+        pendentesRecentesMap.set(itemKey, v.cd_venda);
+      }
+    }
+  }
+
+  // Filtragem de status e origem considerando apenas vendas válidas (não desduplicadas por abandono)
+  const vendasElegiveis = vendas.filter((v) => {
+    const itemKey = `${v.nr_id_telegram}_${v.cd_conteudo || v.cd_plano || v.tp_compra}`;
+
+    if (v.tp_status === "PENDENTE") {
+      // Se o cliente já aprovou este item, o QR code anterior foi abandonado/pago em nova tentativa
+      if (chaveAprovadas.has(itemKey)) return false;
+      // Se gerou múltiplos QR codes pendentes para o mesmo item, considera apenas a última tentativa
+      if (pendentesRecentesMap.get(itemKey) !== v.cd_venda) return false;
+    }
+
+    return true;
+  });
+
+  const vendasFiltradas = vendasElegiveis.filter((v) => {
     if (filtros.status !== "TODAS" && v.tp_status !== filtros.status) return false;
     if (
       filtros.origemFilter &&
