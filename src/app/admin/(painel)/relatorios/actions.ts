@@ -1,7 +1,17 @@
 "use server";
 
 import { pool } from "@/lib/db";
+import { chaveDiaBrasil } from "@/lib/data";
 import type { Conteudo, Plano, Venda, TpStatusVenda } from "@/types/database";
+
+// Meia-noite (00:00 em Brasília, UTC-3 fixo — Brasil não tem mais horário de
+// verão desde 2019) do dia calendário informado. Sem isso, "início do dia"
+// era calculado com getFullYear()/getMonth()/getDate() no fuso do runtime
+// (UTC na Vercel), fazendo "Hoje" começar 3h adiantado e incluir parte da
+// noite de ontem (horário de Brasília) — justamente o pico de vendas.
+function meiaNoiteBrasil(data: Date): Date {
+  return new Date(`${chaveDiaBrasil(data)}T00:00:00-03:00`);
+}
 
 export type TipoPeriodoRelatorio =
   | "hoje"
@@ -64,17 +74,14 @@ export async function carregarDadosRelatorios(filtros: FiltrosRelatorio) {
   let fimIso: string;
 
   if (filtros.periodo === "hoje") {
-    const inicio = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate(), 0, 0, 0, 0);
-    const fim = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate(), 23, 59, 59, 999);
-    inicioIso = inicio.toISOString();
-    fimIso = fim.toISOString();
+    inicioIso = meiaNoiteBrasil(agora).toISOString();
+    fimIso = agora.toISOString();
   } else if (filtros.periodo === "ontem") {
     const ontem = new Date(agora);
     ontem.setDate(ontem.getDate() - 1);
-    const inicio = new Date(ontem.getFullYear(), ontem.getMonth(), ontem.getDate(), 0, 0, 0, 0);
-    const fim = new Date(ontem.getFullYear(), ontem.getMonth(), ontem.getDate(), 23, 59, 59, 999);
-    inicioIso = inicio.toISOString();
-    fimIso = fim.toISOString();
+    inicioIso = meiaNoiteBrasil(ontem).toISOString();
+    // último instante de ontem = 1ms antes da meia-noite de hoje (Brasília)
+    fimIso = new Date(meiaNoiteBrasil(agora).getTime() - 1).toISOString();
   } else if (filtros.periodo === "7dias") {
     const d7 = new Date(agora);
     d7.setDate(d7.getDate() - 7);
@@ -86,18 +93,17 @@ export async function carregarDadosRelatorios(filtros: FiltrosRelatorio) {
     inicioIso = d30.toISOString();
     fimIso = agora.toISOString();
   } else if (filtros.periodo === "este_mes") {
-    const inicio = new Date(agora.getFullYear(), agora.getMonth(), 1, 0, 0, 0, 0);
-    inicioIso = inicio.toISOString();
+    const [anoBrasil, mesBrasil] = chaveDiaBrasil(agora).split("-");
+    inicioIso = new Date(`${anoBrasil}-${mesBrasil}-01T00:00:00-03:00`).toISOString();
     fimIso = agora.toISOString();
   } else if (filtros.periodo === "personalizado" && filtros.dataInicio && filtros.dataFim) {
-    const dIni = new Date(`${filtros.dataInicio}T00:00:00.000`);
-    const dFim = new Date(`${filtros.dataFim}T23:59:59.999`);
+    const dIni = new Date(`${filtros.dataInicio}T00:00:00-03:00`);
+    const dFim = new Date(`${filtros.dataFim}T23:59:59-03:00`);
     inicioIso = Number.isNaN(dIni.getTime()) ? new Date(0).toISOString() : dIni.toISOString();
     fimIso = Number.isNaN(dFim.getTime()) ? agora.toISOString() : dFim.toISOString();
   } else {
     // padrão hoje
-    const inicio = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate(), 0, 0, 0, 0);
-    inicioIso = inicio.toISOString();
+    inicioIso = meiaNoiteBrasil(agora).toISOString();
     fimIso = agora.toISOString();
   }
 
