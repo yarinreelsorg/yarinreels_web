@@ -5,7 +5,13 @@ import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import type { Conteudo, Episodio } from "@/types/database";
 import VideoPlayer from "@/components/player/VideoPlayer";
-import { formatarPreco, resolverUrlVideo, temTrilhaLegendada, type TrilhaAudio } from "@/lib/catalogo";
+import {
+  formatarPreco,
+  otimizarUrlPoster,
+  resolverUrlVideo,
+  temTrilhaLegendada,
+  type TrilhaAudio,
+} from "@/lib/catalogo";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Stagger";
 import { registrarProgressoAssistindo } from "@/lib/historico-actions";
 
@@ -89,7 +95,7 @@ export default function AssistirClient({
           <VideoPlayer
             key={`${idProgresso}-${trilha}`}
             src={urlVideo as string}
-            poster={conteudo.ds_url_poster}
+            poster={otimizarUrlPoster(conteudo.ds_url_poster, 1080)}
             idProgresso={idProgresso}
             autoPlay
             titulo={conteudo.nm_titulo}

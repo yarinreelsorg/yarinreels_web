@@ -1,3 +1,25 @@
+/**
+ * Todos os pôsteres do catálogo vêm do CDN do Blogger
+ * (blogger.googleusercontent.com), que aceita redimensionar a imagem via
+ * sufixo "=wNNN" na própria URL — sem isso, cards de ~230px de largura
+ * carregavam o JPEG original (frequentemente 600-900KB), pesando o site
+ * inteiro à toa. Com o sufixo, a mesma imagem cai pra ~30-50KB.
+ * Outros hosts (Bunny, upload local futuro) não suportam o parâmetro,
+ * então só aplica quando a URL é reconhecidamente do Google.
+ */
+export function otimizarUrlPoster(url: string | null, largura: number): string | null {
+  if (!url) return null;
+  try {
+    const { hostname } = new URL(url);
+    if (!hostname.endsWith("googleusercontent.com")) return url;
+  } catch {
+    return url;
+  }
+  // Remove um sufixo "=wNNN..." que já exista antes de acrescentar o novo.
+  const base = url.replace(/=w\d+.*$/, "");
+  return `${base}=w${largura}`;
+}
+
 export function formatarPreco(valor: number | null) {
   if (valor === null || valor <= 0) return null;
   return new Intl.NumberFormat("pt-BR", {

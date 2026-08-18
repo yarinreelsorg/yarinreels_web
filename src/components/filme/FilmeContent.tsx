@@ -7,7 +7,7 @@ import type { Conteudo, Episodio } from "@/types/database";
 import Navbar from "@/components/layout/Navbar";
 import Carrossel from "@/components/catalog/Carrossel";
 import Estrelas from "@/components/catalog/Estrelas";
-import { formatarPreco, calcularRating } from "@/lib/catalogo";
+import { formatarPreco, calcularRating, otimizarUrlPoster } from "@/lib/catalogo";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Stagger";
 import { buttonTap } from "@/lib/motion";
 import BotaoMinhaLista from "@/components/catalog/BotaoMinhaLista";
@@ -70,7 +70,7 @@ export default function FilmeContent({
           {conteudo.ds_url_poster ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={conteudo.ds_url_poster}
+              src={otimizarUrlPoster(conteudo.ds_url_poster, 100) ?? undefined}
               alt=""
               aria-hidden="true"
               className="h-full w-full scale-110 object-cover object-top blur-md"
@@ -93,7 +93,7 @@ export default function FilmeContent({
             {conteudo.ds_url_poster ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={conteudo.ds_url_poster}
+                src={otimizarUrlPoster(conteudo.ds_url_poster, 520) ?? undefined}
                 alt={conteudo.nm_titulo}
                 width={260}
                 height={390}

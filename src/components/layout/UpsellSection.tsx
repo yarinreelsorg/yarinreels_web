@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "motion/react";
 import type { Conteudo } from "@/types/database";
 import { springExpressivo } from "@/lib/motion";
 import Reveal from "@/components/motion/Reveal";
+import { otimizarUrlPoster } from "@/lib/catalogo";
 
 const BENEFICIOS = [
   "Sem anúncios",
@@ -78,9 +79,9 @@ export default function UpsellSection({
   destaques?: Conteudo[];
   cdPlanoPromo: string | null;
 }) {
-  const poster1 = destaques[0]?.ds_url_poster;
-  const poster2 = destaques[1]?.ds_url_poster;
-  const poster3 = destaques[2]?.ds_url_poster;
+  const poster1 = otimizarUrlPoster(destaques[0]?.ds_url_poster ?? null, 300);
+  const poster2 = otimizarUrlPoster(destaques[1]?.ds_url_poster ?? null, 300);
+  const poster3 = otimizarUrlPoster(destaques[2]?.ds_url_poster ?? null, 300);
   const hrefPromo = cdPlanoPromo ? `/checkout/plano/${cdPlanoPromo}` : "/assinaturas";
 
   return (

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { removerDoHistorico } from "@/lib/historico-actions";
+import { otimizarUrlPoster } from "@/lib/catalogo";
 import type { ItemContinuarAssistindo } from "@/lib/historico";
 
 export default function ContinuarAssistindo({
@@ -36,8 +37,9 @@ export default function ContinuarAssistindo({
                 {item.conteudo.ds_url_poster ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={item.conteudo.ds_url_poster}
+                    src={otimizarUrlPoster(item.conteudo.ds_url_poster, 460) ?? undefined}
                     alt={item.conteudo.nm_titulo}
+                    loading="lazy"
                     className="h-full w-full object-cover"
                   />
                 ) : (

@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
 import Navbar from "@/components/layout/Navbar";
-import { formatarPreco, formatarViews } from "@/lib/catalogo";
+import { formatarPreco, formatarViews, otimizarUrlPoster } from "@/lib/catalogo";
 import type { Conteudo, Plano } from "@/types/database";
 
 interface LandingContentProps {
@@ -100,7 +100,7 @@ export default function LandingContent({
           <div className="absolute inset-0 -z-10 overflow-hidden opacity-25">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={heroBackground}
+              src={otimizarUrlPoster(heroBackground, 100) ?? undefined}
               alt=""
               className="h-full w-full object-cover blur-md scale-105"
             />
@@ -252,7 +252,7 @@ export default function LandingContent({
                 {item.ds_url_poster ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img
-                    src={item.ds_url_poster}
+                    src={otimizarUrlPoster(item.ds_url_poster, 460) ?? undefined}
                     alt={item.nm_titulo}
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                     loading="lazy"
@@ -626,7 +626,7 @@ export default function LandingContent({
                   {modalConteudo.ds_url_poster && (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img
-                      src={modalConteudo.ds_url_poster}
+                      src={otimizarUrlPoster(modalConteudo.ds_url_poster, 520) ?? undefined}
                       alt=""
                       className="h-full w-full object-cover"
                     />

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { formatarPreco, obterPrecoCapa } from "@/lib/catalogo";
+import { formatarPreco, obterPrecoCapa, otimizarUrlPoster } from "@/lib/catalogo";
 
 type Variant = "carrossel" | "top12" | "grid";
 
@@ -34,7 +34,7 @@ export default function CardFilme({
   const preco = formatarPreco(obterPrecoCapa(conteudo));
   const destino = href ?? `/filme/${conteudo.cd_conteudo}`;
 
-  const poster = (sizeClasses: string, className: string) => (
+  const poster = (sizeClasses: string, className: string, largura: number) => (
     <div className={`relative overflow-hidden rounded-lg bg-surface ${sizeClasses} ${className}`}>
       {!carregada && conteudo.ds_url_poster && (
         <div className="absolute inset-0 animate-shimmer bg-[linear-gradient(110deg,#161616_30%,#222_50%,#161616_70%)]" />
@@ -42,7 +42,7 @@ export default function CardFilme({
       {conteudo.ds_url_poster ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={conteudo.ds_url_poster}
+          src={otimizarUrlPoster(conteudo.ds_url_poster, largura) ?? undefined}
           alt={conteudo.nm_titulo}
           loading="lazy"
           onLoad={() => setCarregada(true)}
@@ -62,7 +62,7 @@ export default function CardFilme({
     return (
       <div className="flex items-center gap-2.5 lg:gap-4">
         <Link href={destino} className="relative shrink-0">
-          {poster("w-[75px] h-[105px] lg:w-[130px] lg:h-[182px]", "")}
+          {poster("w-[75px] h-[105px] lg:w-[130px] lg:h-[182px]", "", 260)}
           <span
             className={`absolute bottom-0 left-0 flex h-[25px] w-[25px] items-center justify-center rounded-tr-lg text-sm font-black lg:h-[34px] lg:w-[34px] lg:text-lg ${
               CORES_RANK[rank] ?? "bg-primary text-white"
@@ -95,7 +95,7 @@ export default function CardFilme({
   return (
     <div className={fixo ? "shrink-0 w-[125px] lg:w-[230px]" : "w-full"}>
       <Link href={destino} className="relative block">
-        {poster(fixo ? "w-[125px] h-[185px] lg:w-[230px] lg:h-[340px]" : "aspect-[2/3] w-full", "cursor-pointer")}
+        {poster(fixo ? "w-[125px] h-[185px] lg:w-[230px] lg:h-[340px]" : "aspect-[2/3] w-full", "cursor-pointer", 460)}
         {badge && (
           <span className="absolute left-1.5 top-1.5 rounded bg-black/80 px-1.5 py-0.5 text-[10px] font-bold text-foreground">
             {badge}

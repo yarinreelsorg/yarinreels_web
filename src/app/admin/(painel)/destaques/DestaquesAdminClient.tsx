@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import type { Conteudo } from "@/types/database";
 import { definirCarrosselDestaque, definirTop12 } from "./actions";
 import { buttonTap } from "@/lib/motion";
+import { otimizarUrlPoster } from "@/lib/catalogo";
 import { useToast } from "@/components/admin/ToastProvider";
 
 type ItemLista = { cd_conteudo: string; nm_titulo: string; ds_url_poster: string | null };
@@ -140,8 +141,9 @@ function ListaCurada({
               {item.ds_url_poster ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={item.ds_url_poster}
+                  src={otimizarUrlPoster(item.ds_url_poster, 60) ?? undefined}
                   alt=""
+                  loading="lazy"
                   className="h-10 w-7 shrink-0 rounded object-cover"
                 />
               ) : (

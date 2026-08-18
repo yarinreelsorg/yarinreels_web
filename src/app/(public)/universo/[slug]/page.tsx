@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import UniversoPage from "./UniversoPage";
 import { pool } from "@/lib/db";
 import { UNIVERSOS_CONFIG, categoriaParaSlug, COR_UNIVERSO_PADRAO } from "@/lib/universos-config";
+import { otimizarUrlPoster } from "@/lib/catalogo";
 import type { Conteudo } from "@/types/database";
 
 export default async function UniversoRoute({
@@ -42,7 +43,10 @@ export default async function UniversoRoute({
   const config = UNIVERSOS_CONFIG[slug];
   const label = config?.label ?? nmCategoria;
   const cor = config?.cor ?? COR_UNIVERSO_PADRAO;
-  const bannerUrl = config?.imagemUrl ?? conteudosUniverso[0]?.ds_url_poster ?? null;
+  const bannerUrl = otimizarUrlPoster(
+    config?.imagemUrl ?? conteudosUniverso[0]?.ds_url_poster ?? null,
+    900
+  );
 
   return (
     <UniversoPage

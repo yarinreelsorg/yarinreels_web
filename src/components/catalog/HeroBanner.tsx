@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import type { Conteudo } from "@/types/database";
+import { otimizarUrlPoster } from "@/lib/catalogo";
 
 export default function HeroBanner({ destaques }: { destaques: Conteudo[] }) {
   const trilhoRef = useRef<HTMLElement>(null);
@@ -50,7 +51,7 @@ export default function HeroBanner({ destaques }: { destaques: Conteudo[] }) {
       onMouseLeave={retomar}
       className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth px-4 py-2.5 [scrollbar-width:none] sm:px-8 [&::-webkit-scrollbar]:hidden"
     >
-      {destaques.map((item) => (
+      {destaques.map((item, indice) => (
         <Link
           key={item.cd_conteudo}
           href={`/filme/${item.cd_conteudo}`}
@@ -58,8 +59,9 @@ export default function HeroBanner({ destaques }: { destaques: Conteudo[] }) {
         >
           {item.ds_url_poster ? (
             <img
-              src={item.ds_url_poster}
+              src={otimizarUrlPoster(item.ds_url_poster, 700) ?? undefined}
               alt={item.nm_titulo}
+              loading={indice === 0 ? "eager" : "lazy"}
               className="h-full w-full object-cover"
             />
           ) : (

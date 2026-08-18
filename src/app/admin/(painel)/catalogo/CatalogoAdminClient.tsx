@@ -13,6 +13,7 @@ import {
   toggleDestaque,
   toggleDestaqueEmLote,
 } from "./actions";
+import { otimizarUrlPoster } from "@/lib/catalogo";
 import Pagination from "@/components/admin/Pagination";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import EpisodiosDrawer from "./EpisodiosDrawer";
@@ -425,8 +426,9 @@ export default function CatalogoAdminClient({
                     <td className="px-6 py-3">
                       {conteudo.ds_url_poster ? (
                         <img
-                          src={conteudo.ds_url_poster}
+                          src={otimizarUrlPoster(conteudo.ds_url_poster, 80) ?? undefined}
                           alt={conteudo.nm_titulo}
+                          loading="lazy"
                           className="h-[60px] w-[40px] rounded object-cover border border-[rgba(139,92,246,0.15)]"
                         />
                       ) : (
@@ -742,7 +744,7 @@ export default function CatalogoAdminClient({
                     <div className="shrink-0 flex items-end">
                       {urlPoster && urlPoster.startsWith("http") ? (
                         <img
-                          src={urlPoster}
+                          src={otimizarUrlPoster(urlPoster, 130) ?? undefined}
                           alt="Poster preview"
                           className="w-16 h-24 object-cover rounded border border-[rgba(139,92,246,0.3)]"
                         />
