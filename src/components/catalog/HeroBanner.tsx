@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import type { Conteudo } from "@/types/database";
-import { otimizarUrlPoster } from "@/lib/catalogo";
+import { formatarPreco, formatarViews, otimizarUrlPoster } from "@/lib/catalogo";
 
 export default function HeroBanner({ destaques }: { destaques: Conteudo[] }) {
   const trilhoRef = useRef<HTMLElement>(null);
@@ -67,6 +67,12 @@ export default function HeroBanner({ destaques }: { destaques: Conteudo[] }) {
           ) : (
             <div className="flex h-full w-full items-center justify-center px-4 text-center text-lg font-bold text-secondary">
               {item.nm_titulo}
+            </div>
+          )}
+
+          {typeof item.nr_views === "number" && item.nr_views > 0 && (
+            <div className="absolute top-3 right-3 rounded-full bg-black/75 px-3 py-1 text-xs font-semibold text-emerald-400 backdrop-blur-md">
+              👁️ {formatarViews(item.nr_views)}
             </div>
           )}
 

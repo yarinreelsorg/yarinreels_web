@@ -18,6 +18,15 @@ export type Usuario = {
   ts_atualizacao: string;
 };
 
+export type RecuperacaoSenha = {
+  cd_recuperacao: string;
+  cd_usuario: string;
+  ds_token: string;
+  ts_expiracao: string;
+  sn_utilizado: boolean;
+  ts_criacao: string;
+};
+
 export type Conteudo = {
   cd_conteudo: string;
   nm_titulo: string;

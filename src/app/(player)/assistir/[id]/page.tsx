@@ -24,6 +24,9 @@ export default async function AssistirPage({
 
   if (!conteudo) notFound();
 
+  // Incrementa visualizações em segundo plano ao assistir
+  pool.query('UPDATE "CONTEUDOS" SET nr_views = nr_views + 1 WHERE cd_conteudo = $1', [conteudo.cd_conteudo]).catch(() => {});
+
   const sessao = await getSessaoUsuario();
 
   let acesso: StatusAcesso = { liberado: false };

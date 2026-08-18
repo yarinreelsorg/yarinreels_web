@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { formatarPreco, obterPrecoCapa, otimizarUrlPoster } from "@/lib/catalogo";
+import { formatarPreco, formatarViews, obterPrecoCapa, otimizarUrlPoster } from "@/lib/catalogo";
 
 type Variant = "carrossel" | "top12" | "grid";
 
@@ -20,7 +20,14 @@ export default function CardFilme({
   legenda,
   badge,
 }: {
-  conteudo: { cd_conteudo: string; nm_titulo: string; ds_url_poster: string | null; vl_aluguel: number | null; vl_vitalicio: number | null };
+  conteudo: {
+    cd_conteudo: string;
+    nm_titulo: string;
+    ds_url_poster: string | null;
+    vl_aluguel: number | null;
+    vl_vitalicio: number | null;
+    nr_views?: number;
+  };
   rank?: number;
   variant?: Variant;
   /** Sobrescreve o destino do pôster/botão (padrão: /filme/[id]). */
@@ -55,6 +62,12 @@ export default function CardFilme({
           {conteudo.nm_titulo}
         </div>
       )}
+
+      {typeof conteudo.nr_views === "number" && conteudo.nr_views > 0 && (
+        <span className="absolute bottom-1.5 right-1.5 rounded bg-black/80 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-400 backdrop-blur-md">
+          {formatarViews(conteudo.nr_views)}
+        </span>
+      )}
     </div>
   );
 
@@ -78,10 +91,17 @@ export default function CardFilme({
           >
             {conteudo.nm_titulo}
           </Link>
-          {preco && <p className="mt-1 text-[11px] font-extrabold text-secondary lg:text-sm">{preco}</p>}
+
+          {typeof conteudo.nr_views === "number" && conteudo.nr_views > 0 && (
+            <p className="mt-0.5 text-[10px] font-medium text-emerald-400 lg:text-xs">
+              {formatarViews(conteudo.nr_views)}
+            </p>
+          )}
+
+          {preco && <p className="mt-0.5 text-[11px] font-extrabold text-secondary lg:text-sm">{preco}</p>}
           <Link
             href={destino}
-            className="mt-2 flex w-fit items-center gap-1 rounded-full bg-white px-3 py-1.5 text-[10px] font-black text-black transition-transform active:scale-95 lg:px-4 lg:py-2 lg:text-xs"
+            className="mt-1.5 flex w-fit items-center gap-1 rounded-full bg-white px-3 py-1 text-[10px] font-black text-black transition-transform active:scale-95 lg:px-4 lg:py-1.5 lg:text-xs"
           >
             🛒 Comprar
           </Link>

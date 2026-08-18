@@ -7,7 +7,7 @@ import type { Conteudo, Episodio } from "@/types/database";
 import Navbar from "@/components/layout/Navbar";
 import Carrossel from "@/components/catalog/Carrossel";
 import Estrelas from "@/components/catalog/Estrelas";
-import { formatarPreco, calcularRating, otimizarUrlPoster } from "@/lib/catalogo";
+import { formatarPreco, formatarViews, calcularRating, otimizarUrlPoster } from "@/lib/catalogo";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Stagger";
 import { buttonTap } from "@/lib/motion";
 import BotaoMinhaLista from "@/components/catalog/BotaoMinhaLista";
@@ -136,6 +136,14 @@ export default function FilmeContent({
                 <>
                   <span>·</span>
                   <span>{conteudo.nm_idioma}</span>
+                </>
+              )}
+              {typeof conteudo.nr_views === "number" && conteudo.nr_views > 0 && (
+                <>
+                  <span>·</span>
+                  <span className="font-semibold text-emerald-400">
+                    👁️ {formatarViews(conteudo.nr_views)}
+                  </span>
                 </>
               )}
             </div>

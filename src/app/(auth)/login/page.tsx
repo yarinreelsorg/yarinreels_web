@@ -55,15 +55,25 @@ function LoginPageInner() {
           placeholder="voce@email.com"
           required
         />
-        <CampoTexto
-          label="Senha"
-          type="password"
-          name="senha"
-          value={senha}
-          onChange={setSenha}
-          placeholder="••••••••"
-          required
-        />
+        <div className="flex flex-col gap-1">
+          <CampoTexto
+            label="Senha"
+            type="password"
+            name="senha"
+            value={senha}
+            onChange={setSenha}
+            placeholder="••••••••"
+            required
+          />
+          <div className="text-right">
+            <Link
+              href="/esqueceu-senha"
+              className="text-xs text-secondary hover:text-primary transition-colors hover:underline"
+            >
+              Esqueceu a senha?
+            </Link>
+          </div>
+        </div>
         {erro && <p className="text-sm text-red-400">{erro}</p>}
         <button
           type="submit"

@@ -17,6 +17,9 @@ export default async function FilmePage({
   const conteudo = conteudos.find((c) => String(c.cd_conteudo) === id);
   if (!conteudo) notFound();
 
+  // Incrementa visualizações em segundo plano
+  pool.query('UPDATE "CONTEUDOS" SET nr_views = nr_views + 1 WHERE cd_conteudo = $1', [conteudo.cd_conteudo]).catch(() => {});
+
   const categorias = Array.from(
     new Set(conteudos.map((c) => c.nm_categoria).filter(Boolean))
   ).sort();
