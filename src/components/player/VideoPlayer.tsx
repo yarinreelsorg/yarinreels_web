@@ -286,19 +286,6 @@ export default function VideoPlayer({
       onClick={() => !arrastando && alternarPlay()}
       className="relative flex h-full w-full items-center justify-center overflow-hidden bg-black outline-none select-none"
     >
-      {/* Preenche as faixas do letterbox (quando a proporção do vídeo não
-          bate com a tela) com uma versão borrada do pôster em vez de barras
-          pretas — mesmo truque de Reels/TikTok/Stories. Some sozinho quando
-          o vídeo já cobre a tela inteira, então é seguro deixar sempre. */}
-      {poster && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={poster}
-          alt=""
-          aria-hidden="true"
-          className="absolute inset-0 h-full w-full scale-110 object-cover object-center blur-2xl opacity-50"
-        />
-      )}
       <video
         ref={videoRef}
         poster={poster ?? undefined}
@@ -306,7 +293,7 @@ export default function VideoPlayer({
         playsInline
         disablePictureInPicture
         onContextMenu={(e) => e.preventDefault()}
-        className="relative h-full w-full object-contain"
+        className="relative h-full w-full object-cover"
       />
 
       {carregando && !erro && (
