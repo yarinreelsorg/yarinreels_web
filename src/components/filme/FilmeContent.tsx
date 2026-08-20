@@ -44,6 +44,26 @@ export default function FilmeContent({
   logado: boolean;
 }) {
   const [trailerAberto, setTrailerAberto] = useState(false);
+  const [linkCopiado, setLinkCopiado] = useState(false);
+
+  async function aoCompartilhar() {
+    const url = `${window.location.origin}/filme/${conteudo.cd_conteudo}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: conteudo.nm_titulo, url });
+      } catch {
+        // usuário cancelou o share nativo — não é erro, ignora
+      }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setLinkCopiado(true);
+      setTimeout(() => setLinkCopiado(false), 2000);
+    } catch {
+      // clipboard indisponível (http local, permissão negada) — sem fallback melhor aqui
+    }
+  }
 
   const generos = conteudo.ds_generos
     ?.split(",")
@@ -192,6 +212,14 @@ export default function FilmeContent({
                   🎬 Trailer
                 </motion.button>
               )}
+              <motion.button
+                type="button"
+                onClick={aoCompartilhar}
+                {...buttonTap}
+                className="rounded-md border border-secondary/40 px-5 py-2 text-xs font-bold text-foreground transition-colors hover:border-foreground sm:text-sm"
+              >
+                {linkCopiado ? "✓ Link copiado!" : "🔗 Compartilhar"}
+              </motion.button>
             </div>
 
             {(precoAluguel || precoVitalicio) && (
