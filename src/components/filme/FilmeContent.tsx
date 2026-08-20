@@ -7,10 +7,11 @@ import type { Conteudo, Episodio } from "@/types/database";
 import Navbar from "@/components/layout/Navbar";
 import Carrossel from "@/components/catalog/Carrossel";
 import Estrelas from "@/components/catalog/Estrelas";
-import { formatarPreco, formatarViews, calcularRating, otimizarUrlPoster } from "@/lib/catalogo";
+import { formatarPreco, formatarViews, calcularRating } from "@/lib/catalogo";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Stagger";
 import { buttonTap } from "@/lib/motion";
 import BotaoMinhaLista from "@/components/catalog/BotaoMinhaLista";
+import PosterImg from "@/components/catalog/PosterImg";
 
 const ROTULO_FORMATO: Record<string, string> = {
   FILME: "Filme",
@@ -68,11 +69,11 @@ export default function FilmeContent({
       <section className="relative flex min-h-[46vh] w-full items-end sm:min-h-[56vh] lg:min-h-[64vh]">
         <div className="absolute inset-0">
           {conteudo.ds_url_poster ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={otimizarUrlPoster(conteudo.ds_url_poster, 100) ?? undefined}
+            <PosterImg
+              src={conteudo.ds_url_poster}
+              largura={100}
               alt=""
-              aria-hidden="true"
+              loading="eager"
               className="h-full w-full scale-110 object-cover object-top blur-md"
             />
           ) : (
@@ -91,12 +92,11 @@ export default function FilmeContent({
         >
           <div className="hidden shrink-0 overflow-hidden rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.6)] lg:block">
             {conteudo.ds_url_poster ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={otimizarUrlPoster(conteudo.ds_url_poster, 520) ?? undefined}
+              <PosterImg
+                src={conteudo.ds_url_poster}
+                largura={520}
                 alt={conteudo.nm_titulo}
-                width={260}
-                height={390}
+                loading="eager"
                 className="h-[390px] w-[260px] object-cover"
               />
             ) : (

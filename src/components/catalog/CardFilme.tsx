@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { formatarPreco, formatarViews, obterPrecoCapa, otimizarUrlPoster } from "@/lib/catalogo";
+import { formatarPreco, formatarViews, obterPrecoCapa } from "@/lib/catalogo";
+import PosterImg from "./PosterImg";
 
 type Variant = "carrossel" | "top12" | "grid";
 
@@ -47,11 +48,10 @@ export default function CardFilme({
         <div className="absolute inset-0 animate-shimmer bg-[linear-gradient(110deg,#161616_30%,#222_50%,#161616_70%)]" />
       )}
       {conteudo.ds_url_poster ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={otimizarUrlPoster(conteudo.ds_url_poster, largura) ?? undefined}
+        <PosterImg
+          src={conteudo.ds_url_poster}
+          largura={largura}
           alt={conteudo.nm_titulo}
-          loading="lazy"
           onLoad={() => setCarregada(true)}
           className={`h-full w-full object-cover transition-opacity duration-300 ${
             carregada ? "opacity-100" : "opacity-0"

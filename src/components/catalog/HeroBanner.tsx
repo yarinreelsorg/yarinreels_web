@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import type { Conteudo } from "@/types/database";
-import { formatarPreco, formatarViews, otimizarUrlPoster } from "@/lib/catalogo";
+import { formatarViews } from "@/lib/catalogo";
+import PosterImg from "./PosterImg";
 
 export default function HeroBanner({ destaques }: { destaques: Conteudo[] }) {
   const trilhoRef = useRef<HTMLElement>(null);
@@ -58,8 +59,9 @@ export default function HeroBanner({ destaques }: { destaques: Conteudo[] }) {
           className="relative h-[450px] min-w-[88vw] shrink-0 snap-center overflow-hidden rounded-2xl bg-surface sm:min-w-[420px]"
         >
           {item.ds_url_poster ? (
-            <img
-              src={otimizarUrlPoster(item.ds_url_poster, 700) ?? undefined}
+            <PosterImg
+              src={item.ds_url_poster}
+              largura={700}
               alt={item.nm_titulo}
               loading={indice === 0 ? "eager" : "lazy"}
               className="h-full w-full object-cover"

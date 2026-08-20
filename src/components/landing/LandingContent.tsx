@@ -4,8 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
 import Navbar from "@/components/layout/Navbar";
-import { formatarPreco, formatarViews, otimizarUrlPoster } from "@/lib/catalogo";
+import { formatarPreco, formatarViews } from "@/lib/catalogo";
 import type { Conteudo, Plano } from "@/types/database";
+import PosterImg from "@/components/catalog/PosterImg";
 
 interface LandingContentProps {
   destaques: Conteudo[];
@@ -98,10 +99,11 @@ export default function LandingContent({
         {/* Banner de fundo com gradiente escuro */}
         {heroBackground && (
           <div className="absolute inset-0 -z-10 overflow-hidden opacity-25">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={otimizarUrlPoster(heroBackground, 100) ?? undefined}
+            <PosterImg
+              src={heroBackground}
+              largura={100}
               alt=""
+              loading="eager"
               className="h-full w-full object-cover blur-md scale-105"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/80 to-[#050505]/40" />
@@ -250,9 +252,9 @@ export default function LandingContent({
               {/* Poster */}
               <div className="aspect-[2/3] w-full overflow-hidden bg-black/40">
                 {item.ds_url_poster ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img
-                    src={otimizarUrlPoster(item.ds_url_poster, 460) ?? undefined}
+                  <PosterImg
+                    src={item.ds_url_poster}
+                    largura={460}
                     alt={item.nm_titulo}
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                     loading="lazy"
@@ -624,10 +626,11 @@ export default function LandingContent({
                 {/* Poster Lateral */}
                 <div className="w-full md:w-5/12 aspect-[2/3] bg-black">
                   {modalConteudo.ds_url_poster && (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img
-                      src={otimizarUrlPoster(modalConteudo.ds_url_poster, 520) ?? undefined}
+                    <PosterImg
+                      src={modalConteudo.ds_url_poster}
+                      largura={520}
                       alt=""
+                      loading="eager"
                       className="h-full w-full object-cover"
                     />
                   )}

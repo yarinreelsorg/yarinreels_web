@@ -79,9 +79,12 @@ export default function UpsellSection({
   destaques?: Conteudo[];
   cdPlanoPromo: string | null;
 }) {
-  const poster1 = otimizarUrlPoster(destaques[0]?.ds_url_poster ?? null, 300);
-  const poster2 = otimizarUrlPoster(destaques[1]?.ds_url_poster ?? null, 300);
-  const poster3 = otimizarUrlPoster(destaques[2]?.ds_url_poster ?? null, 300);
+  const rawPoster1 = destaques[0]?.ds_url_poster ?? null;
+  const rawPoster2 = destaques[1]?.ds_url_poster ?? null;
+  const rawPoster3 = destaques[2]?.ds_url_poster ?? null;
+  const [poster1, setPoster1] = useState(otimizarUrlPoster(rawPoster1, 300));
+  const [poster2, setPoster2] = useState(otimizarUrlPoster(rawPoster2, 300));
+  const [poster3, setPoster3] = useState(otimizarUrlPoster(rawPoster3, 300));
   const hrefPromo = cdPlanoPromo ? `/checkout/plano/${cdPlanoPromo}` : "/assinaturas";
 
   return (
@@ -139,6 +142,7 @@ export default function UpsellSection({
             <motion.img
               src={poster1}
               alt="Poster 1"
+              onError={() => rawPoster1 && setPoster1((atual) => (atual === rawPoster1 ? atual : rawPoster1))}
               initial={{ rotate: -12 }}
               whileHover={{ rotate: -6, scale: 1.05 }}
               transition={springExpressivo}
@@ -149,6 +153,7 @@ export default function UpsellSection({
             <motion.img
               src={poster3}
               alt="Poster 3"
+              onError={() => rawPoster3 && setPoster3((atual) => (atual === rawPoster3 ? atual : rawPoster3))}
               initial={{ rotate: 12 }}
               whileHover={{ rotate: 6, scale: 1.05 }}
               transition={springExpressivo}
@@ -159,6 +164,7 @@ export default function UpsellSection({
             <motion.img
               src={poster2}
               alt="Poster 2"
+              onError={() => rawPoster2 && setPoster2((atual) => (atual === rawPoster2 ? atual : rawPoster2))}
               initial={{ x: "-50%" }}
               whileHover={{ scale: 1.1 }}
               transition={springExpressivo}

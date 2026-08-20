@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import { removerDoHistorico } from "@/lib/historico-actions";
-import { otimizarUrlPoster } from "@/lib/catalogo";
 import type { ItemContinuarAssistindo } from "@/lib/historico";
+import PosterImg from "./PosterImg";
 
 export default function ContinuarAssistindo({
   itens,
@@ -35,11 +35,10 @@ export default function ContinuarAssistindo({
             >
               <div className="h-[185px] w-[125px] lg:h-[340px] lg:w-[230px]">
                 {item.conteudo.ds_url_poster ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={otimizarUrlPoster(item.conteudo.ds_url_poster, 460) ?? undefined}
+                  <PosterImg
+                    src={item.conteudo.ds_url_poster}
+                    largura={460}
                     alt={item.conteudo.nm_titulo}
-                    loading="lazy"
                     className="h-full w-full object-cover"
                   />
                 ) : (
