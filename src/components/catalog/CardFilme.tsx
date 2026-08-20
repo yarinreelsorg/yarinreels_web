@@ -62,12 +62,6 @@ export default function CardFilme({
           {conteudo.nm_titulo}
         </div>
       )}
-
-      {typeof conteudo.nr_views === "number" && conteudo.nr_views > 0 && (
-        <span className="absolute bottom-1.5 right-1.5 rounded bg-black/80 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-400 backdrop-blur-md">
-          {formatarViews(conteudo.nr_views)}
-        </span>
-      )}
     </div>
   );
 
