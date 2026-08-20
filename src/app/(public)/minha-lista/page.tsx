@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { pool } from "@/lib/db";
 import { getSessaoUsuario } from "@/lib/user-auth";
@@ -10,7 +9,6 @@ import { SecaoTitulo, EstadoVazio } from "@/components/catalog/SecaoTitulo";
 import Reveal from "@/components/motion/Reveal";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Stagger";
 import { diasRestantes, estaExpirada } from "@/lib/catalogo";
-import { formatarDataHora } from "@/lib/data";
 import type { Conteudo, Plano, TpCompra, Venda } from "@/types/database";
 
 export const revalidate = 0;
@@ -138,44 +136,6 @@ export default async function MinhaListaPage() {
             Seus filmes comprados, o que sua assinatura libera, e o que você salvou pra ver depois.
           </p>
         </Reveal>
-
-        {/* Assinatura ativa */}
-        {assinaturaAtiva && planoAtivo && (
-          <Reveal delay={0.05} className="mt-8">
-            <div
-              className="flex flex-wrap items-center justify-between gap-4 rounded-lg p-5 sm:p-6"
-              style={{
-                background: "linear-gradient(120deg, rgba(123,47,190,0.18), rgba(13,10,26,0.4))",
-                border: "1px solid rgba(139,92,246,0.3)",
-              }}
-            >
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
-                    Assinatura ativa
-                  </span>
-                </div>
-                <p className="mt-1.5 text-xl font-black text-foreground">{planoAtivo.nm_plano}</p>
-                <p className="mt-0.5 text-sm text-secondary">
-                  Libera <span className="font-semibold text-[#A78BFA]">{planoAtivo.nm_categoria}</span>{" "}
-                  · vale até{" "}
-                  {formatarDataHora(assinaturaAtiva.ts_expiracao as string, {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric",
-                  })}
-                </p>
-              </div>
-              <Link
-                href="/conta/assinatura"
-                className="shrink-0 rounded-md border border-primary/40 px-4 py-2 text-xs font-bold text-foreground transition-colors hover:border-primary"
-              >
-                Gerenciar
-              </Link>
-            </div>
-          </Reveal>
-        )}
 
         {/* Meus Filmes (comprados) */}
         <Reveal delay={0.1} className="mt-12">
