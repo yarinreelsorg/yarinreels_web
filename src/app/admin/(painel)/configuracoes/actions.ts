@@ -7,7 +7,7 @@ import { pool } from "@/lib/db";
 import { getSessaoAdmin } from "@/lib/admin-auth";
 import { registrarLog } from "@/lib/auditoria";
 import { renomearCategoria, salvarConfigCategorias } from "@/lib/categorias-config";
-import { salvarCarenciaAssinanteHoras, salvarLogoSite } from "@/lib/site-config";
+import { salvarCarenciaAssinanteHoras, salvarLogoSite, salvarPercentualAfiliado } from "@/lib/site-config";
 import type { TpPapelAdmin } from "@/types/database";
 
 async function exigirSuperAdmin() {
@@ -75,6 +75,24 @@ export async function atualizarCarenciaAssinante(horas: number) {
     tp_acao: "ALTERACAO_CONFIGURACAO",
     nm_entidade: "CONFIGURACAO_SITE",
     ds_detalhes: { nr_horas_carencia_assinante: horas },
+  });
+
+  revalidatePath("/admin/configuracoes");
+}
+
+export async function atualizarPercentualAfiliado(percentual: number) {
+  await exigirSuperAdmin();
+
+  if (!Number.isFinite(percentual) || percentual < 0 || percentual > 100) {
+    throw new Error("Informe um percentual entre 0 e 100.");
+  }
+
+  await salvarPercentualAfiliado(percentual);
+
+  await registrarLog({
+    tp_acao: "ALTERACAO_CONFIGURACAO",
+    nm_entidade: "CONFIGURACAO_SITE",
+    ds_detalhes: { vl_percentual_afiliado: percentual },
   });
 
   revalidatePath("/admin/configuracoes");

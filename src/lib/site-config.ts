@@ -51,6 +51,31 @@ export async function salvarCarenciaAssinanteHoras(horas: number) {
   }
 }
 
+/** Percentual de comissão do programa de indicação — ver src/lib/afiliados.ts. */
+export async function obterPercentualAfiliado(): Promise<number> {
+  const { rows } = await pool.query<{ vl_percentual_afiliado: number }>(
+    'SELECT vl_percentual_afiliado FROM "CONFIGURACAO_SITE" LIMIT 1'
+  );
+  return rows[0]?.vl_percentual_afiliado ?? 10;
+}
+
+export async function salvarPercentualAfiliado(percentual: number) {
+  const { rows: existente } = await pool.query<{ cd_configuracao: string }>(
+    'SELECT cd_configuracao FROM "CONFIGURACAO_SITE" LIMIT 1'
+  );
+
+  if (existente[0]) {
+    await pool.query(
+      'UPDATE "CONFIGURACAO_SITE" SET vl_percentual_afiliado = $1 WHERE cd_configuracao = $2',
+      [percentual, existente[0].cd_configuracao]
+    );
+  } else {
+    await pool.query('INSERT INTO "CONFIGURACAO_SITE" (vl_percentual_afiliado) VALUES ($1)', [
+      percentual,
+    ]);
+  }
+}
+
 export async function obterVideoSuporteSite(): Promise<string | null> {
   const { rows } = await pool.query<{ ds_url_video_suporte: string | null }>(
     'SELECT ds_url_video_suporte FROM "CONFIGURACAO_SITE" LIMIT 1'

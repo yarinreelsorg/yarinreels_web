@@ -13,6 +13,7 @@ import {
 } from "@/lib/acesso";
 import { obterTaxaCartao } from "@/lib/pagamento";
 import { obterOrigemVisitante } from "@/lib/visitas";
+import { calcularComissaoAfiliado, obterIndicadorDoComprador } from "@/lib/afiliados";
 import {
   consultarCobrancaPix,
   criarCobrancaCartao,
@@ -83,6 +84,20 @@ export async function registrarConsentimentoTermos(contexto: string) {
      VALUES ($1,$2,$3,$4,$5,$6)`,
     [sessao.cd_usuario, sessao.nm_email, contexto, VERSAO_TERMOS, ip, userAgent]
   );
+}
+
+/** Se o comprador foi indicado por alguém, calcula a comissão (sobre o
+ * valor cobrado agora) pra creditar na venda. */
+async function obterDadosComissao(
+  cd_usuario: string,
+  valorCobrado: number
+): Promise<{ cd_afiliado_usuario: string | null; vl_comissao_afiliado: number | null }> {
+  const indicador = await obterIndicadorDoComprador(cd_usuario);
+  if (!indicador) return { cd_afiliado_usuario: null, vl_comissao_afiliado: null };
+  return {
+    cd_afiliado_usuario: indicador,
+    vl_comissao_afiliado: await calcularComissaoAfiliado(valorCobrado),
+  };
 }
 
 async function calcularDiasValidade(tp_compra: TpCompra, cd_plano: string | null) {
@@ -168,13 +183,17 @@ export async function iniciarCheckoutPixConteudo(
   );
 
   const ds_origem = await obterOrigemVisitante();
+  const { cd_afiliado_usuario, vl_comissao_afiliado } = await obterDadosComissao(
+    sessao.cd_usuario,
+    valor
+  );
 
   const { rows: vendas } = await pool.query<{ cd_venda: string }>(
     `INSERT INTO "VENDAS"
-       (nr_id_telegram, tp_compra, tp_status, cd_conteudo, cd_plano, ds_txid, vl_pago, tp_metodo_pagamento, ds_origem)
-     VALUES ($1, $2, 'PENDENTE', $3, NULL, $4, $5, 'PIX', $6)
+       (nr_id_telegram, tp_compra, tp_status, cd_conteudo, cd_plano, ds_txid, vl_pago, tp_metodo_pagamento, ds_origem, cd_afiliado_usuario, vl_comissao_afiliado)
+     VALUES ($1, $2, 'PENDENTE', $3, NULL, $4, $5, 'PIX', $6, $7, $8)
      RETURNING cd_venda`,
-    [nr_id_telegram, tp_compra, cd_conteudo, cobranca.txid, valor, ds_origem]
+    [nr_id_telegram, tp_compra, cd_conteudo, cobranca.txid, valor, ds_origem, cd_afiliado_usuario, vl_comissao_afiliado]
   );
   const venda = vendas[0];
   if (!venda) throw new Error("Erro ao criar a compra.");
@@ -201,13 +220,17 @@ export async function iniciarCheckoutPixPlano(cd_plano: string): Promise<Checkou
   const cobranca = await criarCobrancaPix(plano.vl_plano, `Assinatura: ${plano.nm_plano}`);
 
   const ds_origem = await obterOrigemVisitante();
+  const { cd_afiliado_usuario, vl_comissao_afiliado } = await obterDadosComissao(
+    sessao.cd_usuario,
+    plano.vl_plano
+  );
 
   const { rows: vendas } = await pool.query<{ cd_venda: string }>(
     `INSERT INTO "VENDAS"
-       (nr_id_telegram, tp_compra, tp_status, cd_conteudo, cd_plano, ds_txid, vl_pago, tp_metodo_pagamento, ds_origem)
-     VALUES ($1, 'ASSINATURA', 'PENDENTE', NULL, $2, $3, $4, 'PIX', $5)
+       (nr_id_telegram, tp_compra, tp_status, cd_conteudo, cd_plano, ds_txid, vl_pago, tp_metodo_pagamento, ds_origem, cd_afiliado_usuario, vl_comissao_afiliado)
+     VALUES ($1, 'ASSINATURA', 'PENDENTE', NULL, $2, $3, $4, 'PIX', $5, $6, $7)
      RETURNING cd_venda`,
-    [nr_id_telegram, cd_plano, cobranca.txid, plano.vl_plano, ds_origem]
+    [nr_id_telegram, cd_plano, cobranca.txid, plano.vl_plano, ds_origem, cd_afiliado_usuario, vl_comissao_afiliado]
   );
   const venda = vendas[0];
   if (!venda) throw new Error("Erro ao criar a compra.");
@@ -266,6 +289,7 @@ export interface CheckoutCartaoResultado {
 }
 
 async function finalizarCompraCartao(
+  cd_usuario: string,
   nr_id_telegram: number,
   tp_compra: TpCompra,
   cd_conteudo: string | null,
@@ -300,11 +324,12 @@ async function finalizarCompraCartao(
   const dias = await calcularDiasValidade(tp_compra, cd_plano);
   const tp_status = resultado.status === "APROVADO" ? "APROVADA" : "PENDENTE";
   const ds_origem = await obterOrigemVisitante();
+  const { cd_afiliado_usuario, vl_comissao_afiliado } = await obterDadosComissao(cd_usuario, total);
 
   await pool.query(
     `INSERT INTO "VENDAS"
-       (nr_id_telegram, tp_compra, tp_status, cd_conteudo, cd_plano, ds_txid, ts_expiracao, vl_pago, tp_metodo_pagamento, ds_origem)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'CARTAO', $9)`,
+       (nr_id_telegram, tp_compra, tp_status, cd_conteudo, cd_plano, ds_txid, ts_expiracao, vl_pago, tp_metodo_pagamento, ds_origem, cd_afiliado_usuario, vl_comissao_afiliado)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'CARTAO', $9, $10, $11)`,
     [
       nr_id_telegram,
       tp_compra,
@@ -315,6 +340,8 @@ async function finalizarCompraCartao(
       tp_status === "APROVADA" ? somarDias(dias) : null,
       total,
       ds_origem,
+      cd_afiliado_usuario,
+      vl_comissao_afiliado,
     ]
   );
 
@@ -347,6 +374,7 @@ export async function iniciarCheckoutCartaoConteudo(
   const nr_id_telegram = await obterIdentidadeParaCompra(sessao.cd_usuario);
 
   return finalizarCompraCartao(
+    sessao.cd_usuario,
     nr_id_telegram,
     tp_compra,
     cd_conteudo,
@@ -378,6 +406,7 @@ export async function iniciarCheckoutCartaoPlano(
   const nr_id_telegram = await obterIdentidadeParaCompra(sessao.cd_usuario);
 
   return finalizarCompraCartao(
+    sessao.cd_usuario,
     nr_id_telegram,
     "ASSINATURA",
     null,

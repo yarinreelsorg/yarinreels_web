@@ -1,11 +1,14 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getSessaoUsuario } from "@/lib/user-auth";
 import { pool } from "@/lib/db";
+import { obterOuCriarCodigoAfiliado, obterResumoAfiliadoProprio } from "@/lib/afiliados";
 import Navbar from "@/components/layout/Navbar";
 import VincularTelegram from "@/components/conta/VincularTelegram";
 import SeletorAvatar from "@/components/conta/SeletorAvatar";
 import BotaoInstalarApp from "@/components/conta/BotaoInstalarApp";
+import IndicacaoCard from "@/components/conta/IndicacaoCard";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -19,6 +22,16 @@ export default async function ContaPage() {
     [sessao.cd_usuario]
   );
   const avatarAtual = rows[0]?.ds_avatar ?? null;
+
+  const [codigoAfiliado, resumoAfiliado] = await Promise.all([
+    obterOuCriarCodigoAfiliado(sessao.cd_usuario),
+    obterResumoAfiliadoProprio(sessao.cd_usuario),
+  ]);
+  const h = await headers();
+  const origem = h.get("x-forwarded-proto")
+    ? `${h.get("x-forwarded-proto")}://${h.get("host")}`
+    : `https://${h.get("host")}`;
+  const linkIndicacao = `${origem}/cadastro?ref=${codigoAfiliado}`;
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -40,6 +53,18 @@ export default async function ContaPage() {
         </h2>
         <div className="mt-3">
           <VincularTelegram nrIdTelegramInicial={sessao.nr_id_telegram} />
+        </div>
+
+        <h2 className="mt-8 text-sm font-bold uppercase tracking-wide text-secondary">
+          Indicação
+        </h2>
+        <div className="mt-3">
+          <IndicacaoCard
+            linkIndicacao={linkIndicacao}
+            totalIndicados={resumoAfiliado.total_indicados}
+            vlComissaoPendente={resumoAfiliado.vl_comissao_pendente}
+            vlComissaoPaga={resumoAfiliado.vl_comissao_paga}
+          />
         </div>
 
         <div className="mt-8 flex flex-wrap items-center gap-3">

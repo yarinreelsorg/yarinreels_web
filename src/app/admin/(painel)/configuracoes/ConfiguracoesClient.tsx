@@ -9,6 +9,7 @@ import {
   atualizarLogoSite,
   atualizarOrdemCategorias,
   atualizarPapelAdministrador,
+  atualizarPercentualAfiliado,
   atualizarTaxaCartao,
   atualizarVideoSuporte,
   criarAdministrador,
@@ -29,6 +30,7 @@ export default function ConfiguracoesClient({
   logoAtual,
   carenciaHorasInicial,
   videoSuporteInicial = "",
+  percentualAfiliadoInicial,
 }: {
   administradores: Administrador[];
   cdAdministradorAtual: string | null;
@@ -38,6 +40,7 @@ export default function ConfiguracoesClient({
   logoAtual: string;
   carenciaHorasInicial: number;
   videoSuporteInicial?: string;
+  percentualAfiliadoInicial: number;
 }) {
   const ehSuperAdmin = papelAtual === "SUPER_ADMIN";
   const toast = useToast();
@@ -63,6 +66,25 @@ export default function ConfiguracoesClient({
 
   const [videoSuporte, setVideoSuporte] = useState(videoSuporteInicial);
   const [salvandoVideoSuporte, setSalvandoVideoSuporte] = useState(false);
+
+  const [percentualAfiliado, setPercentualAfiliado] = useState(String(percentualAfiliadoInicial));
+  const [salvandoPercentualAfiliado, setSalvandoPercentualAfiliado] = useState(false);
+  const [percentualAfiliadoSalvo, setPercentualAfiliadoSalvo] = useState(false);
+
+  const aoSalvarPercentualAfiliado = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSalvandoPercentualAfiliado(true);
+    setPercentualAfiliadoSalvo(false);
+    try {
+      await atualizarPercentualAfiliado(Number(percentualAfiliado));
+      setPercentualAfiliadoSalvo(true);
+      toast.sucesso("Percentual de comissão salvo.");
+    } catch (err) {
+      toast.erro(err instanceof Error ? err.message : "Erro ao salvar.");
+    } finally {
+      setSalvandoPercentualAfiliado(false);
+    }
+  };
 
   const aoSalvarVideoSuporte = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -442,6 +464,48 @@ export default function ConfiguracoesClient({
               className="rounded-md bg-[#7B2FBE] hover:bg-[#6D28D9] disabled:opacity-50 px-5 py-2.5 text-sm font-bold text-white transition-colors cursor-pointer"
             >
               {salvandoCarencia ? "Salvando..." : carenciaSalva ? "Salvo!" : "Salvar"}
+            </motion.button>
+          )}
+        </form>
+      </div>
+
+      <div className="rounded-lg border border-[rgba(139,92,246,0.15)] bg-[#0D0A1A] p-6 shadow-lg">
+        <h2 className="text-lg font-bold text-white">Programa de Indicação</h2>
+        <p className="mt-1 text-sm text-[#A78BFA]">
+          Percentual de comissão pago a quem indica novos clientes (calculado sobre o valor pago
+          em cada compra/assinatura aprovada de quem se cadastrou pelo link do indicador). O
+          pagamento ainda é manual — veja em{" "}
+          <a href="/admin/afiliados" className="font-semibold text-[#9D4EDD] hover:underline">
+            Afiliados
+          </a>{" "}
+          quem tem comissão pendente.
+        </p>
+        <form onSubmit={aoSalvarPercentualAfiliado} className="mt-4 flex flex-wrap items-end gap-3">
+          <div>
+            <label htmlFor="vl_percentual_afiliado" className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">
+              Percentual (%)
+            </label>
+            <input
+              type="number"
+              id="vl_percentual_afiliado"
+              name="vl_percentual_afiliado"
+              step="0.1"
+              min="0"
+              max="100"
+              value={percentualAfiliado}
+              onChange={(e) => setPercentualAfiliado(e.target.value)}
+              disabled={!ehSuperAdmin}
+              className="w-40 bg-[#050208] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white disabled:opacity-50"
+            />
+          </div>
+          {ehSuperAdmin && (
+            <motion.button
+              type="submit"
+              disabled={salvandoPercentualAfiliado}
+              {...buttonTap}
+              className="rounded-md bg-[#7B2FBE] hover:bg-[#6D28D9] disabled:opacity-50 px-5 py-2.5 text-sm font-bold text-white transition-colors cursor-pointer"
+            >
+              {salvandoPercentualAfiliado ? "Salvando..." : percentualAfiliadoSalvo ? "Salvo!" : "Salvar"}
             </motion.button>
           )}
         </form>

@@ -3,6 +3,7 @@
 import bcrypt from "bcryptjs";
 import { pool } from "@/lib/db";
 import { definirCookieSessao } from "@/lib/user-auth";
+import { vincularIndicacaoNoCadastro } from "@/lib/afiliados";
 
 export async function cadastrarUsuario(formData: FormData) {
   const nome = String(formData.get("nome") ?? "").trim();
@@ -35,6 +36,8 @@ export async function cadastrarUsuario(formData: FormData) {
     }
     throw err;
   }
+
+  await vincularIndicacaoNoCadastro(cd_usuario);
 
   await definirCookieSessao({
     cd_usuario,

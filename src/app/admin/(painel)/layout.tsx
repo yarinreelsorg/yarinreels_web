@@ -19,6 +19,7 @@ const LINKS = [
   { href: "/admin/combos", label: "Combos", icon: "📦" },
   { href: "/admin/avatares", label: "Avatares", icon: "🖼️" },
   { href: "/admin/clientes", label: "Clientes", icon: "👥" },
+  { href: "/admin/afiliados", label: "Afiliados", icon: "🤝" },
   { href: "/admin/usuarios", label: "Usuários do Site", icon: "🌐" },
   { href: "/admin/apps", label: "Apps de Navegação", icon: "📲" },
   { href: "/admin/financeiro", label: "Financeiro", icon: "📊" },
