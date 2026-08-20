@@ -3,6 +3,8 @@ import FilmeContent from "@/components/filme/FilmeContent";
 import { pool } from "@/lib/db";
 import { getSessaoUsuario } from "@/lib/user-auth";
 import { obterIdsFavoritos } from "@/lib/favoritos";
+import { obterIdsTelegramElegiveis, verificarAcessoConteudo } from "@/lib/acesso";
+import { obterCarenciaAssinanteHoras } from "@/lib/site-config";
 import type { Conteudo, Episodio } from "@/types/database";
 
 export default async function FilmePage({
@@ -44,6 +46,16 @@ export default async function FilmePage({
   const sessao = await getSessaoUsuario();
   const idsFavoritos = sessao ? await obterIdsFavoritos(sessao.cd_usuario) : new Set<string>();
 
+  let incluidoNaAssinatura = false;
+  if (sessao) {
+    const [idsElegiveis, carenciaHoras] = await Promise.all([
+      obterIdsTelegramElegiveis(sessao.cd_usuario),
+      obterCarenciaAssinanteHoras(),
+    ]);
+    const acesso = await verificarAcessoConteudo(idsElegiveis, conteudo, carenciaHoras);
+    incluidoNaAssinatura = acesso.liberado && acesso.motivo === "ASSINATURA";
+  }
+
   return (
     <FilmeContent
       conteudo={conteudo}
@@ -52,6 +64,7 @@ export default async function FilmePage({
       categorias={categorias}
       favoritado={idsFavoritos.has(conteudo.cd_conteudo)}
       logado={!!sessao}
+      incluidoNaAssinatura={incluidoNaAssinatura}
     />
   );
 }

@@ -35,6 +35,7 @@ export default function FilmeContent({
   categorias,
   favoritado,
   logado,
+  incluidoNaAssinatura = false,
 }: {
   conteudo: Conteudo;
   episodios: Episodio[];
@@ -42,6 +43,9 @@ export default function FilmeContent({
   categorias: string[];
   favoritado: boolean;
   logado: boolean;
+  /** Usuário já tem acesso via assinatura ativa — some com os preços
+   * avulsos, que ficam redundantes/confusos nesse caso. */
+  incluidoNaAssinatura?: boolean;
 }) {
   const [trailerAberto, setTrailerAberto] = useState(false);
   const [linkCopiado, setLinkCopiado] = useState(false);
@@ -222,7 +226,11 @@ export default function FilmeContent({
               </motion.button>
             </div>
 
-            {(precoAluguel || precoVitalicio) && (
+            {incluidoNaAssinatura ? (
+              <div className="mt-6 flex items-center gap-2 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-sm font-semibold text-emerald-400 w-fit">
+                ✓ Incluído na sua assinatura
+              </div>
+            ) : (precoAluguel || precoVitalicio) && (
               <div className="mt-6 flex flex-wrap gap-4">
                 {precoAluguel && (
                   <Link

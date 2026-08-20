@@ -311,18 +311,15 @@ export default function VideoPlayer({
 
       {!carregando && !erro && (
         <>
-          {/* Topo: voltar */}
-          <div
-            className={`pointer-events-none absolute inset-x-0 top-0 flex items-start bg-gradient-to-b from-black/85 via-black/25 to-transparent p-3 transition-opacity duration-300 sm:p-6 ${
-              controlesVisiveis ? "opacity-100" : "opacity-0"
-            }`}
-          >
+          {/* Topo: voltar — sempre visível, não some com o resto dos
+              controles, pra nunca dar a sensação de "preso" no player. */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start bg-gradient-to-b from-black/70 to-transparent p-3 sm:p-6">
             {hrefVoltar && (
               <Link
                 href={hrefVoltar}
                 aria-label="Voltar"
                 onClick={(e) => e.stopPropagation()}
-                className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
+                className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full bg-black/40 text-white transition-colors hover:bg-white/20"
               >
                 <IconeVoltar />
               </Link>
