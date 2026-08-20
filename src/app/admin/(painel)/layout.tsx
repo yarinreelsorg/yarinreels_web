@@ -8,24 +8,49 @@ import LogoutButton from "@/components/admin/LogoutButton";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Stagger";
 import { ToastProvider } from "@/components/admin/ToastProvider";
 
-const LINKS = [
-  { href: "/admin/dashboard", label: "Dashboard", icon: "🏠" },
-  { href: "/admin/online", label: "Online Agora", icon: "📡" },
-  { href: "/admin/relatorios", label: "Relatórios", icon: "📈" },
-  { href: "/admin/catalogo", label: "Catálogo", icon: "🎬" },
-  { href: "/admin/destaques", label: "Destaques da Home", icon: "⭐" },
-  { href: "/admin/planos", label: "Planos", icon: "🗂️" },
-  { href: "/admin/cupons", label: "Cupons", icon: "🏷️" },
-  { href: "/admin/combos", label: "Combos", icon: "📦" },
-  { href: "/admin/avatares", label: "Avatares", icon: "🖼️" },
-  { href: "/admin/clientes", label: "Clientes", icon: "👥" },
-  { href: "/admin/afiliados", label: "Afiliados", icon: "🤝" },
-  { href: "/admin/usuarios", label: "Usuários do Site", icon: "🌐" },
-  { href: "/admin/apps", label: "Apps de Navegação", icon: "📲" },
-  { href: "/admin/financeiro", label: "Financeiro", icon: "📊" },
-  { href: "/admin/recusados", label: "Cartão Recusado", icon: "💳" },
-  { href: "/admin/auditoria", label: "Auditoria", icon: "📜" },
-  { href: "/admin/configuracoes", label: "Configurações", icon: "⚙️" },
+const GRUPOS_NAV = [
+  {
+    titulo: "Visão Geral",
+    links: [
+      { href: "/admin/dashboard", label: "Dashboard", icon: "🏠" },
+      { href: "/admin/online", label: "Online Agora", icon: "📡" },
+      { href: "/admin/relatorios", label: "Relatórios", icon: "📈" },
+      { href: "/admin/financeiro", label: "Financeiro", icon: "📊" },
+    ],
+  },
+  {
+    titulo: "Catálogo",
+    links: [
+      { href: "/admin/catalogo", label: "Catálogo", icon: "🎬" },
+      { href: "/admin/destaques", label: "Destaques da Home", icon: "⭐" },
+      { href: "/admin/avatares", label: "Avatares", icon: "🖼️" },
+    ],
+  },
+  {
+    titulo: "Vendas",
+    links: [
+      { href: "/admin/planos", label: "Planos", icon: "🗂️" },
+      { href: "/admin/cupons", label: "Cupons", icon: "🏷️" },
+      { href: "/admin/combos", label: "Combos", icon: "📦" },
+      { href: "/admin/recusados", label: "Cartão Recusado", icon: "💳" },
+    ],
+  },
+  {
+    titulo: "Pessoas",
+    links: [
+      { href: "/admin/clientes", label: "Clientes", icon: "👥" },
+      { href: "/admin/afiliados", label: "Afiliados", icon: "🤝" },
+      { href: "/admin/usuarios", label: "Usuários do Site", icon: "🌐" },
+    ],
+  },
+  {
+    titulo: "Sistema",
+    links: [
+      { href: "/admin/apps", label: "Apps de Navegação", icon: "📲" },
+      { href: "/admin/auditoria", label: "Auditoria", icon: "📜" },
+      { href: "/admin/configuracoes", label: "Configurações", icon: "⚙️" },
+    ],
+  },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -82,39 +107,50 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </Link>
         </div>
 
-        {/* Links de navegação */}
-        <StaggerGroup className="flex-1 py-6 px-4 flex flex-col gap-1.5" staggerChildren={0.05}>
-          {LINKS.map((link) => {
-            const isAtivo = pathname === link.href || (link.href !== "/admin/dashboard" && pathname.startsWith(link.href));
-            return (
-              <StaggerItem key={link.href}>
-                <Link
-                  href={link.href}
-                  onClick={() => setMenuAberto(false)}
-                  className={`group relative flex items-center gap-3 px-4 py-3 rounded-md text-sm font-semibold transition-colors ${
-                    isAtivo ? "" : "hover:bg-white/5"
-                  }`}
-                >
-                  {isAtivo && (
-                    <motion.span
-                      layoutId="admin-nav-ativo"
-                      transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                      className="absolute inset-0 rounded-md bg-[rgba(139,92,246,0.15)] border-l-[3px] border-[#9D4EDD]"
-                    />
-                  )}
-                  <span className="relative text-base">{link.icon}</span>
-                  <span
-                    className={`relative transition-colors ${
-                      isAtivo ? "text-white" : "text-[#A78BFA] group-hover:text-white"
-                    }`}
-                  >
-                    {link.label}
-                  </span>
-                </Link>
-              </StaggerItem>
-            );
-          })}
-        </StaggerGroup>
+        {/* Links de navegação, agrupados por área */}
+        <nav className="flex-1 overflow-y-auto py-5 px-4 flex flex-col gap-4">
+          {GRUPOS_NAV.map((grupo) => (
+            <div key={grupo.titulo}>
+              <p className="px-4 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-[#A78BFA]/50">
+                {grupo.titulo}
+              </p>
+              <StaggerGroup className="flex flex-col gap-0.5" staggerChildren={0.03}>
+                {grupo.links.map((link) => {
+                  const isAtivo =
+                    pathname === link.href ||
+                    (link.href !== "/admin/dashboard" && pathname.startsWith(link.href));
+                  return (
+                    <StaggerItem key={link.href}>
+                      <Link
+                        href={link.href}
+                        onClick={() => setMenuAberto(false)}
+                        className={`group relative flex items-center gap-3 px-4 py-2 rounded-md text-sm font-semibold transition-colors ${
+                          isAtivo ? "" : "hover:bg-white/5"
+                        }`}
+                      >
+                        {isAtivo && (
+                          <motion.span
+                            layoutId="admin-nav-ativo"
+                            transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                            className="absolute inset-0 rounded-md bg-[rgba(139,92,246,0.15)] border-l-[3px] border-[#9D4EDD]"
+                          />
+                        )}
+                        <span className="relative text-base">{link.icon}</span>
+                        <span
+                          className={`relative transition-colors ${
+                            isAtivo ? "text-white" : "text-[#A78BFA] group-hover:text-white"
+                          }`}
+                        >
+                          {link.label}
+                        </span>
+                      </Link>
+                    </StaggerItem>
+                  );
+                })}
+              </StaggerGroup>
+            </div>
+          ))}
+        </nav>
 
         {/* Footer Sidebar */}
         <div className="p-4 border-t border-[rgba(139,92,246,0.15)] flex flex-col items-center gap-2">
