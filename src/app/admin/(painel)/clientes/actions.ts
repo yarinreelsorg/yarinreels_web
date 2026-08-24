@@ -224,12 +224,9 @@ export async function revogarAcesso(cdVenda: string) {
   revalidatePath("/admin/dashboard");
 }
 
-/** Remove uma venda pendente (nunca paga) do histórico do cliente. */
-export async function removerVendaPendente(cdVenda: string) {
-  await pool.query('DELETE FROM "VENDAS" WHERE cd_venda = $1 AND tp_status = $2', [
-    cdVenda,
-    "PENDENTE",
-  ]);
+/** Remove uma venda do histórico do cliente, aprovada ou não. */
+export async function removerVenda(cdVenda: string) {
+  await pool.query('DELETE FROM "VENDAS" WHERE cd_venda = $1', [cdVenda]);
 
   await registrarLog({
     tp_acao: "EXCLUSAO",

@@ -22,7 +22,7 @@ import {
   obterDetalhesBanimento,
   salvarBanimentoCliente,
   revogarAcesso,
-  removerVendaPendente,
+  removerVenda,
 } from "./actions";
 
 interface Filtros {
@@ -266,11 +266,11 @@ export default function ClientesAdminClient({
     }
   };
 
-  const aoRemoverPendente = async (cdVenda: string) => {
-    if (!window.confirm("Remover esta transação pendente? Isso não pode ser desfeito.")) return;
+  const aoRemover = async (cdVenda: string) => {
+    if (!window.confirm("Remover esta transação do histórico? Isso não pode ser desfeito.")) return;
     setRemovendoId(cdVenda);
     try {
-      await removerVendaPendente(cdVenda);
+      await removerVenda(cdVenda);
       toast.sucesso("Transação removida.");
       if (selectedTelegramId !== null) abrirDetalhes(selectedTelegramId);
     } catch (err) {
@@ -655,28 +655,28 @@ export default function ClientesAdminClient({
                                 PENDENTE
                               </span>
                             )}
-                            {v.tp_status === "APROVADA" &&
-                              v.ts_expiracao &&
-                              v.ts_expiracao > new Date().toISOString() && (
-                                <button
-                                  type="button"
-                                  disabled={revogandoId === v.cd_venda}
-                                  onClick={() => aoRevogar(v.cd_venda)}
-                                  className="text-[10px] font-bold text-red-400 hover:text-red-300 cursor-pointer disabled:opacity-50"
-                                >
-                                  {revogandoId === v.cd_venda ? "Revogando..." : "Revogar acesso"}
-                                </button>
-                              )}
-                            {v.tp_status === "PENDENTE" && (
+                            <div className="flex items-center gap-3">
+                              {v.tp_status === "APROVADA" &&
+                                v.ts_expiracao &&
+                                v.ts_expiracao > new Date().toISOString() && (
+                                  <button
+                                    type="button"
+                                    disabled={revogandoId === v.cd_venda}
+                                    onClick={() => aoRevogar(v.cd_venda)}
+                                    className="text-[10px] font-bold text-red-400 hover:text-red-300 cursor-pointer disabled:opacity-50"
+                                  >
+                                    {revogandoId === v.cd_venda ? "Revogando..." : "Revogar acesso"}
+                                  </button>
+                                )}
                               <button
                                 type="button"
                                 disabled={removendoId === v.cd_venda}
-                                onClick={() => aoRemoverPendente(v.cd_venda)}
+                                onClick={() => aoRemover(v.cd_venda)}
                                 className="text-[10px] font-bold text-red-400 hover:text-red-300 cursor-pointer disabled:opacity-50"
                               >
-                                {removendoId === v.cd_venda ? "Removendo..." : "Retirar"}
+                                {removendoId === v.cd_venda ? "Removendo..." : "Remover"}
                               </button>
-                            )}
+                            </div>
                           </div>
                         </StaggerItem>
                       );
