@@ -113,7 +113,7 @@ function NavbarInner({
           ))}
         </nav>
 
-        <div className="order-2 flex flex-1 items-center gap-2.5 rounded-xl border border-white/5 bg-white/10 px-3.5 py-3 backdrop-blur-2xl lg:order-none lg:py-2.5">
+        <div className="order-2 flex flex-1 items-center gap-2.5 rounded-xl border border-white/5 bg-[#12101c] px-3.5 py-3 lg:order-none lg:py-2.5">
           <span className="shrink-0 text-lg">🔍</span>
           <input
             type="search"

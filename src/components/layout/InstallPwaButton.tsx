@@ -79,7 +79,7 @@ export default function InstallPwaButton() {
   if (!visivel) return null;
 
   return (
-    <div className="fixed inset-x-4 bottom-[90px] z-[90] flex items-center justify-between gap-3 rounded-xl border border-primary/40 bg-surface/95 p-3.5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] backdrop-blur-md sm:inset-x-auto sm:right-6 sm:w-80 lg:bottom-6">
+    <div className="fixed inset-x-4 bottom-[90px] z-[90] flex items-center justify-between gap-3 rounded-xl border border-primary/40 bg-surface p-3.5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] sm:inset-x-auto sm:right-6 sm:w-80 lg:bottom-6">
       <div className="flex items-center gap-3">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/icon.png" alt="Logo" className="h-10 w-10 shrink-0 rounded-lg object-cover" />
