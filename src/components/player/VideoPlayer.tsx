@@ -387,7 +387,7 @@ export default function VideoPlayer({
                 type="button"
                 onClick={() => pular(-15)}
                 aria-label="Voltar 15 segundos"
-                className="hidden text-white transition-colors hover:text-white/70 sm:block cursor-pointer"
+                className="text-white transition-colors hover:text-white/70 cursor-pointer"
               >
                 <IconeVoltar15 />
               </button>
@@ -395,7 +395,7 @@ export default function VideoPlayer({
                 type="button"
                 onClick={() => pular(15)}
                 aria-label="Avançar 15 segundos"
-                className="hidden text-white transition-colors hover:text-white/70 sm:block cursor-pointer"
+                className="text-white transition-colors hover:text-white/70 cursor-pointer"
               >
                 <IconeAvancar15 />
               </button>
