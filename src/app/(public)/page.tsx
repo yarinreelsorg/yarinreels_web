@@ -8,7 +8,11 @@ import {
   ordenarCategorias,
 } from "@/lib/categorias-config";
 import { getSessaoUsuario } from "@/lib/user-auth";
-import { usuarioTemAssinaturaAtiva } from "@/lib/acesso";
+import {
+  conteudoIncluidoEmCategorias,
+  obterCategoriasAssinaturaAtiva,
+  usuarioTemAssinaturaAtiva,
+} from "@/lib/acesso";
 import { obterContinuarAssistindo } from "@/lib/historico";
 import { obterAppsVisiveis } from "@/lib/apps-config";
 import type { Conteudo, Plano } from "@/types/database";
@@ -82,15 +86,22 @@ export default async function HomePage() {
   const continuarAssistindo = await obterContinuarAssistindo(sessao.cd_usuario);
   const exibirPromoInicial = await deveExibirPromoInicial(sessao.cd_usuario);
   const ehAssinante = await usuarioTemAssinaturaAtiva(sessao.cd_usuario);
+  const categoriasAssinatura = ehAssinante
+    ? await obterCategoriasAssinaturaAtiva(sessao.cd_usuario)
+    : [];
 
   const categoriasExclusivas = await obterCategoriasExclusivasAssinantes();
   const canonPorNome = canonicalizarCategorias(
     conteudosSemExclusivos.map((c) => c.nm_categoria)
   );
-  const conteudosCanonizados = conteudosSemExclusivos.map((c) => ({
-    ...c,
-    nm_categoria: canonPorNome.get(c.nm_categoria) ?? c.nm_categoria,
-  }));
+  const conteudosCanonizados = conteudosSemExclusivos.map((c) => {
+    const nm_categoria = canonPorNome.get(c.nm_categoria) ?? c.nm_categoria;
+    return {
+      ...c,
+      nm_categoria,
+      incluidoNaAssinatura: conteudoIncluidoEmCategorias(nm_categoria, categoriasAssinatura),
+    };
+  });
   const conteudos = ehAssinante
     ? conteudosCanonizados
     : conteudosCanonizados.filter((c) => !categoriasExclusivas.includes(c.nm_categoria));

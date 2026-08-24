@@ -28,6 +28,9 @@ export default function CardFilme({
     vl_aluguel: number | null;
     vl_vitalicio: number | null;
     nr_views?: number;
+    /** Já incluso numa assinatura ativa do usuário — troca preço/Comprar
+     * por Assistir direto, igual o bot já faz. */
+    incluidoNaAssinatura?: boolean;
   };
   rank?: number;
   variant?: Variant;
@@ -41,6 +44,8 @@ export default function CardFilme({
   const [carregada, setCarregada] = useState(false);
   const preco = formatarPreco(obterPrecoCapa(conteudo));
   const destino = href ?? `/filme/${conteudo.cd_conteudo}`;
+  const incluido = !!conteudo.incluidoNaAssinatura;
+  const destinoAssistir = `/assistir/${conteudo.cd_conteudo}`;
 
   const poster = (sizeClasses: string, className: string, largura: number) => (
     <div className={`relative overflow-hidden rounded-lg bg-surface ${sizeClasses} ${className}`}>
@@ -92,13 +97,24 @@ export default function CardFilme({
             </p>
           )}
 
-          {preco && <p className="mt-0.5 text-[11px] font-extrabold text-secondary lg:text-sm">{preco}</p>}
-          <Link
-            href={destino}
-            className="mt-1.5 flex w-fit items-center gap-1 rounded-full bg-white px-3 py-1 text-[10px] font-black text-black transition-transform active:scale-95 lg:px-4 lg:py-1.5 lg:text-xs"
-          >
-            🛒 Comprar
-          </Link>
+          {incluido ? (
+            <Link
+              href={destinoAssistir}
+              className="mt-1.5 flex w-fit items-center gap-1 rounded-full bg-emerald-500 px-3 py-1 text-[10px] font-black text-black transition-transform active:scale-95 lg:px-4 lg:py-1.5 lg:text-xs"
+            >
+              ▶ Assistir
+            </Link>
+          ) : (
+            <>
+              {preco && <p className="mt-0.5 text-[11px] font-extrabold text-secondary lg:text-sm">{preco}</p>}
+              <Link
+                href={destino}
+                className="mt-1.5 flex w-fit items-center gap-1 rounded-full bg-white px-3 py-1 text-[10px] font-black text-black transition-transform active:scale-95 lg:px-4 lg:py-1.5 lg:text-xs"
+              >
+                🛒 Comprar
+              </Link>
+            </>
+          )}
         </div>
       </div>
     );
@@ -126,6 +142,13 @@ export default function CardFilme({
 
       {legenda ? (
         <p className="mt-0.5 line-clamp-1 text-[11px] text-secondary lg:text-sm">{legenda}</p>
+      ) : incluido ? (
+        <Link
+          href={destinoAssistir}
+          className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-md bg-emerald-500 py-2 text-[10px] font-bold uppercase tracking-wide text-black transition-colors hover:bg-emerald-400 lg:py-2.5 lg:text-xs"
+        >
+          ▶ Assistir
+        </Link>
       ) : (
         <>
           {preco && <p className="text-xs font-extrabold text-price lg:text-base">{preco}</p>}

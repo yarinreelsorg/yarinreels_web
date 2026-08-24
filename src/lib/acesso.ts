@@ -112,6 +112,41 @@ export async function usuarioTemAssinaturaAtiva(cdUsuario: string): Promise<bool
   return Number(assinaturaRows[0]?.total ?? 0) > 0;
 }
 
+/**
+ * Categorias liberadas pelas assinaturas ativas do usuário — usado pra
+ * home/carrosséis mostrarem "Assistir" direto em vez de preço/Comprar pra
+ * quem já tem acesso incluso (igual o bot já faz), sem precisar checar
+ * item por item.
+ */
+export async function obterCategoriasAssinaturaAtiva(cdUsuario: string): Promise<string[]> {
+  const { rows } = await pool.query<{
+    nr_id_telegram: number | null;
+    nr_id_telegram_web: number | null;
+  }>('SELECT nr_id_telegram, nr_id_telegram_web FROM "USUARIOS" WHERE cd_usuario = $1 LIMIT 1', [
+    cdUsuario,
+  ]);
+  const usuario = rows[0];
+  if (!usuario) return [];
+
+  const ids = [usuario.nr_id_telegram, usuario.nr_id_telegram_web].filter(
+    (id): id is number => !!id
+  );
+  if (ids.length === 0) return [];
+
+  const { rows: planos } = await pool.query<{ nm_categoria: string }>(
+    `SELECT DISTINCT p.nm_categoria FROM "VENDAS" v
+     JOIN "PLANOS" p ON p.cd_plano = v.cd_plano
+     WHERE v.nr_id_telegram = ANY($1::bigint[]) AND v.tp_compra = 'ASSINATURA'
+       AND v.tp_status = 'APROVADA' AND v.ts_expiracao > now()`,
+    [ids]
+  );
+  return planos.map((p) => p.nm_categoria);
+}
+
+export function conteudoIncluidoEmCategorias(nmCategoriaConteudo: string, categoriasPlano: string[]) {
+  return categoriasPlano.some((cat) => categoriasCompativeis(cat, nmCategoriaConteudo));
+}
+
 /** Validade por tipo de compra — mesma regra usada na concessão manual pelo admin. */
 export const DIAS_ALUGUEL = 7;
 export const DIAS_VITALICIO = 18250;
