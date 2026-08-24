@@ -22,6 +22,7 @@ import {
   obterDetalhesBanimento,
   salvarBanimentoCliente,
   revogarAcesso,
+  removerVendaPendente,
 } from "./actions";
 
 interface Filtros {
@@ -77,6 +78,7 @@ export default function ClientesAdminClient({
 
   const [alterandoBan, setAlterandoBan] = useState(false);
   const [revogandoId, setRevogandoId] = useState<string | null>(null);
+  const [removendoId, setRemovendoId] = useState<string | null>(null);
   const [ultimaVisita, setUltimaVisita] = useState<{
     ds_dispositivo: string | null;
     ds_ip: string | null;
@@ -261,6 +263,20 @@ export default function ClientesAdminClient({
       toast.erro(err instanceof Error ? err.message : "Erro ao revogar acesso.");
     } finally {
       setRevogandoId(null);
+    }
+  };
+
+  const aoRemoverPendente = async (cdVenda: string) => {
+    if (!window.confirm("Remover esta transação pendente? Isso não pode ser desfeito.")) return;
+    setRemovendoId(cdVenda);
+    try {
+      await removerVendaPendente(cdVenda);
+      toast.sucesso("Transação removida.");
+      if (selectedTelegramId !== null) abrirDetalhes(selectedTelegramId);
+    } catch (err) {
+      toast.erro(err instanceof Error ? err.message : "Erro ao remover transação.");
+    } finally {
+      setRemovendoId(null);
     }
   };
 
@@ -651,6 +667,16 @@ export default function ClientesAdminClient({
                                   {revogandoId === v.cd_venda ? "Revogando..." : "Revogar acesso"}
                                 </button>
                               )}
+                            {v.tp_status === "PENDENTE" && (
+                              <button
+                                type="button"
+                                disabled={removendoId === v.cd_venda}
+                                onClick={() => aoRemoverPendente(v.cd_venda)}
+                                className="text-[10px] font-bold text-red-400 hover:text-red-300 cursor-pointer disabled:opacity-50"
+                              >
+                                {removendoId === v.cd_venda ? "Removendo..." : "Retirar"}
+                              </button>
+                            )}
                           </div>
                         </StaggerItem>
                       );
