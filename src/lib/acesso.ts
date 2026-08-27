@@ -164,14 +164,20 @@ export type StatusAcesso =
   | { liberado: false; emCarencia?: boolean };
 
 /**
- * Lançamento ainda dentro da janela de carência (configurável no admin) —
- * acesso por assinatura fica bloqueado por um tempo pra evitar que
- * assinante grave e pirateie no dia do lançamento, e pra dar tempo de
- * vender avulso antes. Acesso por aluguel/vitalício nunca é afetado.
+ * Título ainda dentro da janela de carência (opt-in por título via
+ * sn_carencia_ativa + horas configuráveis no admin) — acesso por assinatura
+ * fica bloqueado por um tempo pra evitar que assinante grave e pirateie no
+ * dia do lançamento, e pra dar tempo de vender avulso antes. Acesso por
+ * aluguel/vitalício nunca é afetado.
+ *
+ * Usa ts_criacao (quando o título foi de fato publicado no sistema), não
+ * dt_lancamento — esse é só a data "AAAA-MM-DD" digitada pelo admin (sem
+ * horário, vira meia-noite UTC = 21h do dia anterior em Brasília), então a
+ * janela fechava sozinha horas antes do conteúdo ir ao ar.
  */
-function dentroDaCarencia(dtLancamento: string | null, carenciaHoras: number) {
-  if (!carenciaHoras || !dtLancamento) return false;
-  const limiteMs = new Date(dtLancamento).getTime() + carenciaHoras * 60 * 60 * 1000;
+function dentroDaCarencia(tsCriacao: string | null, carenciaHoras: number) {
+  if (!carenciaHoras || !tsCriacao) return false;
+  const limiteMs = new Date(tsCriacao).getTime() + carenciaHoras * 60 * 60 * 1000;
   return Date.now() < limiteMs;
 }
 
@@ -216,7 +222,12 @@ export async function obterBanimentoUsuario(nrIdsTelegram: number[]): Promise<In
  */
 export async function verificarAcessoConteudo(
   nrIdsTelegram: number[],
-  conteudo: { cd_conteudo: string; nm_categoria: string; dt_lancamento: string | null },
+  conteudo: {
+    cd_conteudo: string;
+    nm_categoria: string;
+    ts_criacao: string;
+    sn_carencia_ativa: boolean;
+  },
   carenciaHoras = 0
 ): Promise<StatusAcesso> {
   if (nrIdsTelegram.length === 0) return { liberado: false };
@@ -260,7 +271,7 @@ export async function verificarAcessoConteudo(
     };
   }
 
-  const emCarencia = dentroDaCarencia(conteudo.dt_lancamento, carenciaHoras);
+  const emCarencia = conteudo.sn_carencia_ativa && dentroDaCarencia(conteudo.ts_criacao, carenciaHoras);
 
   const assinaturas = vendas.filter(
     (v): v is VendaAcesso & { cd_plano: string; ts_expiracao: string } =>

@@ -882,6 +882,19 @@ export default function CatalogoAdminClient({
                       Exclusivo para assinantes (oculto da home/catálogo pra quem não assina)
                     </label>
                   </div>
+
+                  <div className="flex items-center pt-2">
+                    <input
+                      type="checkbox"
+                      id="sn_carencia_ativa"
+                      name="sn_carencia_ativa"
+                      defaultChecked={conteudoEdicao?.sn_carencia_ativa}
+                      className="h-4 w-4 rounded border-[rgba(139,92,246,0.3)] bg-[#0D0A1A] text-[#7B2FBE] focus:ring-[#9D4EDD] cursor-pointer"
+                    />
+                    <label htmlFor="sn_carencia_ativa" className="ml-2 text-xs font-semibold text-[#A78BFA] uppercase cursor-pointer">
+                      Aplicar carência de lançamento (bloqueia assinante por N horas — configurável em Configurações)
+                    </label>
+                  </div>
                 </div>
 
                 {/* Form Buttons */}

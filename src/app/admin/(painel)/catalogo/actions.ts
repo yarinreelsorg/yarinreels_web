@@ -86,6 +86,8 @@ function extrairCampos(formData: FormData) {
     sn_exclusivo_assinantes:
       formData.get("sn_exclusivo_assinantes") === "on" ||
       formData.get("sn_exclusivo_assinantes") === "true",
+    sn_carencia_ativa:
+      formData.get("sn_carencia_ativa") === "on" || formData.get("sn_carencia_ativa") === "true",
   };
 }
 
@@ -97,8 +99,9 @@ export async function adicionarConteudo(cdConteudo: string, formData: FormData) 
        (cd_conteudo, nm_titulo, nm_categoria, tp_formato, nm_idioma, ds_generos, ds_descricao,
         vl_aluguel, vl_vitalicio, ds_url_poster, ds_url_bunny, ds_file_id_telegram,
         ds_url_bunny_legendado, ds_file_id_telegram_legendado,
-        tp_fonte_prioritaria, sn_destaque, dt_lancamento, nm_app_origem, sn_exclusivo_assinantes, nr_views)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,0)`,
+        tp_fonte_prioritaria, sn_destaque, dt_lancamento, nm_app_origem, sn_exclusivo_assinantes,
+        sn_carencia_ativa, nr_views)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,0)`,
     [
       cdConteudo,
       campos.nm_titulo,
@@ -119,6 +122,7 @@ export async function adicionarConteudo(cdConteudo: string, formData: FormData) 
       campos.dt_lancamento,
       campos.nm_app_origem,
       campos.sn_exclusivo_assinantes,
+      campos.sn_carencia_ativa,
     ]
   );
 
@@ -142,8 +146,9 @@ export async function editarConteudo(id: string, formData: FormData) {
        ds_descricao = $6, vl_aluguel = $7, vl_vitalicio = $8, ds_url_poster = $9,
        ds_url_bunny = $10, ds_file_id_telegram = $11, ds_url_bunny_legendado = $12,
        ds_file_id_telegram_legendado = $13, tp_fonte_prioritaria = $14,
-       sn_destaque = $15, dt_lancamento = $16, nm_app_origem = $17, sn_exclusivo_assinantes = $18
-     WHERE cd_conteudo = $19`,
+       sn_destaque = $15, dt_lancamento = $16, nm_app_origem = $17, sn_exclusivo_assinantes = $18,
+       sn_carencia_ativa = $19
+     WHERE cd_conteudo = $20`,
     [
       campos.nm_titulo,
       campos.nm_categoria,
@@ -163,6 +168,7 @@ export async function editarConteudo(id: string, formData: FormData) {
       campos.dt_lancamento,
       campos.nm_app_origem,
       campos.sn_exclusivo_assinantes,
+      campos.sn_carencia_ativa,
       id,
     ]
   );

@@ -55,6 +55,8 @@ export type Conteudo = {
   nr_views: number;
   nm_app_origem: string | null;
   sn_exclusivo_assinantes: boolean;
+  sn_carencia_ativa: boolean;
+  ts_criacao: string;
 };
 
 export type ConteudoInsert = {
