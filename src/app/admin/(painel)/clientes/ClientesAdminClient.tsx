@@ -40,6 +40,7 @@ export default function ClientesAdminClient({
   conteudos,
   planos,
   avatares,
+  emails,
 }: {
   clientes: ClienteResumo[];
   totalRegistros: number;
@@ -48,6 +49,7 @@ export default function ClientesAdminClient({
   conteudos: Conteudo[];
   planos: Plano[];
   avatares: Record<number, string>;
+  emails: Record<number, string>;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -368,7 +370,7 @@ export default function ClientesAdminClient({
       <div className="max-w-md">
         <input
           type="text"
-          placeholder="Buscar por ID Telegram..."
+          placeholder="Buscar por ID Telegram ou e-mail..."
           value={buscaLocal}
           onChange={(e) => aoBuscar(e.target.value)}
           className="w-full bg-[#0D0A1A] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] py-2 px-4 text-white text-sm"
@@ -386,6 +388,7 @@ export default function ClientesAdminClient({
                     ID Telegram{indicadorOrdenacao("nr_id_telegram")}
                   </button>
                 </th>
+                <th className="px-6 py-3">E-mail</th>
                 <th className="px-6 py-3">
                   <button type="button" onClick={() => aoOrdenar("total_compras")} className="cursor-pointer hover:text-white">
                     Total de Compras{indicadorOrdenacao("total_compras")}
@@ -409,7 +412,7 @@ export default function ClientesAdminClient({
             >
               {clientes.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-[#A78BFA]/70">
+                  <td colSpan={6} className="px-6 py-8 text-center text-[#A78BFA]/70">
                     Nenhum cliente encontrado.
                   </td>
                 </tr>
@@ -438,7 +441,16 @@ export default function ClientesAdminClient({
                             <Avatar valor={avatares[cliente.nr_id_telegram]} className="h-full w-full" />
                           </span>
                         )}
-                        {cliente.nr_id_telegram}
+                        {cliente.nr_id_telegram < 0 ? (
+                          <span className="rounded bg-[#050208] border border-[rgba(139,92,246,0.2)] px-1.5 py-0.5 text-[10px] font-bold text-[#A78BFA]">
+                            🌐 Site
+                          </span>
+                        ) : (
+                          cliente.nr_id_telegram
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-xs text-[#A78BFA]/80">
+                        {emails[cliente.nr_id_telegram] ?? "—"}
                       </td>
                       <td className="px-6 py-4 font-semibold">{cliente.total_compras}</td>
                       <td className="px-6 py-4 text-xs text-[#A78BFA]/80">{dataUltima}</td>
@@ -509,7 +521,12 @@ export default function ClientesAdminClient({
                     Histórico do Cliente
                   </h2>
                   <p className="text-xs font-mono text-[#A78BFA] mt-0.5">
-                    Telegram ID: {selectedTelegramId}
+                    {selectedTelegramId !== null && selectedTelegramId < 0
+                      ? "🌐 Cliente do site"
+                      : `Telegram ID: ${selectedTelegramId}`}
+                    {selectedTelegramId !== null && emails[selectedTelegramId] && (
+                      <span className="ml-2 text-white/70">— {emails[selectedTelegramId]}</span>
+                    )}
                   </p>
                   {banido && (
                     <div className="mt-2 flex flex-wrap gap-1.5">

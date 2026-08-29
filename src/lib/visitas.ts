@@ -124,3 +124,56 @@ export async function obterMetricasOnline(): Promise<MetricasOnline> {
     })),
   };
 }
+
+export interface AcessoDiario {
+  data: string; // "YYYY-MM-DD"
+  total: number;
+}
+
+export interface MetricasAcessoDiario {
+  hoje: number;
+  ontem: number;
+  serie: AcessoDiario[]; // últimos DIAS_GRAFICO dias, do mais antigo pro mais recente
+}
+
+const DIAS_GRAFICO = 14;
+
+/**
+ * Visitantes únicos (por sessão) por dia dos últimos DIAS_GRAFICO dias, pra
+ * medir o crescimento orgânico do site (o cliente não roda anúncios, então
+ * esse é o único jeito de acompanhar se o fluxo tá subindo ou caindo).
+ */
+export async function obterMetricasAcessoDiario(): Promise<MetricasAcessoDiario> {
+  const agora = new Date();
+  const inicioHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+  const inicioJanela = new Date(inicioHoje);
+  inicioJanela.setDate(inicioJanela.getDate() - (DIAS_GRAFICO - 1));
+
+  const { rows } = await pool.query<{ dia: string; total: string }>(
+    `SELECT to_char(date_trunc('day', ts_criacao), 'YYYY-MM-DD') AS dia,
+            COUNT(DISTINCT cd_sessao) AS total
+     FROM "VISITAS"
+     WHERE ts_criacao >= $1
+     GROUP BY dia
+     ORDER BY dia`,
+    [inicioJanela.toISOString()]
+  );
+
+  const porDia = new Map(rows.map((r) => [r.dia, Number(r.total)]));
+
+  const serie: AcessoDiario[] = [];
+  for (let i = 0; i < DIAS_GRAFICO; i++) {
+    const dia = new Date(inicioJanela);
+    dia.setDate(dia.getDate() + i);
+    const chave = `${dia.getFullYear()}-${String(dia.getMonth() + 1).padStart(2, "0")}-${String(
+      dia.getDate()
+    ).padStart(2, "0")}`;
+    serie.push({ data: chave, total: porDia.get(chave) ?? 0 });
+  }
+
+  return {
+    hoje: serie[serie.length - 1]?.total ?? 0,
+    ontem: serie[serie.length - 2]?.total ?? 0,
+    serie,
+  };
+}

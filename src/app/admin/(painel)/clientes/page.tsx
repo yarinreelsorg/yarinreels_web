@@ -54,23 +54,24 @@ export default async function ClientesAdminPage({
 
   const idsTelegramPagina = clientes.map((c) => c.nr_id_telegram);
   const avatares: Record<number, string> = {};
+  const emails: Record<number, string> = {};
   if (idsTelegramPagina.length > 0) {
-    const { rows: usuariosComAvatar } = await pool.query<{
+    const { rows: usuariosDaPagina } = await pool.query<{
       nr_id_telegram: number | null;
       nr_id_telegram_web: number | null;
-      ds_avatar: string;
+      ds_avatar: string | null;
+      nm_email: string;
     }>(
-      `SELECT nr_id_telegram, nr_id_telegram_web, ds_avatar FROM "USUARIOS"
-       WHERE ds_avatar IS NOT NULL
-         AND (nr_id_telegram = ANY($1::bigint[]) OR nr_id_telegram_web = ANY($1::bigint[]))`,
+      `SELECT nr_id_telegram, nr_id_telegram_web, ds_avatar, nm_email FROM "USUARIOS"
+       WHERE nr_id_telegram = ANY($1::bigint[]) OR nr_id_telegram_web = ANY($1::bigint[])`,
       [idsTelegramPagina]
     );
-    for (const u of usuariosComAvatar) {
-      if (u.nr_id_telegram && idsTelegramPagina.includes(u.nr_id_telegram)) {
-        avatares[u.nr_id_telegram] = u.ds_avatar;
-      }
-      if (u.nr_id_telegram_web && idsTelegramPagina.includes(u.nr_id_telegram_web)) {
-        avatares[u.nr_id_telegram_web] = u.ds_avatar;
+    for (const u of usuariosDaPagina) {
+      for (const id of [u.nr_id_telegram, u.nr_id_telegram_web]) {
+        if (id && idsTelegramPagina.includes(id)) {
+          if (u.ds_avatar) avatares[id] = u.ds_avatar;
+          emails[id] = u.nm_email;
+        }
       }
     }
   }
@@ -84,6 +85,7 @@ export default async function ClientesAdminPage({
       conteudos={conteudosResult.rows}
       planos={planosResult.rows}
       avatares={avatares}
+      emails={emails}
     />
   );
 }

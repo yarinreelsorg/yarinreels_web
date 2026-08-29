@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { Usuario } from "@/types/database";
 import Avatar from "@/components/ui/Avatar";
 import { formatarDataHora } from "@/lib/data";
+import AcessosDiariosCard from "@/components/admin/AcessosDiariosCard";
 
 export default function UsuariosAdminClient({
   usuarios,
@@ -37,6 +38,8 @@ export default function UsuariosAdminClient({
           </p>
         </div>
       </div>
+
+      <AcessosDiariosCard />
 
       <input
         type="text"
