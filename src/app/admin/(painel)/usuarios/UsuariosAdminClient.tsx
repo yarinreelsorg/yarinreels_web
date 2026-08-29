@@ -87,7 +87,17 @@ export default function UsuariosAdminClient({
                   <td className="p-3 text-[#A78BFA]">
                     {formatarDataHora(usuario.ts_criacao)}
                   </td>
-                  <td className="p-3 text-right">
+                  <td className="p-3 text-right space-x-2 whitespace-nowrap">
+                    {(usuario.nr_id_telegram || usuario.nr_id_telegram_web) && (
+                      <a
+                        href={`/admin/clientes?verHistorico=${
+                          usuario.nr_id_telegram || usuario.nr_id_telegram_web
+                        }`}
+                        className="inline-block rounded-md border border-[rgba(139,92,246,0.3)] hover:bg-white/5 px-3 py-1.5 text-xs font-bold text-[#A78BFA] transition-colors"
+                      >
+                        Ver histórico
+                      </a>
+                    )}
                     <a
                       href={`/admin/clientes?concederEmail=${encodeURIComponent(usuario.nm_email)}`}
                       className="inline-block rounded-md bg-[#7B2FBE] hover:bg-[#6D28D9] px-3 py-1.5 text-xs font-bold text-white transition-colors"

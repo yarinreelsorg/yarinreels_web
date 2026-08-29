@@ -54,6 +54,7 @@ export default function ClientesAdminClient({
   const toast = useToast();
   const searchParams = useSearchParams();
   const emailDaQuery = searchParams.get("concederEmail");
+  const historicoDaQuery = searchParams.get("verHistorico");
 
   const [buscaLocal, setBuscaLocal] = useState(filtrosAtuais.busca);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -192,6 +193,16 @@ export default function ClientesAdminClient({
       setCarregandoVendas(false);
     }
   };
+
+  // Vem da tela de Usuários do Site (?verHistorico=...): abre o drawer
+  // direto nesse cliente, sem precisar buscar pelo ID Telegram na tabela.
+  useEffect(() => {
+    if (historicoDaQuery) {
+      Promise.resolve().then(() => abrirDetalhes(Number(historicoDaQuery)));
+      router.replace(pathname, { scroll: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const abrirModalBan = () => {
     if (detalhesBan) {

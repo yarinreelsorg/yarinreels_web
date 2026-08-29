@@ -25,7 +25,12 @@ export default async function ClientesAdminPage({
   const whereSql = busca
     ? (() => {
         valores.push(`%${busca}%`);
-        return `WHERE id_telegram_texto ILIKE $${valores.length}`;
+        return `WHERE vc.id_telegram_texto ILIKE $${valores.length}
+          OR EXISTS (
+            SELECT 1 FROM "USUARIOS" u
+            WHERE (u.nr_id_telegram = vc.nr_id_telegram OR u.nr_id_telegram_web = vc.nr_id_telegram)
+              AND u.nm_email ILIKE $${valores.length}
+          )`;
       })()
     : "";
   const direcaoSql = direcao === "asc" ? "ASC" : "DESC";
@@ -36,7 +41,7 @@ export default async function ClientesAdminPage({
 
   const [clientesResult, conteudosResult, planosResult] = await Promise.all([
     pool.query<ClienteResumo & { total_count: string }>(
-      `SELECT *, COUNT(*) OVER() AS total_count FROM vw_clientes ${whereSql}
+      `SELECT vc.*, COUNT(*) OVER() AS total_count FROM vw_clientes vc ${whereSql}
        ORDER BY ${ordenarPor} ${direcaoSql} LIMIT $${limitParam} OFFSET $${offsetParam}`,
       valores
     ),
