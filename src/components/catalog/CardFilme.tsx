@@ -57,6 +57,14 @@ export default function CardFilme({
           src={conteudo.ds_url_poster}
           largura={largura}
           alt={conteudo.nm_titulo}
+          // Top12 é um conjunto pequeno e fixo (12) logo no topo da home —
+          // carrega sem esperar entrar no viewport. Isso evita que, ao
+          // recarregar a página com a rolagem restaurada pelo navegador
+          // (volta pra onde o usuário estava), várias dessas imagens
+          // "lazy" disparem o carregamento juntas de uma vez — um burst
+          // de requisições simultâneas que o CDN do pôster derruba com
+          // mais facilidade do que um carregamento espalhado no tempo.
+          loading={variant === "top12" ? "eager" : "lazy"}
           onLoad={() => setCarregada(true)}
           className={`h-full w-full object-cover transition-opacity duration-300 ${
             carregada ? "opacity-100" : "opacity-0"

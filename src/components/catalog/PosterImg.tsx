@@ -58,7 +58,14 @@ function PosterImgComEstado({ src, largura, alt, className, loading = "lazy", on
     // redimensionada, desiste — já tentou o razoável sem arriscar loop.
   }
 
-  const url = usarFallback ? src : otimizarUrlPoster(src, largura);
+  const urlBase = usarFallback ? src : otimizarUrlPoster(src, largura);
+  // A partir da 1ª retentativa, força bypass do cache HTTP do navegador —
+  // se a requisição original falhou no meio (conexão derrubada, comum
+  // nesse CDN), o navegador às vezes guarda essa resposta quebrada/vazia
+  // em cache; sem isso, TODA retentativa (e toda visita futura, inclusive
+  // depois de recarregar a página) bateria nesse mesmo cache ruim em vez
+  // de ir de novo pra rede.
+  const url = urlBase && tentativa > 0 ? `${urlBase}?cb=${tentativa}` : urlBase;
 
   return (
     // eslint-disable-next-line @next/next/no-img-element
