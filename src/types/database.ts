@@ -37,8 +37,12 @@ export type Conteudo = {
   ds_descricao: string | null;
   ds_generos: string | null;
   ds_url_trailer_youtube: string | null;
-  /** Clipe vertical (9:16) pra tela imersiva estilo Reels em /trailer/[id]. */
+  /** Clipe vertical (9:16) pra tela imersiva estilo Reels em /trailer/[id] —
+   * opcional; sem ele, a página usa o vídeo real do filme auto-cortado. */
   ds_url_teaser_vertical: string | null;
+  /** Segundos de prévia tocados em /trailer/[id] quando NÃO há clipe
+   * vertical manual (usa o vídeo real do filme, sem exigir login). */
+  nr_segundos_preview_trailer: number;
   nr_duracao_minutos: number | null;
   vl_aluguel: number | null;
   vl_vitalicio: number | null;
@@ -72,6 +76,7 @@ export type ConteudoInsert = {
   ds_generos?: string | null;
   ds_url_trailer_youtube?: string | null;
   ds_url_teaser_vertical?: string | null;
+  nr_segundos_preview_trailer?: number;
   nr_duracao_minutos?: number | null;
   vl_aluguel?: number | null;
   vl_vitalicio?: number | null;
@@ -97,6 +102,7 @@ export type ConteudoUpdate = {
   ds_generos?: string | null;
   ds_url_trailer_youtube?: string | null;
   ds_url_teaser_vertical?: string | null;
+  nr_segundos_preview_trailer?: number;
   nr_duracao_minutos?: number | null;
   vl_aluguel?: number | null;
   vl_vitalicio?: number | null;

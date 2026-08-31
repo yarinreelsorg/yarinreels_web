@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { pool } from "@/lib/db";
 import { getSessaoUsuario } from "@/lib/user-auth";
+import { resolverUrlVideo } from "@/lib/catalogo";
 import TrailerContent from "./TrailerContent";
 import type { Conteudo } from "@/types/database";
 import type { Metadata } from "next";
@@ -41,10 +42,16 @@ export default async function TrailerPage({
     id,
   ]);
   const conteudo = rows[0];
+  if (!conteudo) notFound();
 
-  // Sem clipe vertical cadastrado, não tem o que mostrar nessa tela —
-  // volta pra página normal de detalhes em vez de uma tela quebrada.
-  if (!conteudo || !conteudo.ds_url_teaser_vertical) notFound();
+  // Prioriza um clipe vertical curado manualmente (toca sem limite); sem
+  // ele, cai pro vídeo real do filme — object-fit:cover já corta as bordas
+  // pra caber na tela vertical sem distorcer, então não precisa de um
+  // arquivo à parte. Sem NENHuma fonte tocável na web (ex: fonte TELEGRAM
+  // sem cópia), não tem o que mostrar nessa tela.
+  const usaClipeManual = !!conteudo.ds_url_teaser_vertical;
+  const src = conteudo.ds_url_teaser_vertical || resolverUrlVideo(conteudo, "dublado");
+  if (!src) notFound();
 
   pool
     .query('UPDATE "CONTEUDOS" SET nr_views = nr_views + 1 WHERE cd_conteudo = $1', [
@@ -60,5 +67,13 @@ export default async function TrailerPage({
 
   const sessao = await getSessaoUsuario();
 
-  return <TrailerContent conteudo={conteudo} tags={tags} logado={!!sessao} />;
+  return (
+    <TrailerContent
+      conteudo={conteudo}
+      src={src}
+      limiteSegundos={usaClipeManual ? null : conteudo.nr_segundos_preview_trailer}
+      tags={tags}
+      logado={!!sessao}
+    />
+  );
 }

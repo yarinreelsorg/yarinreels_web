@@ -822,24 +822,43 @@ export default function CatalogoAdminClient({
 
                   <div className="rounded-md border border-dashed border-[rgba(139,92,246,0.25)] p-3">
                     <p className="mb-1 text-xs font-semibold uppercase text-[#A78BFA]">
-                      Teaser Vertical (opcional)
+                      Página de Anúncio (/trailer/[id])
                     </p>
                     <p className="mb-3 text-[11px] text-[#A78BFA]/70">
-                      Clipe já cortado em 9:16 (vertical) pra tela imersiva estilo Reels usada em
-                      /trailer/[id] — página de destino pra anúncio no celular. Deixe em branco pra
-                      não gerar essa página pro título.
+                      Tela imersiva estilo Reels pra anúncio no celular. Por padrão usa o próprio
+                      vídeo do filme (corta as bordas pra caber na tela vertical, sem exigir
+                      login) e toca só uma prévia — ajuste os segundos abaixo. Se quiser um
+                      resultado mais preciso, cole aqui embaixo um clipe já cortado em 9:16; quando
+                      preenchido, ele substitui a prévia automática e toca sem limite de tempo.
                     </p>
-                    <label htmlFor="ds_url_teaser_vertical" className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">
-                      URL Bunny Video (Vertical)
-                    </label>
-                    <input
-                      type="text"
-                      id="ds_url_teaser_vertical"
-                      name="ds_url_teaser_vertical"
-                      placeholder="https://..."
-                      defaultValue={conteudoEdicao?.ds_url_teaser_vertical || ""}
-                      className="w-full bg-[#0D0A1A] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white"
-                    />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label htmlFor="ds_url_teaser_vertical" className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">
+                          URL Bunny Video (Vertical, opcional)
+                        </label>
+                        <input
+                          type="text"
+                          id="ds_url_teaser_vertical"
+                          name="ds_url_teaser_vertical"
+                          placeholder="https://..."
+                          defaultValue={conteudoEdicao?.ds_url_teaser_vertical || ""}
+                          className="w-full bg-[#0D0A1A] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="nr_segundos_preview_trailer" className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">
+                          Segundos de Prévia
+                        </label>
+                        <input
+                          type="number"
+                          min={5}
+                          id="nr_segundos_preview_trailer"
+                          name="nr_segundos_preview_trailer"
+                          defaultValue={conteudoEdicao?.nr_segundos_preview_trailer ?? 60}
+                          className="w-full bg-[#0D0A1A] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white"
+                        />
+                      </div>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
