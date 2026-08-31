@@ -13,6 +13,23 @@ function meiaNoiteBrasil(data: Date): Date {
   return new Date(`${chaveDiaBrasil(data)}T00:00:00-03:00`);
 }
 
+/**
+ * ds_origem vem de um parâmetro livre na URL do anúncio (?origem=...) —
+ * quem monta o link decide a grafia, então "Instagram", "instagram" e
+ * "INSTAGRAM" acabavam virando 3 linhas separadas nos relatórios e no
+ * filtro. Normaliza tudo pra Title Case antes de agrupar/comparar/exibir,
+ * assim variação de maiúscula/minúscula deixa de fragmentar a origem.
+ */
+function normalizarOrigem(valor: string | null): string {
+  const bruto = (valor || "Direto / Telegram").trim();
+  if (!bruto) return "Direto / Telegram";
+  return bruto
+    .toLowerCase()
+    .split(" ")
+    .map((palavra) => (palavra ? palavra[0].toUpperCase() + palavra.slice(1) : palavra))
+    .join(" ");
+}
+
 export type TipoPeriodoRelatorio =
   | "hoje"
   | "ontem"
@@ -176,7 +193,7 @@ export async function carregarDadosRelatorios(filtros: FiltrosRelatorio) {
     if (
       filtros.origemFilter &&
       filtros.origemFilter !== "TODAS" &&
-      (v.ds_origem || "Direto / Telegram") !== filtros.origemFilter
+      normalizarOrigem(v.ds_origem) !== normalizarOrigem(filtros.origemFilter)
     ) {
       return false;
     }
@@ -231,7 +248,7 @@ export async function carregarDadosRelatorios(filtros: FiltrosRelatorio) {
   // Rastreamento por Origem Telegram
   const origemMap = new Map<string, { totalVendas: number; faturamento: number }>();
   for (const v of vendasFiltradas) {
-    const orig = (v.ds_origem || "Direto / Telegram").trim();
+    const orig = normalizarOrigem(v.ds_origem);
     const atual = origemMap.get(orig) ?? { totalVendas: 0, faturamento: 0 };
     atual.totalVendas += 1;
     if (v.tp_status === "APROVADA") {
@@ -269,14 +286,14 @@ export async function carregarDadosRelatorios(filtros: FiltrosRelatorio) {
       nm_item: itemNome,
       valor: getValorVenda(v),
       tp_metodo_pagamento: v.tp_metodo_pagamento ?? "PIX",
-      ds_origem: v.ds_origem || "Direto / Telegram",
+      ds_origem: normalizarOrigem(v.ds_origem),
       ts_criacao: v.ts_criacao,
     };
   });
 
   const listaOrigensDisponiveis = Array.from(
-    new Set(vendas.map((v) => (v.ds_origem || "Direto / Telegram").trim()))
-  );
+    new Set(vendas.map((v) => normalizarOrigem(v.ds_origem)))
+  ).sort();
 
   return {
     metricas: {
