@@ -5,7 +5,6 @@ import type { Conteudo } from "@/types/database";
 import type { ItemContinuarAssistindo } from "@/lib/historico";
 import type { AppNavegacao } from "@/lib/apps-config";
 import Navbar from "@/components/layout/Navbar";
-import UpsellSection from "@/components/layout/UpsellSection";
 import HeroBanner from "@/components/catalog/HeroBanner";
 import ChipsCategorias from "@/components/catalog/ChipsCategorias";
 import AppsBar from "@/components/catalog/AppsBar";
@@ -21,18 +20,14 @@ export default function HomeContent({
   apps,
   destaques,
   top12,
-  cdPlanoPromo,
   continuarAssistindo,
-  exibirPromoInicial,
 }: {
   conteudos: Conteudo[];
   categorias: string[];
   apps: AppNavegacao[];
   destaques: Conteudo[];
   top12: Conteudo[];
-  cdPlanoPromo: string | null;
   continuarAssistindo: ItemContinuarAssistindo[];
-  exibirPromoInicial: boolean;
 }) {
   const [busca, setBusca] = useState("");
   const [, startTransition] = useTransition();
@@ -102,10 +97,6 @@ export default function HomeContent({
           <ChipsCategorias categorias={categorias} />
 
           {destaques.length > 0 && <HeroBanner destaques={destaques} />}
-
-          {exibirPromoInicial && (
-            <UpsellSection destaques={destaques} cdPlanoPromo={cdPlanoPromo} />
-          )}
 
           {top12.length > 0 && <Top12 itens={top12} />}
 

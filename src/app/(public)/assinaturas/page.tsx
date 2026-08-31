@@ -51,12 +51,7 @@ export default async function AssinaturasPage() {
         <p className="mt-3 text-secondary">
           {assinaturaAtiva
             ? "Você já tem acesso liberado — gerencie ou troque de plano abaixo."
-            : (
-              <>
-                Acesso liberado ao catálogo enquanto sua assinatura estiver ativa. Primeiro mês
-                por <span className="font-bold text-primary">R$ 20</span>.
-              </>
-            )}
+            : "Acesso liberado ao catálogo inteiro enquanto sua assinatura estiver ativa."}
         </p>
 
         {assinaturaAtiva && planoAtivo && (

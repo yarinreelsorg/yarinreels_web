@@ -154,7 +154,7 @@ export default function LandingContent({
               href="#planos"
               className="w-full sm:w-auto rounded-full bg-gradient-to-r from-primary to-primary-dark px-8 py-4 text-center text-base font-bold text-white shadow-[0_0_30px_rgba(194,24,91,0.5)] transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(194,24,91,0.8)] active:scale-95"
             >
-              🚀 Ver Planos a partir de R$ 20
+              🚀 Ver Planos de Assinatura
             </a>
             <Link
               href="/catalogo"

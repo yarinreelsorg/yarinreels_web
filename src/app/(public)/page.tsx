@@ -1,6 +1,5 @@
 import HomeContent from "@/components/home/HomeContent";
 import { pool } from "@/lib/db";
-import { deveExibirPromoInicial, obterCdPlanoPromoInicial } from "@/lib/pagamento";
 import {
   canonicalizarCategorias,
   obterCategoriasExclusivasAssinantes,
@@ -33,9 +32,7 @@ export default async function HomePage() {
   const { rows: conteudosSemExclusivos } = await pool.query<Conteudo>(
     'SELECT * FROM "CONTEUDOS" WHERE sn_exclusivo_assinantes = false'
   );
-  const cdPlanoPromo = sessao ? await obterCdPlanoPromoInicial() : null;
   const continuarAssistindo = sessao ? await obterContinuarAssistindo(sessao.cd_usuario) : [];
-  const exibirPromoInicial = sessao ? await deveExibirPromoInicial(sessao.cd_usuario) : true;
   const ehAssinante = sessao ? await usuarioTemAssinaturaAtiva(sessao.cd_usuario) : false;
   const categoriasAssinatura =
     sessao && ehAssinante ? await obterCategoriasAssinaturaAtiva(sessao.cd_usuario) : [];
@@ -85,9 +82,7 @@ export default async function HomePage() {
       apps={apps}
       destaques={destaques}
       top12={top12}
-      cdPlanoPromo={cdPlanoPromo}
       continuarAssistindo={continuarAssistindo}
-      exibirPromoInicial={exibirPromoInicial}
     />
   );
 }
