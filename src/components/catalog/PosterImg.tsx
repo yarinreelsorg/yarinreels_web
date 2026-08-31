@@ -3,7 +3,12 @@
 import { useState } from "react";
 import { otimizarUrlPoster } from "@/lib/catalogo";
 
-const ATRASO_RETRY_MS = 600;
+// Atraso crescente entre tentativas da versão redimensionada — o CDN do
+// Google (blogger.googleusercontent.com) parece derrubar conexão sob
+// carga (muitas capas pedindo ao mesmo tempo, ex: Top12 + carrosséis
+// todos na home), então esperar um pouco mais a cada tentativa dá tempo
+// do burst inicial de requisições esvaziar antes de tentar de novo.
+const ATRASOS_RETRY_MS = [500, 1500, 3000];
 
 interface PosterImgProps {
   src: string;
@@ -15,11 +20,13 @@ interface PosterImgProps {
 }
 
 /**
- * <img> de pôster com retry + fallback automático: se a versão
- * redimensionada (=wNNN, ver otimizarUrlPoster) falhar — o CDN do Google às
- * vezes recusa/limita a requisição de resize, às vezes é só uma falha de
- * rede passageira — espera um instante e tenta de novo antes de cair pra
- * URL original, em vez de deixar a capa em branco na primeira falha.
+ * <img> de pôster com retry + fallback automático. A versão redimensionada
+ * (=wNNN, ver otimizarUrlPoster) é sempre a aposta melhor — além de mais
+ * leve, é a que mais confiavelmente carrega; a URL original (sem =wNNN)
+ * costuma ser um JPEG/PNG de vários MB e, na prática, falha sozinha com
+ * mais frequência que a redimensionada. Por isso insiste bastante na
+ * versão redimensionada antes de cair pra original como último recurso,
+ * em vez de escalar cedo demais pra uma fonte pior.
  *
  * `key={src}` força o React a criar uma instância nova (e portanto zerar
  * usarFallback/tentativa) sempre que a URL muda — sem isso, se o React
@@ -36,19 +43,19 @@ function PosterImgComEstado({ src, largura, alt, className, loading = "lazy", on
   const [tentativa, setTentativa] = useState(0);
 
   function aoDarErro() {
-    if (tentativa === 0) {
-      // Falha de rede passageira é comum — espera um instante e tenta de
-      // novo a mesma URL antes de desistir dela. O "key" abaixo muda com
-      // `tentativa`, forçando o navegador a refazer a requisição do zero.
-      setTimeout(() => setTentativa(1), ATRASO_RETRY_MS);
+    if (tentativa < ATRASOS_RETRY_MS.length) {
+      // O "key" abaixo muda com `tentativa`, forçando o navegador a refazer
+      // a requisição do zero em vez de reusar uma conexão já derrubada.
+      setTimeout(() => setTentativa((t) => t + 1), ATRASOS_RETRY_MS[tentativa]);
       return;
     }
     if (!usarFallback) {
       setUsarFallback(true);
       setTentativa(0);
+      return;
     }
-    // se a URL original também falhar depois do fallback, desiste — já
-    // tentou o razoável sem arriscar loop de requisições.
+    // se a URL original também falhar depois de esgotar as tentativas da
+    // redimensionada, desiste — já tentou o razoável sem arriscar loop.
   }
 
   const url = usarFallback ? src : otimizarUrlPoster(src, largura);

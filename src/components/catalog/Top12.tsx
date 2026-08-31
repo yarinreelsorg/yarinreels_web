@@ -10,6 +10,10 @@ import { motion } from "motion/react";
 export default function Top12({ itens }: { itens: Conteudo[] }) {
   const trilhoRef = useRef<HTMLDivElement>(null);
   const pausadoRef = useRef(false);
+  const arrastoRef = useRef<{ x: number; scrollLeft: number; moveu: boolean } | null>(null);
+  // Sobrevive ao "arrastoRef" ser zerado no pointerup, pra o handler de
+  // click (disparado depois) ainda saber que aquilo foi um arraste.
+  const moveuNoArrasteRef = useRef(false);
 
   useEffect(() => {
     if (itens.length <= 1) return;
@@ -54,13 +58,59 @@ export default function Top12({ itens }: { itens: Conteudo[] }) {
     });
   }
 
+  // Toque já rola nativamente (scroll horizontal por gesto), mas no
+  // desktop "overflow-x-auto" só responde a scroll do mouse/trackpad —
+  // não dá pra "puxar pro lado" clicando e arrastando, que é o gesto mais
+  // intuitivo. Implementa esse arraste manualmente só pra ponteiro tipo
+  // mouse (touch/caneta usam o scroll nativo, sem interferência).
+  function aoPressionarPonteiro(e: React.PointerEvent<HTMLDivElement>) {
+    pausar();
+    if (e.pointerType !== "mouse") return;
+    const trilho = trilhoRef.current;
+    if (!trilho) return;
+    arrastoRef.current = { x: e.clientX, scrollLeft: trilho.scrollLeft, moveu: false };
+    moveuNoArrasteRef.current = false;
+    trilho.setPointerCapture(e.pointerId);
+  }
+
+  function aoMoverPonteiro(e: React.PointerEvent<HTMLDivElement>) {
+    const estado = arrastoRef.current;
+    const trilho = trilhoRef.current;
+    if (!estado || !trilho) return;
+    const delta = e.clientX - estado.x;
+    if (Math.abs(delta) > 3) {
+      estado.moveu = true;
+      moveuNoArrasteRef.current = true;
+    }
+    trilho.scrollLeft = estado.scrollLeft - delta;
+  }
+
+  function aoSoltarPonteiro(e: React.PointerEvent<HTMLDivElement>) {
+    retomar();
+    const trilho = trilhoRef.current;
+    if (arrastoRef.current && trilho) trilho.releasePointerCapture(e.pointerId);
+    arrastoRef.current = null;
+  }
+
+  // Depois de um arraste de verdade (não um simples clique), o "click"
+  // que o navegador dispara em seguida no card por baixo do cursor não
+  // deve navegar — senão soltar o mouse depois de arrastar abre o filme
+  // por baixo sem querer.
+  function aoClicarDepoisDeArrastar(e: React.MouseEvent<HTMLDivElement>) {
+    if (moveuNoArrasteRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      moveuNoArrasteRef.current = false;
+    }
+  }
+
   return (
     <section className="py-5">
       <div className="mb-4 flex items-center justify-between px-4 sm:px-8">
         <h2 className="flex items-center gap-1.5 text-lg font-black text-foreground">
           Top 12 <span>🔥</span>
         </h2>
-        <div className="flex items-center gap-2 lg:hidden">
+        <div className="flex items-center gap-2">
           <motion.button
             type="button"
             aria-label="Anterior"
@@ -84,11 +134,14 @@ export default function Top12({ itens }: { itens: Conteudo[] }) {
 
       <StaggerGroup
         ref={trilhoRef}
-        onPointerDown={pausar}
-        onPointerUp={retomar}
+        onPointerDown={aoPressionarPonteiro}
+        onPointerMove={aoMoverPonteiro}
+        onPointerUp={aoSoltarPonteiro}
+        onPointerCancel={aoSoltarPonteiro}
+        onClickCapture={aoClicarDepoisDeArrastar}
         onMouseEnter={pausar}
         onMouseLeave={retomar}
-        className="grid snap-x snap-mandatory grid-flow-col grid-rows-3 gap-x-3 gap-y-4 overflow-x-auto scroll-smooth px-4 pb-2 [grid-auto-columns:min(calc(50vw-15px),270px)] [scrollbar-width:none] sm:px-8 lg:grid-rows-2 lg:gap-x-5 lg:gap-y-6 lg:[grid-auto-columns:440px] [&::-webkit-scrollbar]:hidden"
+        className="grid snap-x snap-mandatory grid-flow-col grid-rows-3 gap-x-3 gap-y-4 overflow-x-auto scroll-smooth px-4 pb-2 [grid-auto-columns:min(calc(50vw-15px),270px)] [scrollbar-width:none] sm:px-8 lg:cursor-grab lg:select-none lg:grid-rows-2 lg:gap-x-5 lg:gap-y-6 lg:[grid-auto-columns:440px] lg:active:cursor-grabbing [&::-webkit-scrollbar]:hidden"
         staggerChildren={0.04}
       >
         {itens.slice(0, 12).map((item, index) => (
