@@ -820,6 +820,28 @@ export default function CatalogoAdminClient({
                     </div>
                   </div>
 
+                  <div className="rounded-md border border-dashed border-[rgba(139,92,246,0.25)] p-3">
+                    <p className="mb-1 text-xs font-semibold uppercase text-[#A78BFA]">
+                      Teaser Vertical (opcional)
+                    </p>
+                    <p className="mb-3 text-[11px] text-[#A78BFA]/70">
+                      Clipe já cortado em 9:16 (vertical) pra tela imersiva estilo Reels usada em
+                      /trailer/[id] — página de destino pra anúncio no celular. Deixe em branco pra
+                      não gerar essa página pro título.
+                    </p>
+                    <label htmlFor="ds_url_teaser_vertical" className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">
+                      URL Bunny Video (Vertical)
+                    </label>
+                    <input
+                      type="text"
+                      id="ds_url_teaser_vertical"
+                      name="ds_url_teaser_vertical"
+                      placeholder="https://..."
+                      defaultValue={conteudoEdicao?.ds_url_teaser_vertical || ""}
+                      className="w-full bg-[#0D0A1A] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white"
+                    />
+                  </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="tp_fonte_prioritaria" className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">

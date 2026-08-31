@@ -37,6 +37,8 @@ export type Conteudo = {
   ds_descricao: string | null;
   ds_generos: string | null;
   ds_url_trailer_youtube: string | null;
+  /** Clipe vertical (9:16) pra tela imersiva estilo Reels em /trailer/[id]. */
+  ds_url_teaser_vertical: string | null;
   nr_duracao_minutos: number | null;
   vl_aluguel: number | null;
   vl_vitalicio: number | null;
@@ -69,6 +71,7 @@ export type ConteudoInsert = {
   ds_descricao?: string | null;
   ds_generos?: string | null;
   ds_url_trailer_youtube?: string | null;
+  ds_url_teaser_vertical?: string | null;
   nr_duracao_minutos?: number | null;
   vl_aluguel?: number | null;
   vl_vitalicio?: number | null;
@@ -93,6 +96,7 @@ export type ConteudoUpdate = {
   ds_descricao?: string | null;
   ds_generos?: string | null;
   ds_url_trailer_youtube?: string | null;
+  ds_url_teaser_vertical?: string | null;
   nr_duracao_minutos?: number | null;
   vl_aluguel?: number | null;
   vl_vitalicio?: number | null;

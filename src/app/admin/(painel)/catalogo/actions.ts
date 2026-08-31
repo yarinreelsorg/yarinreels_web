@@ -47,6 +47,7 @@ function extrairCampos(formData: FormData) {
   const ds_file_id_telegram = parseString(formData.get("ds_file_id_telegram"));
   const ds_url_bunny_legendado = parseString(formData.get("ds_url_bunny_legendado"));
   const ds_file_id_telegram_legendado = parseString(formData.get("ds_file_id_telegram_legendado"));
+  const ds_url_teaser_vertical = parseString(formData.get("ds_url_teaser_vertical"));
   const tp_fonte_prioritaria = (parseString(formData.get("tp_fonte_prioritaria")) ??
     "LOCAL") as TpFontePrioritaria;
   const vl_aluguel = parseNumber(formData.get("vl_aluguel"));
@@ -54,6 +55,7 @@ function extrairCampos(formData: FormData) {
 
   validarUrlBunny(ds_url_bunny);
   validarUrlBunny(ds_url_bunny_legendado);
+  validarUrlBunny(ds_url_teaser_vertical);
   // Esse campo só precisa ser um file_id de verdade quando a fonte é
   // TELEGRAM — quando a fonte é LOCAL, ele guarda o nome do arquivo local
   // (com espaços, acentos, ".mp4" etc), que a regex de file_id rejeitava,
@@ -79,6 +81,7 @@ function extrairCampos(formData: FormData) {
     ds_file_id_telegram,
     ds_url_bunny_legendado,
     ds_file_id_telegram_legendado,
+    ds_url_teaser_vertical,
     tp_fonte_prioritaria,
     sn_destaque: formData.get("sn_destaque") === "on" || formData.get("sn_destaque") === "true",
     dt_lancamento: parseString(formData.get("dt_lancamento")),
@@ -98,10 +101,10 @@ export async function adicionarConteudo(cdConteudo: string, formData: FormData) 
     `INSERT INTO "CONTEUDOS"
        (cd_conteudo, nm_titulo, nm_categoria, tp_formato, nm_idioma, ds_generos, ds_descricao,
         vl_aluguel, vl_vitalicio, ds_url_poster, ds_url_bunny, ds_file_id_telegram,
-        ds_url_bunny_legendado, ds_file_id_telegram_legendado,
+        ds_url_bunny_legendado, ds_file_id_telegram_legendado, ds_url_teaser_vertical,
         tp_fonte_prioritaria, sn_destaque, dt_lancamento, nm_app_origem, sn_exclusivo_assinantes,
         sn_carencia_ativa, nr_views)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,0)`,
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,0)`,
     [
       cdConteudo,
       campos.nm_titulo,
@@ -117,6 +120,7 @@ export async function adicionarConteudo(cdConteudo: string, formData: FormData) 
       campos.ds_file_id_telegram,
       campos.ds_url_bunny_legendado,
       campos.ds_file_id_telegram_legendado,
+      campos.ds_url_teaser_vertical,
       campos.tp_fonte_prioritaria,
       campos.sn_destaque,
       campos.dt_lancamento,
@@ -145,10 +149,10 @@ export async function editarConteudo(id: string, formData: FormData) {
        nm_titulo = $1, nm_categoria = $2, tp_formato = $3, nm_idioma = $4, ds_generos = $5,
        ds_descricao = $6, vl_aluguel = $7, vl_vitalicio = $8, ds_url_poster = $9,
        ds_url_bunny = $10, ds_file_id_telegram = $11, ds_url_bunny_legendado = $12,
-       ds_file_id_telegram_legendado = $13, tp_fonte_prioritaria = $14,
-       sn_destaque = $15, dt_lancamento = $16, nm_app_origem = $17, sn_exclusivo_assinantes = $18,
-       sn_carencia_ativa = $19
-     WHERE cd_conteudo = $20`,
+       ds_file_id_telegram_legendado = $13, ds_url_teaser_vertical = $14, tp_fonte_prioritaria = $15,
+       sn_destaque = $16, dt_lancamento = $17, nm_app_origem = $18, sn_exclusivo_assinantes = $19,
+       sn_carencia_ativa = $20
+     WHERE cd_conteudo = $21`,
     [
       campos.nm_titulo,
       campos.nm_categoria,
@@ -163,6 +167,7 @@ export async function editarConteudo(id: string, formData: FormData) {
       campos.ds_file_id_telegram,
       campos.ds_url_bunny_legendado,
       campos.ds_file_id_telegram_legendado,
+      campos.ds_url_teaser_vertical,
       campos.tp_fonte_prioritaria,
       campos.sn_destaque,
       campos.dt_lancamento,
@@ -244,9 +249,10 @@ export async function restaurarConteudo(snapshot: Conteudo) {
   await pool.query(
     `INSERT INTO "CONTEUDOS"
        (cd_conteudo, nm_titulo, nm_categoria, tp_formato, dt_lancamento, nm_idioma, ds_descricao,
-        ds_generos, ds_url_trailer_youtube, nr_duracao_minutos, vl_aluguel, vl_vitalicio,
-        ds_url_poster, ds_file_id_telegram, ds_url_bunny, tp_fonte_prioritaria, sn_destaque, nr_views)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,
+        ds_generos, ds_url_trailer_youtube, ds_url_teaser_vertical, nr_duracao_minutos, vl_aluguel,
+        vl_vitalicio, ds_url_poster, ds_file_id_telegram, ds_url_bunny, tp_fonte_prioritaria,
+        sn_destaque, nr_views)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`,
     [
       snapshot.cd_conteudo,
       snapshot.nm_titulo,
@@ -257,6 +263,7 @@ export async function restaurarConteudo(snapshot: Conteudo) {
       snapshot.ds_descricao,
       snapshot.ds_generos,
       snapshot.ds_url_trailer_youtube,
+      snapshot.ds_url_teaser_vertical,
       snapshot.nr_duracao_minutos,
       snapshot.vl_aluguel,
       snapshot.vl_vitalicio,
