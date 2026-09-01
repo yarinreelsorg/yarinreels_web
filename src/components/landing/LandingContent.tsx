@@ -250,13 +250,13 @@ export default function LandingContent({
               className="group relative cursor-pointer overflow-hidden rounded-xl border border-white/10 bg-surface shadow-lg transition-all hover:border-primary/50 hover:shadow-[0_0_20px_rgba(194,24,91,0.3)]"
             >
               {/* Poster */}
-              <div className="aspect-[2/3] w-full overflow-hidden bg-black/40">
+              <div className="relative aspect-[2/3] w-full overflow-hidden bg-black/40">
                 {item.ds_url_poster ? (
                   <PosterImg
                     src={item.ds_url_poster}
                     largura={460}
                     alt={item.nm_titulo}
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    className="object-cover transition-transform duration-500 group-hover:scale-110"
                     loading="lazy"
                   />
                 ) : (
@@ -624,14 +624,14 @@ export default function LandingContent({
 
               <div className="flex flex-col md:flex-row">
                 {/* Poster Lateral */}
-                <div className="w-full md:w-5/12 aspect-[2/3] bg-black">
+                <div className="relative w-full md:w-5/12 aspect-[2/3] bg-black">
                   {modalConteudo.ds_url_poster && (
                     <PosterImg
                       src={modalConteudo.ds_url_poster}
                       largura={520}
                       alt=""
                       loading="eager"
-                      className="h-full w-full object-cover"
+                      className="object-cover"
                     />
                   )}
                 </div>

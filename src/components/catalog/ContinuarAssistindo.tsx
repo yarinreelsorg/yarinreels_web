@@ -33,13 +33,13 @@ export default function ContinuarAssistindo({
               href={`/assistir/${item.conteudo.cd_conteudo}`}
               className="relative block overflow-hidden rounded-lg bg-surface"
             >
-              <div className="h-[185px] w-[125px] lg:h-[340px] lg:w-[230px]">
+              <div className="relative h-[185px] w-[125px] lg:h-[340px] lg:w-[230px]">
                 {item.conteudo.ds_url_poster ? (
                   <PosterImg
                     src={item.conteudo.ds_url_poster}
                     largura={460}
                     alt={item.conteudo.nm_titulo}
-                    className="h-full w-full object-cover"
+                    className="object-cover"
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center px-2 text-center text-xs text-secondary">

@@ -114,14 +114,14 @@ export default function FilmeContent({
           transition={{ duration: 0.6, ease: "easeOut" }}
           className="relative z-10 flex w-full flex-col gap-6 px-4 pb-14 sm:px-8 lg:flex-row lg:items-end lg:gap-10"
         >
-          <div className="hidden shrink-0 overflow-hidden rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.6)] lg:block">
+          <div className="relative hidden h-[390px] w-[260px] shrink-0 overflow-hidden rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.6)] lg:block">
             {conteudo.ds_url_poster ? (
               <PosterImg
                 src={conteudo.ds_url_poster}
                 largura={520}
                 alt={conteudo.nm_titulo}
                 loading="eager"
-                className="h-[390px] w-[260px] object-cover"
+                className="object-cover"
               />
             ) : (
               <div className="flex h-[390px] w-[260px] items-center justify-center bg-surface px-3 text-center text-sm text-secondary">
