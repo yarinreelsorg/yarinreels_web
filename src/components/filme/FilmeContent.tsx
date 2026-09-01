@@ -36,6 +36,7 @@ export default function FilmeContent({
   favoritado,
   logado,
   incluidoNaAssinatura = false,
+  codigoAfiliado,
 }: {
   conteudo: Conteudo;
   episodios: Episodio[];
@@ -46,12 +47,18 @@ export default function FilmeContent({
   /** Usuário já tem acesso via assinatura ativa — some com os preços
    * avulsos, que ficam redundantes/confusos nesse caso. */
   incluidoNaAssinatura?: boolean;
+  /** Código de indicação do usuário logado — vai junto no link de
+   * compartilhar (?ref=CODIGO) pra creditar comissão se a pessoa indicada
+   * criar conta e comprar depois. null quando deslogado. */
+  codigoAfiliado?: string | null;
 }) {
   const [trailerAberto, setTrailerAberto] = useState(false);
   const [linkCopiado, setLinkCopiado] = useState(false);
 
   async function aoCompartilhar() {
-    const url = `${window.location.origin}/filme/${conteudo.cd_conteudo}`;
+    const url = `${window.location.origin}/filme/${conteudo.cd_conteudo}${
+      codigoAfiliado ? `?ref=${codigoAfiliado}` : ""
+    }`;
     if (navigator.share) {
       try {
         await navigator.share({ title: conteudo.nm_titulo, url });

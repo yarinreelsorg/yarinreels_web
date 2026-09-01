@@ -5,6 +5,7 @@ import { getSessaoUsuario } from "@/lib/user-auth";
 import { obterIdsFavoritos } from "@/lib/favoritos";
 import { obterIdsTelegramElegiveis, verificarAcessoConteudo } from "@/lib/acesso";
 import { obterCarenciaAssinanteHoras } from "@/lib/site-config";
+import { obterOuCriarCodigoAfiliado } from "@/lib/afiliados";
 import type { Conteudo, Episodio } from "@/types/database";
 
 export default async function FilmePage({
@@ -45,6 +46,7 @@ export default async function FilmePage({
 
   const sessao = await getSessaoUsuario();
   const idsFavoritos = sessao ? await obterIdsFavoritos(sessao.cd_usuario) : new Set<string>();
+  const codigoAfiliado = sessao ? await obterOuCriarCodigoAfiliado(sessao.cd_usuario) : null;
 
   let incluidoNaAssinatura = false;
   if (sessao) {
@@ -65,6 +67,7 @@ export default async function FilmePage({
       favoritado={idsFavoritos.has(conteudo.cd_conteudo)}
       logado={!!sessao}
       incluidoNaAssinatura={incluidoNaAssinatura}
+      codigoAfiliado={codigoAfiliado}
     />
   );
 }
