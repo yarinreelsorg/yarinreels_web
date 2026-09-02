@@ -3,12 +3,7 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { atualizarAvatar, obterAvataresPublicos } from "@/app/(public)/conta/actions";
-import {
-  AVATARES_DISPONIVEIS,
-  CATEGORIAS_AVATAR,
-  avatarAleatorio,
-  type AvatarOpcao,
-} from "@/lib/avatares";
+import { AVATARES_DISPONIVEIS, CATEGORIAS_AVATAR, type AvatarOpcao } from "@/lib/avatares";
 import { useFocoModal } from "@/components/admin/useFocoModal";
 import Avatar from "@/components/ui/Avatar";
 
@@ -25,12 +20,13 @@ export default function SeletorAvatar({ avatarAtual }: { avatarAtual: string | n
   useEffect(() => {
     if (!aberto) return;
     obterAvataresPublicos().then((dinamicos) => {
-      if (dinamicos && dinamicos.length > 0) {
-        // Junta avatares cadastrados pelo admin no banco com os avatares estáticos
-        const ids = new Set(dinamicos.map((d) => d.url));
-        const estaticosRestantes = AVATARES_DISPONIVEIS.filter((e) => !ids.has(e.url));
-        setAvataresLista([...dinamicos, ...estaticosRestantes]);
-      }
+      // O banco (AVATARES) é a fonte de verdade — inclusive os avatares
+      // "de fábrica" já foram migrados pra lá (ver migration
+      // 20260902_seed_avatares_estaticos.sql), então dá pra excluir
+      // qualquer um deles pelo admin. Só cai pro array estático do código
+      // se o banco vier vazio (erro/fora do ar) — nunca mescla os dois,
+      // senão um avatar excluído no admin "voltaria" por essa mescla.
+      if (dinamicos && dinamicos.length > 0) setAvataresLista(dinamicos);
     });
   }, [aberto]);
 
@@ -189,8 +185,12 @@ export default function SeletorAvatar({ avatarAtual }: { avatarAtual: string | n
                 <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
                   <button
                     type="button"
-                    disabled={salvando}
-                    onClick={() => escolher(avatarAleatorio())}
+                    disabled={salvando || avataresLista.length === 0}
+                    onClick={() =>
+                      escolher(
+                        avataresLista[Math.floor(Math.random() * avataresLista.length)].url
+                      )
+                    }
                     className="w-full sm:w-auto rounded-md border border-[rgba(139,92,246,0.3)] bg-[#050208] px-4 py-2.5 text-xs font-bold text-[#A78BFA] transition-colors hover:bg-white/5 disabled:opacity-50 cursor-pointer"
                   >
                     🎲 Escolher Aleatório
