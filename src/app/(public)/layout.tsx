@@ -23,7 +23,7 @@ export default async function PublicLayout({
   }
 
   return (
-    <div className="flex min-h-screen flex-col pb-[75px] lg:pb-0">
+    <div className="flex min-h-screen flex-col pb-[104px] lg:pb-0">
       <main className="flex-1">{children}</main>
       <Footer />
       <BottomNav />
