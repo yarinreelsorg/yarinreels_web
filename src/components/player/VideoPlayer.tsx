@@ -326,6 +326,38 @@ export default function VideoPlayer({
             )}
           </div>
 
+          {/* Pular ±15s direto na tela — em telas pequenas os botões
+              minúsculos lá na barra de controles (junto com play, volume,
+              tempo etc.) ficavam difíceis demais de acertar com o dedo.
+              Aqui a área de toque é grande (metade da tela de cada lado),
+              não precisa acertar um ícone pequeno. */}
+          <div className="absolute inset-y-0 left-0 flex w-1/2 items-center justify-start pl-4 sm:pl-10">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                pular(-15);
+              }}
+              aria-label="Voltar 15 segundos"
+              className="flex h-14 w-14 items-center justify-center rounded-full text-white transition-colors active:bg-white/15"
+            >
+              <IconeVoltar15 />
+            </button>
+          </div>
+          <div className="absolute inset-y-0 right-0 flex w-1/2 items-center justify-end pr-4 sm:pr-10">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                pular(15);
+              }}
+              aria-label="Avançar 15 segundos"
+              className="flex h-14 w-14 items-center justify-center rounded-full text-white transition-colors active:bg-white/15"
+            >
+              <IconeAvancar15 />
+            </button>
+          </div>
+
           {/* Painel "Você está assistindo" — só quando pausado */}
           {!tocando && (titulo || descricao) && (
             <div className="pointer-events-none absolute inset-x-0 bottom-24 px-4 sm:bottom-28 sm:px-10">
@@ -361,13 +393,15 @@ export default function VideoPlayer({
                 onPointerDown={aoIniciarArraste}
                 onPointerMove={aoArrastar}
                 onPointerUp={aoSoltarArraste}
-                className="group/bar relative h-1.5 flex-1 cursor-pointer rounded-full bg-white/25"
+                className="group/bar relative flex-1 cursor-pointer py-3"
               >
-                <div className="h-full rounded-full bg-primary" style={{ width: `${progresso}%` }} />
-                <div
-                  className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white opacity-0 shadow transition-opacity group-hover/bar:opacity-100"
-                  style={{ left: `${progresso}%` }}
-                />
+                <div className="relative h-1.5 rounded-full bg-white/25">
+                  <div className="h-full rounded-full bg-primary" style={{ width: `${progresso}%` }} />
+                  <div
+                    className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white opacity-0 shadow transition-opacity group-hover/bar:opacity-100"
+                    style={{ left: `${progresso}%` }}
+                  />
+                </div>
               </div>
               <span className="w-11 shrink-0 text-right text-xs font-medium tabular-nums text-white/80">
                 {formatarTempo(duracao - tempoAtual)}
