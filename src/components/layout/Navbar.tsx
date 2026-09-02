@@ -47,11 +47,38 @@ function NavbarInner({
   const [menuAberto, setMenuAberto] = useState(false);
   const [user, setUser] = useState<UsuarioNavbar | null>(null);
   const [logoUrl, setLogoUrl] = useState(LOGO_PADRAO);
+  const [escondida, setEscondida] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const ultimoScrollRef = useRef(0);
 
   useEffect(() => {
     obterUsuarioAtual().then(setUser);
     obterLogoSite().then(setLogoUrl);
+  }, []);
+
+  // Esconde a navbar ao rolar pra baixo, mostra de novo ao rolar pra
+  // cima — só no celular (no desktop os links do menu ficam nela, então
+  // ela precisa continuar sempre visível). Transform puro (sem blur), não
+  // reintroduz o travamento de scroll que o backdrop-blur causava aqui.
+  useEffect(() => {
+    function aoRolar() {
+      if (window.innerWidth >= 1024) {
+        setEscondida(false);
+        return;
+      }
+      const atual = window.scrollY;
+      const diferenca = atual - ultimoScrollRef.current;
+      if (atual < 80) {
+        setEscondida(false);
+      } else if (diferenca > 8) {
+        setEscondida(true);
+      } else if (diferenca < -8) {
+        setEscondida(false);
+      }
+      ultimoScrollRef.current = atual;
+    }
+    window.addEventListener("scroll", aoRolar, { passive: true });
+    return () => window.removeEventListener("scroll", aoRolar);
   }, []);
 
   useEffect(() => {
@@ -88,7 +115,9 @@ function NavbarInner({
 
   return (
     <header
-      className="sticky top-0 z-[100] px-4 pb-3 pt-4 sm:px-8"
+      className={`sticky top-0 z-[100] px-4 pb-3 pt-4 transition-transform duration-300 ease-out sm:px-8 ${
+        escondida ? "-translate-y-full" : "translate-y-0"
+      }`}
       style={{
         backgroundImage:
           "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 60%, rgba(0,0,0,0) 100%)",
@@ -113,7 +142,7 @@ function NavbarInner({
           ))}
         </nav>
 
-        <div className="order-2 flex flex-1 items-center gap-2.5 rounded-xl border border-white/5 bg-[#12101c] px-3.5 py-3 lg:order-none lg:py-2.5">
+        <div className="order-2 flex flex-1 items-center gap-2.5 rounded-xl border border-white/5 bg-[#12101c] px-3.5 py-3 transition-colors duration-200 focus-within:border-primary/60 lg:order-none lg:py-2.5">
           <span className="shrink-0 text-lg">🔍</span>
           <input
             type="search"
@@ -126,9 +155,10 @@ function NavbarInner({
 
           {user ? (
             <div ref={menuRef} className="relative shrink-0">
-              <button
+              <motion.button
                 type="button"
                 onClick={() => setMenuAberto((v) => !v)}
+                whileTap={{ scale: 0.88 }}
                 className={`flex h-8 w-8 items-center justify-center overflow-hidden rounded-full text-white ${
                   user.ds_avatar ? "bg-surface text-base" : "bg-primary text-xs font-bold"
                 }`}
@@ -138,7 +168,7 @@ function NavbarInner({
                 ) : (
                   inicial
                 )}
-              </button>
+              </motion.button>
               <AnimatePresence>
                 {menuAberto && (
                   <motion.div
@@ -172,12 +202,14 @@ function NavbarInner({
               </AnimatePresence>
             </div>
           ) : (
-            <Link
-              href="/login"
-              className="shrink-0 rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold text-white"
-            >
-              Entrar
-            </Link>
+            <motion.div whileTap={{ scale: 0.92 }} className="shrink-0">
+              <Link
+                href="/login"
+                className="block rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold text-white"
+              >
+                Entrar
+              </Link>
+            </motion.div>
           )}
         </div>
       </div>
