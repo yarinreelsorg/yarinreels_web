@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
-import { buttonTap } from "@/lib/motion";
 
 const ITENS = [
   { label: "Início", href: "/", Icone: IconeHome },
@@ -16,30 +15,40 @@ export default function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-[100] flex h-[72px] items-center justify-around border-t border-white/10 bg-[#0a0a0a] lg:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-[100] flex h-[72px] items-center justify-around border-t border-white/10 bg-[#0a0a0a] px-1 lg:hidden">
       {ITENS.map((item) => {
         const ativo = pathname === item.href;
         return (
-          <motion.div key={item.href} {...buttonTap} className="flex-1">
-            <Link
-              href={item.href}
-              className={`flex flex-col items-center gap-1 py-2 text-[10px] font-semibold tracking-wide transition-colors ${
-                ativo ? "text-primary" : "text-[#7a7a7a]"
-              }`}
-            >
-              <span className="relative flex h-6 w-6 items-center justify-center">
-                {item.destaque && !ativo && (
-                  <motion.span
-                    className="absolute inset-0 rounded-full bg-primary/40"
-                    animate={{ scale: [1, 1.6, 1], opacity: [0.5, 0, 0.5] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                  />
-                )}
-                <item.Icone ativo={ativo} />
-              </span>
-              {item.label.toUpperCase()}
-            </Link>
-          </motion.div>
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`relative flex flex-col items-center gap-1 px-3.5 py-2 text-[10px] font-semibold tracking-wide transition-colors active:scale-95 ${
+              ativo ? "text-primary" : "text-[#7a7a7a]"
+            }`}
+          >
+            {/* Fundo do item ativo — mesmo layoutId em todo item faz o
+                framer-motion animar posição/largura dele deslizando de
+                uma aba pra outra, em vez de sumir/reaparecer. */}
+            {ativo && (
+              <motion.div
+                layoutId="nav-indicador-ativo"
+                className="absolute inset-0 rounded-2xl border border-primary/70 bg-primary/15 shadow-[0_0_14px_2px_rgba(194,24,91,0.5),inset_0_0_10px_rgba(230,65,126,0.35)]"
+                transition={{ type: "spring", stiffness: 420, damping: 34 }}
+              />
+            )}
+
+            <span className="relative z-10 flex h-6 w-6 items-center justify-center">
+              {item.destaque && !ativo && (
+                <motion.span
+                  className="absolute inset-0 rounded-full bg-primary/40"
+                  animate={{ scale: [1, 1.6, 1], opacity: [0.5, 0, 0.5] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                />
+              )}
+              <item.Icone ativo={ativo} />
+            </span>
+            <span className="relative z-10 whitespace-nowrap">{item.label.toUpperCase()}</span>
+          </Link>
         );
       })}
     </nav>
