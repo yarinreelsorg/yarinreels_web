@@ -74,7 +74,9 @@ export async function verificarVinculacao() {
   return { status: "confirmado" as const, nr_id_telegram: vinculacao.nr_id_telegram };
 }
 
-export async function atualizarAvatar(avatar: string) {
+/** avatar = null remove a foto/personagem escolhido, voltando pro ícone
+ * neutro padrão (ver Avatar.tsx). */
+export async function atualizarAvatar(avatar: string | null) {
   const sessao = await usuarioAutenticado();
 
   await pool.query('UPDATE "USUARIOS" SET ds_avatar = $1 WHERE cd_usuario = $2', [

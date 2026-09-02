@@ -34,7 +34,7 @@ export default function SeletorAvatar({ avatarAtual }: { avatarAtual: string | n
     });
   }, [aberto]);
 
-  const escolher = async (novoAvatar: string) => {
+  const escolher = async (novoAvatar: string | null) => {
     setSalvando(true);
     try {
       await atualizarAvatar(novoAvatar);
@@ -66,17 +66,21 @@ export default function SeletorAvatar({ avatarAtual }: { avatarAtual: string | n
 
   return (
     <>
-      <button
+      <motion.button
         type="button"
         onClick={() => setAberto(true)}
-        aria-label="Escolher avatar de perfil"
+        aria-label="Alterar foto de perfil"
+        whileTap={{ scale: 0.94 }}
         className="group relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#0D0A1A] text-3xl outline outline-2 outline-offset-2 outline-[#9D4EDD]/30 transition-all hover:scale-105 hover:outline-[#9D4EDD] cursor-pointer shadow-lg"
       >
         <Avatar valor={avatar} className="h-full w-full object-cover" />
-        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
-          <span className="text-xs font-bold text-white uppercase tracking-wider">Trocar</span>
-        </div>
-      </button>
+        {/* Badge sempre visível (não só no hover) — em touch não existe
+            hover, então a dica de "dá pra trocar" precisa aparecer sem
+            precisar passar o mouse. */}
+        <span className="absolute bottom-0 right-0 flex h-6 w-6 items-center justify-center rounded-full border-2 border-[#0D0A1A] bg-[#9D4EDD] text-xs text-white shadow-md transition-transform group-hover:scale-110">
+          ✏️
+        </span>
+      </motion.button>
 
       <AnimatePresence>
         {aberto && (
@@ -182,14 +186,26 @@ export default function SeletorAvatar({ avatarAtual }: { avatarAtual: string | n
               </div>
 
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-[rgba(139,92,246,0.15)]">
-                <button
-                  type="button"
-                  disabled={salvando}
-                  onClick={() => escolher(avatarAleatorio())}
-                  className="w-full sm:w-auto rounded-md border border-[rgba(139,92,246,0.3)] bg-[#050208] px-4 py-2.5 text-xs font-bold text-[#A78BFA] transition-colors hover:bg-white/5 disabled:opacity-50 cursor-pointer"
-                >
-                  🎲 Escolher Aleatório
-                </button>
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                  <button
+                    type="button"
+                    disabled={salvando}
+                    onClick={() => escolher(avatarAleatorio())}
+                    className="w-full sm:w-auto rounded-md border border-[rgba(139,92,246,0.3)] bg-[#050208] px-4 py-2.5 text-xs font-bold text-[#A78BFA] transition-colors hover:bg-white/5 disabled:opacity-50 cursor-pointer"
+                  >
+                    🎲 Escolher Aleatório
+                  </button>
+                  {avatar && (
+                    <button
+                      type="button"
+                      disabled={salvando}
+                      onClick={() => escolher(null)}
+                      className="w-full sm:w-auto rounded-md border border-red-500/30 bg-[#050208] px-4 py-2.5 text-xs font-bold text-red-400 transition-colors hover:bg-red-500/10 disabled:opacity-50 cursor-pointer"
+                    >
+                      🗑️ Remover foto
+                    </button>
+                  )}
+                </div>
 
                 {/* Input de link personalizado */}
                 <div className="flex items-center gap-2 w-full sm:w-auto flex-1 max-w-md">

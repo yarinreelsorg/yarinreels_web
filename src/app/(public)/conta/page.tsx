@@ -45,6 +45,7 @@ export default async function ContaPage() {
           <div>
             {sessao.nm_nome && <p className="text-lg font-bold text-foreground">{sessao.nm_nome}</p>}
             <p className="text-sm text-secondary">{sessao.nm_email}</p>
+            <p className="mt-1.5 text-xs font-semibold text-[#9D4EDD]">✏️ Alterar foto de perfil</p>
           </div>
         </div>
 
