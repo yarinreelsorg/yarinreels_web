@@ -40,13 +40,11 @@ export default async function ContaPage() {
       <section className="mx-auto w-full max-w-2xl px-4 pb-16 pt-6 sm:px-8">
         <h1 className="text-2xl font-black text-foreground sm:text-3xl">Minha Conta</h1>
 
-        <div className="mt-6 flex items-center gap-4 rounded-lg border border-border bg-surface p-6">
-          <SeletorAvatar avatarAtual={avatarAtual} />
-          <div>
+        <div className="mt-6 rounded-lg border border-border bg-surface p-6">
+          <SeletorAvatar avatarAtual={avatarAtual}>
             {sessao.nm_nome && <p className="text-lg font-bold text-foreground">{sessao.nm_nome}</p>}
             <p className="text-sm text-secondary">{sessao.nm_email}</p>
-            <p className="mt-1.5 text-xs font-semibold text-[#9D4EDD]">✏️ Alterar foto de perfil</p>
-          </div>
+          </SeletorAvatar>
         </div>
 
         <h2 className="mt-8 text-sm font-bold uppercase tracking-wide text-secondary">

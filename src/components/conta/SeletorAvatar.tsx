@@ -1,13 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { atualizarAvatar, obterAvataresPublicos } from "@/app/(public)/conta/actions";
 import { AVATARES_DISPONIVEIS, CATEGORIAS_AVATAR, type AvatarOpcao } from "@/lib/avatares";
 import { useFocoModal } from "@/components/admin/useFocoModal";
 import Avatar from "@/components/ui/Avatar";
 
-export default function SeletorAvatar({ avatarAtual }: { avatarAtual: string | null }) {
+export default function SeletorAvatar({
+  avatarAtual,
+  children,
+}: {
+  avatarAtual: string | null;
+  /** Nome/e-mail exibidos ao lado do avatar — ficam aqui dentro (em vez
+   * de soltos na página) porque o link "Alterar foto de perfil" abaixo
+   * deles precisa abrir o mesmo modal, e esse estado é local a este
+   * componente. */
+  children?: ReactNode;
+}) {
   const [avatar, setAvatar] = useState(avatarAtual);
   const [aberto, setAberto] = useState(false);
   const [salvando, setSalvando] = useState(false);
@@ -62,21 +72,34 @@ export default function SeletorAvatar({ avatarAtual }: { avatarAtual: string | n
 
   return (
     <>
-      <motion.button
-        type="button"
-        onClick={() => setAberto(true)}
-        aria-label="Alterar foto de perfil"
-        whileTap={{ scale: 0.94 }}
-        className="group relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#0D0A1A] text-3xl outline outline-2 outline-offset-2 outline-[#9D4EDD]/30 transition-all hover:scale-105 hover:outline-[#9D4EDD] cursor-pointer shadow-lg"
-      >
-        <Avatar valor={avatar} className="h-full w-full object-cover" />
-        {/* Badge sempre visível (não só no hover) — em touch não existe
-            hover, então a dica de "dá pra trocar" precisa aparecer sem
-            precisar passar o mouse. */}
-        <span className="absolute bottom-0 right-0 flex h-6 w-6 items-center justify-center rounded-full border-2 border-[#0D0A1A] bg-[#9D4EDD] text-xs text-white shadow-md transition-transform group-hover:scale-110">
-          ✏️
-        </span>
-      </motion.button>
+      <div className="flex items-center gap-4">
+        <motion.button
+          type="button"
+          onClick={() => setAberto(true)}
+          aria-label="Alterar foto de perfil"
+          whileTap={{ scale: 0.94 }}
+          className="group relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#0D0A1A] text-3xl outline outline-2 outline-offset-2 outline-[#9D4EDD]/30 transition-all hover:scale-105 hover:outline-[#9D4EDD] cursor-pointer shadow-lg"
+        >
+          <Avatar valor={avatar} className="h-full w-full object-cover" />
+          {/* Badge sempre visível (não só no hover) — em touch não existe
+              hover, então a dica de "dá pra trocar" precisa aparecer sem
+              precisar passar o mouse. */}
+          <span className="absolute bottom-0 right-0 flex h-6 w-6 items-center justify-center rounded-full border-2 border-[#0D0A1A] bg-[#9D4EDD] text-xs text-white shadow-md transition-transform group-hover:scale-110">
+            ✏️
+          </span>
+        </motion.button>
+
+        <div>
+          {children}
+          <button
+            type="button"
+            onClick={() => setAberto(true)}
+            className="mt-1.5 text-xs font-semibold text-[#9D4EDD] hover:text-white transition-colors cursor-pointer"
+          >
+            ✏️ Alterar foto de perfil
+          </button>
+        </div>
+      </div>
 
       <AnimatePresence>
         {aberto && (
