@@ -205,7 +205,7 @@ export default function TrailerContent({
         )}
 
         {previaEncerrada && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/70 px-8 text-center">
+          <div className="bg-gradiente-marca absolute inset-0 flex flex-col items-center justify-center gap-4 px-8 text-center">
             <span className="text-4xl">🔒</span>
             <p className="text-lg font-black text-white">Prévia encerrada</p>
             <p className="text-sm text-white/70">
@@ -255,7 +255,7 @@ export default function TrailerContent({
           <Link
             href={`/filme/${conteudo.cd_conteudo}`}
             aria-label="Voltar"
-            className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white"
+            className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-black/30 text-white backdrop-blur-md transition-transform active:scale-90"
           >
             <IconeVoltar />
           </Link>
@@ -263,7 +263,7 @@ export default function TrailerContent({
             type="button"
             onClick={alternarMudo}
             aria-label={mudo ? "Ativar som" : "Mudo"}
-            className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white"
+            className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-black/30 text-white backdrop-blur-md transition-transform active:scale-90"
           >
             {mudo ? "🔇" : "🔊"}
           </button>

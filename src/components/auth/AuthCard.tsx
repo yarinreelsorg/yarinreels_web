@@ -14,7 +14,21 @@ export default function AuthCard({
   children: ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-12">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-12">
+      {/* Fundo ambiente: manchas de cor da marca flutuando bem devagar
+          atrás do card, sem interação — só clima, sem competir com o
+          formulário. */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-background">
+        <div
+          className="animate-flutuar absolute -left-24 -top-24 h-[420px] w-[420px] rounded-full bg-primary/25 blur-[100px]"
+          style={{ animationDelay: "-4s" }}
+        />
+        <div
+          className="animate-flutuar absolute -bottom-32 -right-16 h-[380px] w-[380px] rounded-full bg-accent/20 blur-[100px]"
+          style={{ animationDelay: "-11s" }}
+        />
+      </div>
+
       <motion.div
         initial={{ opacity: 0, y: 24, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}

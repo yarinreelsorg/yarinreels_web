@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { motion } from "motion/react";
 import { alternarFavorito } from "@/app/(public)/minha-lista/actions";
-import { buttonTap } from "@/lib/motion";
+import { buttonTap, springExpressivo } from "@/lib/motion";
 
 export default function BotaoMinhaLista({
   cdConteudo,
@@ -52,7 +52,21 @@ export default function BotaoMinhaLista({
       className={className}
       style={style}
     >
-      {iconeApenas ? (favoritado ? "♥" : "♡") : favoritado ? "✓ Na Minha Lista" : "+ Minha Lista"}
+      {iconeApenas ? (
+        <motion.span
+          key={favoritado ? "cheio" : "vazio"}
+          initial={{ scale: 0.5 }}
+          animate={{ scale: 1 }}
+          transition={springExpressivo}
+          className="inline-block"
+        >
+          {favoritado ? "♥" : "♡"}
+        </motion.span>
+      ) : favoritado ? (
+        "✓ Na Minha Lista"
+      ) : (
+        "+ Minha Lista"
+      )}
     </motion.button>
   );
 }

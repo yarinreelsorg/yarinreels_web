@@ -88,3 +88,48 @@ body {
 .animate-fade-in-up {
   animation: fade-in-up 0.35s ease-out both;
 }
+
+/* Gradiente animado — fundo do Hero, banners de assinatura, telas de
+   login/cadastro. Usa as cores da marca (primary/accent), bem lento e
+   sutil pra dar profundidade sem chamar atenção do conteúdo em cima. */
+@keyframes gradiente-fluido {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.bg-gradiente-marca {
+  background: linear-gradient(
+    120deg,
+    rgba(194, 24, 91, 0.35),
+    rgba(230, 65, 126, 0.25),
+    rgba(5, 5, 5, 0.9),
+    rgba(147, 18, 63, 0.3)
+  );
+  background-size: 300% 300%;
+  animation: gradiente-fluido 14s ease-in-out infinite;
+}
+
+/* Movimento ambiente de fundo — manchas de cor flutuando bem devagar,
+   usadas em telas de entrada (login/cadastro/landing) atrás do
+   conteúdo, sem interação nenhuma do usuário. */
+@keyframes flutuar-ambiente {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(4%, -6%) scale(1.08);
+  }
+  66% {
+    transform: translate(-3%, 4%) scale(0.96);
+  }
+}
+
+.animate-flutuar {
+  animation: flutuar-ambiente 18s ease-in-out infinite;
+}

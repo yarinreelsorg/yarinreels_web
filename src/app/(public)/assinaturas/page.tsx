@@ -41,7 +41,11 @@ export default async function AssinaturasPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="relative flex min-h-screen flex-col overflow-hidden">
+      <div
+        aria-hidden
+        className="bg-gradiente-marca pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px] opacity-60"
+      />
       <Navbar categorias={[]} />
 
       <section className="mx-auto w-full max-w-5xl px-4 pb-16 pt-6 text-center sm:px-8">

@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { motion } from "motion/react";
 import { formatarPreco, formatarViews, obterPrecoCapa } from "@/lib/catalogo";
+import { cardHover } from "@/lib/motion";
 import PosterImg from "./PosterImg";
 
 type Variant = "carrossel" | "top12" | "grid";
@@ -81,7 +83,8 @@ export default function CardFilme({
   if (variant === "top12" && typeof rank === "number") {
     return (
       <div className="flex items-center gap-2.5 lg:gap-4">
-        <Link href={destino} className="relative shrink-0">
+        <motion.div whileTap={{ scale: 0.95 }} className="relative shrink-0">
+        <Link href={destino} className="relative block">
           {poster("w-[75px] h-[105px] lg:w-[130px] lg:h-[182px]", "", 260)}
           <span
             className={`absolute bottom-0 left-0 flex h-[25px] w-[25px] items-center justify-center rounded-tr-lg text-sm font-black lg:h-[34px] lg:w-[34px] lg:text-lg ${
@@ -91,6 +94,7 @@ export default function CardFilme({
             {rank}
           </span>
         </Link>
+        </motion.div>
         <div className="flex min-w-0 flex-1 flex-col justify-center">
           <Link
             href={destino}
@@ -132,14 +136,16 @@ export default function CardFilme({
 
   return (
     <div className={fixo ? "shrink-0 w-[125px] lg:w-[230px]" : "w-full"}>
-      <Link href={destino} className="relative block">
-        {poster(fixo ? "w-[125px] h-[185px] lg:w-[230px] lg:h-[340px]" : "aspect-[2/3] w-full", "cursor-pointer", 460)}
-        {badge && (
-          <span className="absolute left-1.5 top-1.5 rounded bg-black/80 px-1.5 py-0.5 text-[10px] font-bold text-foreground">
-            {badge}
-          </span>
-        )}
-      </Link>
+      <motion.div {...cardHover}>
+        <Link href={destino} className="relative block">
+          {poster(fixo ? "w-[125px] h-[185px] lg:w-[230px] lg:h-[340px]" : "aspect-[2/3] w-full", "cursor-pointer", 460)}
+          {badge && (
+            <span className="absolute left-1.5 top-1.5 rounded bg-black/80 px-1.5 py-0.5 text-[10px] font-bold text-foreground">
+              {badge}
+            </span>
+          )}
+        </Link>
+      </motion.div>
 
       <Link
         href={destino}
