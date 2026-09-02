@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { motion } from "motion/react";
 import { formatarPreco, formatarViews, obterPrecoCapa } from "@/lib/catalogo";
-import { cardHover } from "@/lib/motion";
+import { springExpressivo } from "@/lib/motion";
+import { useSuportaHover } from "@/lib/useSuportaHover";
 import PosterImg from "./PosterImg";
 
 type Variant = "carrossel" | "top12" | "grid";
@@ -44,6 +45,7 @@ export default function CardFilme({
   badge?: string;
 }) {
   const [carregada, setCarregada] = useState(false);
+  const suportaHover = useSuportaHover();
   const preco = formatarPreco(obterPrecoCapa(conteudo));
   const destino = href ?? `/filme/${conteudo.cd_conteudo}`;
   const incluido = !!conteudo.incluidoNaAssinatura;
@@ -136,7 +138,10 @@ export default function CardFilme({
 
   return (
     <div className={fixo ? "shrink-0 w-[125px] lg:w-[230px]" : "w-full"}>
-      <motion.div {...cardHover}>
+      <motion.div
+        whileHover={suportaHover ? { scale: 1.08, transition: springExpressivo } : undefined}
+        whileTap={{ scale: 0.96 }}
+      >
         <Link href={destino} className="relative block">
           {poster(fixo ? "w-[125px] h-[185px] lg:w-[230px] lg:h-[340px]" : "aspect-[2/3] w-full", "cursor-pointer", 460)}
           {badge && (
