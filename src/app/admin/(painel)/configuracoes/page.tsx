@@ -1,7 +1,7 @@
 import { pool } from "@/lib/db";
 import { getSessaoAdmin } from "@/lib/admin-auth";
 import { obterTaxaCartao } from "@/lib/pagamento";
-import { ordenarCategoriasParaAdmin } from "@/lib/categorias-config";
+import { canonicalizarCategorias, ordenarCategoriasParaAdmin } from "@/lib/categorias-config";
 import {
   obterCarenciaAssinanteHoras,
   obterLogoSite,
@@ -34,7 +34,12 @@ export default async function ConfiguracoesPage() {
     obterPercentualAfiliado(),
   ]);
 
-  const categoriasSemOrdem = conteudos.map((c) => c.nm_categoria).filter(Boolean);
+  // Categorias divergindo só por maiúscula/minúscula/acento (ex: "Brasileira"
+  // vs "BRASILEIRA") viravam duas linhas separadas nessa tela — agrupa antes
+  // de montar a lista, igual já acontecia na home/catálogo.
+  const nomesCategorias = conteudos.map((c) => c.nm_categoria).filter(Boolean);
+  const canonPorNome = canonicalizarCategorias(nomesCategorias);
+  const categoriasSemOrdem = Array.from(new Set(nomesCategorias.map((c) => canonPorNome.get(c) ?? c)));
   const categoriasOrdenadas = await ordenarCategoriasParaAdmin(categoriasSemOrdem);
 
   return (

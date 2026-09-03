@@ -9,6 +9,15 @@ function normalizar(categoria: string) {
     .trim();
 }
 
+/** Mesmo problema do canonicalizarCategorias, mas pra comparar um nome de
+ * categoria contra uma lista salva (ordem/ocultas/exclusivas no admin) —
+ * sem isso, "BRASILEIRA" configurada como oculta não escondia "Brasileira"
+ * no catálogo, só a grafia idêntica salva na hora. */
+function contemNormalizado(lista: string[], valor: string): boolean {
+  const alvo = normalizar(valor);
+  return lista.some((item) => normalizar(item) === alvo);
+}
+
 /**
  * Categorias cadastradas via bot ou admin podem divergir só por espaço,
  * maiúscula/minúscula ou acento (ex: "Dorama" vs "DORAMA " vs "dorama") —
@@ -94,17 +103,18 @@ export async function ordenarCategorias(
 ): Promise<string[]> {
   const { ordem: ordemSalva, ocultas, exclusivas } = await obterConfigSalva();
   const visiveis = categorias.filter(
-    (c) => !ocultas.includes(c) && (ehAssinante || !exclusivas.includes(c))
+    (c) => !contemNormalizado(ocultas, c) && (ehAssinante || !contemNormalizado(exclusivas, c))
   );
 
   if (ordemSalva.length === 0) {
     return ordenarCategoriasPadrao(visiveis);
   }
 
-  const presentes = new Set(visiveis);
-  const ordenadas = ordemSalva.filter((c) => presentes.has(c));
+  const ordenadas = ordemSalva
+    .map((salva) => visiveis.find((v) => normalizar(v) === normalizar(salva)))
+    .filter((c): c is string => !!c);
   const restantes = ordenarCategoriasPadrao(
-    visiveis.filter((c) => !ordemSalva.includes(c))
+    visiveis.filter((c) => !contemNormalizado(ordemSalva, c))
   );
 
   return [...ordenadas, ...restantes];
@@ -116,21 +126,23 @@ export async function ordenarCategoriasParaAdmin(categorias: string[]): Promise<
   { nm_categoria: string; visivel: boolean; exclusivaAssinantes: boolean }[]
 > {
   const { ordem: ordemSalva, ocultas, exclusivas } = await obterConfigSalva();
-  const visiveis = categorias.filter((c) => !ocultas.includes(c));
+  const visiveis = categorias.filter((c) => !contemNormalizado(ocultas, c));
   const ordenadasVisiveis =
     ordemSalva.length === 0
       ? ordenarCategoriasPadrao(visiveis)
       : [
-          ...ordemSalva.filter((c) => visiveis.includes(c)),
-          ...ordenarCategoriasPadrao(visiveis.filter((c) => !ordemSalva.includes(c))),
+          ...ordemSalva
+            .map((salva) => visiveis.find((v) => normalizar(v) === normalizar(salva)))
+            .filter((c): c is string => !!c),
+          ...ordenarCategoriasPadrao(visiveis.filter((c) => !contemNormalizado(ordemSalva, c))),
         ];
 
-  const ocultasPresentes = categorias.filter((c) => ocultas.includes(c));
+  const ocultasPresentes = categorias.filter((c) => contemNormalizado(ocultas, c));
 
   const paraObjeto = (visivel: boolean) => (c: string) => ({
     nm_categoria: c,
     visivel,
-    exclusivaAssinantes: exclusivas.includes(c),
+    exclusivaAssinantes: contemNormalizado(exclusivas, c),
   });
 
   return [...ordenadasVisiveis.map(paraObjeto(true)), ...ocultasPresentes.map(paraObjeto(false))];

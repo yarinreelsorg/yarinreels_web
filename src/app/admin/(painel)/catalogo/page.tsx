@@ -1,4 +1,5 @@
 import { pool } from "@/lib/db";
+import { canonicalizarCategorias } from "@/lib/categorias-config";
 import type { Conteudo, TpFormato } from "@/types/database";
 import CatalogoAdminClient from "./CatalogoAdminClient";
 
@@ -31,7 +32,9 @@ export default async function CatalogoAdminPage({
   }
   if (categoria) {
     valores.push(categoria);
-    condicoes.push(`nm_categoria = $${valores.length}`);
+    // Categorias divergindo só por maiúscula/minúscula (ex: "Brasileira" vs
+    // "BRASILEIRA") não podem ficar de fora ao filtrar por uma delas.
+    condicoes.push(`LOWER(nm_categoria) = LOWER($${valores.length})`);
   }
   if (formato) {
     valores.push(formato);
@@ -56,8 +59,10 @@ export default async function CatalogoAdminPage({
 
   const conteudos: Conteudo[] = conteudosResult.rows;
   const totalRegistros = Number(conteudosResult.rows[0]?.total_count ?? 0);
+  const nomesCategorias = categoriasResult.rows.map((c) => c.nm_categoria).filter(Boolean);
+  const canonPorNomeCategoria = canonicalizarCategorias(nomesCategorias);
   const categorias = Array.from(
-    new Set(categoriasResult.rows.map((c) => c.nm_categoria).filter(Boolean))
+    new Set(nomesCategorias.map((c) => canonPorNomeCategoria.get(c) ?? c))
   ).sort();
 
   const vendasMensais: Record<string, number> = {};

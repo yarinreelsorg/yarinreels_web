@@ -1,4 +1,5 @@
 import { pool } from "@/lib/db";
+import { canonicalizarCategorias } from "@/lib/categorias-config";
 import type { Conteudo, Plano, Venda } from "@/types/database";
 import PlanosAdminClient from "./PlanosAdminClient";
 
@@ -13,8 +14,10 @@ export default async function PlanosAdminPage() {
     ),
   ]);
 
+  const nomesCategorias = conteudos.map((c) => c.nm_categoria).filter(Boolean);
+  const canonPorNomeCategoria = canonicalizarCategorias(nomesCategorias);
   const categorias = Array.from(
-    new Set(conteudos.map((c) => c.nm_categoria).filter(Boolean))
+    new Set(nomesCategorias.map((c) => canonPorNomeCategoria.get(c) ?? c))
   ).sort();
 
   const agoraIso = new Date().toISOString();
