@@ -7,6 +7,7 @@ import Navbar from "@/components/layout/Navbar";
 import CardFilme from "@/components/catalog/CardFilme";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Stagger";
 import { buttonTap } from "@/lib/motion";
+import { tituloCorrespondeABusca } from "@/lib/catalogo";
 
 const ROTULOS_FORMATO: Record<TpFormato, string> = {
   FILME: "Filmes",
@@ -78,11 +79,8 @@ export default function CatalogoContent({
 
   const formatosDisponiveis = Array.from(new Set(conteudos.map((c) => c.tp_formato))).sort();
 
-  const termo = busca.trim().toLowerCase();
-
   const filtrados = conteudos.filter((c) => {
-    const bateBusca =
-      termo.length === 0 || c.nm_titulo.toLowerCase().includes(termo);
+    const bateBusca = tituloCorrespondeABusca(c.nm_titulo, busca);
     const bateCategoria =
       categoriaAtiva === null || c.nm_categoria === categoriaAtiva;
     const bateFormato = formatoAtivo === null || c.tp_formato === formatoAtivo;
@@ -237,7 +235,7 @@ export default function CatalogoContent({
         ) : (
           <>
             <StaggerGroup
-              key={`${categoriaAtiva}-${formatoAtivo}-${appAtivo}-${termo}`}
+              key={`${categoriaAtiva}-${formatoAtivo}-${appAtivo}-${busca}`}
               className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
               staggerChildren={0.03}
             >

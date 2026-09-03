@@ -13,6 +13,7 @@ import CardFilme from "@/components/catalog/CardFilme";
 import Top12 from "@/components/catalog/Top12";
 import ContinuarAssistindo from "@/components/catalog/ContinuarAssistindo";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Stagger";
+import { tituloCorrespondeABusca } from "@/lib/catalogo";
 
 export default function HomeContent({
   conteudos,
@@ -38,9 +39,8 @@ export default function HomeContent({
 
   const buscando = busca.trim().length > 0;
 
-  const termo = busca.trim().toLowerCase();
   const resultadosBusca = buscando
-    ? conteudos.filter((c) => c.nm_titulo.toLowerCase().includes(termo))
+    ? conteudos.filter((c) => tituloCorrespondeABusca(c.nm_titulo, busca))
     : [];
 
   // Lançamentos primeiro em cada fileira — assim que uma série nova entra
@@ -81,7 +81,7 @@ export default function HomeContent({
               : "Nenhum resultado encontrado"}
           </h2>
           <StaggerGroup
-            key={termo}
+            key={busca}
             className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
             staggerChildren={0.04}
           >

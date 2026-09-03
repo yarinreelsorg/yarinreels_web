@@ -20,6 +20,35 @@ export function otimizarUrlPoster(url: string | null, largura: number): string |
   return `${base}=w${largura}`;
 }
 
+/** Minúsculo, sem acento, sem pontuação — só letras/números separados por
+ * um espaço só. */
+function normalizarBusca(texto: string): string {
+  return texto
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+/**
+ * Busca de título tolerante: ignora maiúscula/minúscula, acento e
+ * pontuação (vírgula, dois-pontos etc — comuns em título tipo "A Traição
+ * da Noiva, O Inferno de Dante"), e não exige que as palavras apareçam
+ * na ordem exata — cada palavra digitada só precisa aparecer em algum
+ * lugar do título. Um simples `.includes()` cru falhava toda vez que o
+ * cliente esquecia a vírgula, digitava sem acento, ou trocava a ordem
+ * das palavras.
+ */
+export function tituloCorrespondeABusca(titulo: string, busca: string): boolean {
+  const buscaNormalizada = normalizarBusca(busca);
+  if (!buscaNormalizada) return true;
+
+  const tituloNormalizado = normalizarBusca(titulo);
+  const palavras = buscaNormalizada.split(" ").filter(Boolean);
+  return palavras.every((palavra) => tituloNormalizado.includes(palavra));
+}
+
 export function formatarPreco(valor: number | null) {
   if (valor === null || valor <= 0) return null;
   return new Intl.NumberFormat("pt-BR", {
