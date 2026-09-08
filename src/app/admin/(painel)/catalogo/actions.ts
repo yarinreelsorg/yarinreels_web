@@ -70,9 +70,14 @@ function extrairCampos(formData: FormData) {
   validarPreco(vl_aluguel, "Valor de aluguel");
   validarPreco(vl_vitalicio, "Valor vitalício");
 
+  // Reforço server-side: tira vírgula/ponto/espaço sobrando na ponta,
+  // caso chegue algo digitado direto sem passar pela normalização do
+  // formulário (ver CatalogoAdminClient.tsx).
+  const nmCategoriaBruta = parseString(formData.get("nm_categoria"));
+
   return {
     nm_titulo: parseString(formData.get("nm_titulo")) ?? "",
-    nm_categoria: parseString(formData.get("nm_categoria")) ?? "Geral",
+    nm_categoria: nmCategoriaBruta?.replace(/[,;.\s]+$/, "").trim() || "Geral",
     tp_formato: (parseString(formData.get("tp_formato")) ?? "FILME") as TpFormato,
     nm_idioma: parseString(formData.get("nm_idioma")),
     ds_generos: parseString(formData.get("ds_generos")),

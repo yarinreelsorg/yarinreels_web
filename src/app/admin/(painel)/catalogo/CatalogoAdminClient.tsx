@@ -23,6 +23,17 @@ import { baixarCsv } from "@/lib/csv";
 import { buttonTap } from "@/lib/motion";
 import { formatarDataHora } from "@/lib/data";
 
+/** Minúsculo, sem acento — pra comparar uma categoria nova digitada
+ * contra as que já existem, sem duplicar por causa de maiúscula/acento
+ * (ex: "Turcas" vs "TURCAS "). */
+function normalizarCategoria(valor: string) {
+  return valor
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
 interface Filtros {
   busca: string;
   categoria: string;
@@ -185,7 +196,20 @@ export default function CatalogoAdminClient({
     setSalvando(true);
     try {
       const formData = new FormData(e.currentTarget);
-      const cat = categoriaSelecionada === "CRIAR_NOVA" ? novaCategoria : categoriaSelecionada;
+      let cat = categoriaSelecionada === "CRIAR_NOVA" ? novaCategoria : categoriaSelecionada;
+      if (categoriaSelecionada === "CRIAR_NOVA") {
+        // Digitar "Turcas" (ou com vírgula/espaço/maiúscula sobrando no
+        // fim) não cria uma categoria por palavra — vírgula não separa
+        // nada aqui, é só um caractere a mais no nome. Tira pontuação
+        // solta na ponta e, se já existir uma categoria "igual" (só
+        // variando acento/maiúscula/espaço), reaproveita a grafia que já
+        // existe em vez de criar uma quase-duplicata nova.
+        cat = cat.trim().replace(/[,;.\s]+$/, "");
+        const existente = categoriasDisponiveis.find(
+          (c) => normalizarCategoria(c) === normalizarCategoria(cat)
+        );
+        if (existente) cat = existente;
+      }
       formData.set("nm_categoria", cat);
       formData.set("ds_url_poster", urlPoster);
 
@@ -593,14 +617,21 @@ export default function CatalogoAdminClient({
                   </select>
 
                   {categoriaSelecionada === "CRIAR_NOVA" && (
-                    <input
-                      type="text"
-                      placeholder="Nova categoria"
-                      required
-                      value={novaCategoria}
-                      onChange={(e) => setNovaCategoria(e.target.value)}
-                      className="w-full bg-[#0D0A1A] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white"
-                    />
+                    <>
+                      <input
+                        type="text"
+                        placeholder="Nome da categoria (ex: Turcas)"
+                        required
+                        value={novaCategoria}
+                        onChange={(e) => setNovaCategoria(e.target.value)}
+                        className="w-full bg-[#0D0A1A] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white"
+                      />
+                      <p className="mt-1 text-[11px] text-[#A78BFA]/70">
+                        Uma categoria só por vez — vírgula não separa em várias. Pra cadastrar
+                        &quot;Turcas&quot; e &quot;Brasileiras&quot;, salve esse título numa e edite outro título
+                        depois pra usar a outra.
+                      </p>
+                    </>
                   )}
                 </div>
 
