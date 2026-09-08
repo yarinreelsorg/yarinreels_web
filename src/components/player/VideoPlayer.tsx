@@ -331,7 +331,7 @@ export default function VideoPlayer({
               tempo etc.) ficavam difíceis demais de acertar com o dedo.
               Aqui a área de toque é grande (metade da tela de cada lado),
               não precisa acertar um ícone pequeno. */}
-          <div className="absolute inset-y-0 left-0 flex w-1/2 items-center justify-start pl-4 sm:pl-10">
+          <div className="pointer-events-none absolute inset-y-0 left-0 flex w-1/2 items-center justify-start pl-4 sm:pl-10">
             <button
               type="button"
               onClick={(e) => {
@@ -339,12 +339,12 @@ export default function VideoPlayer({
                 pular(-15);
               }}
               aria-label="Voltar 15 segundos"
-              className="flex h-14 w-14 items-center justify-center rounded-full text-white transition-colors active:bg-white/15"
+              className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full text-white transition-colors active:bg-white/15"
             >
               <IconeVoltar15 />
             </button>
           </div>
-          <div className="absolute inset-y-0 right-0 flex w-1/2 items-center justify-end pr-4 sm:pr-10">
+          <div className="pointer-events-none absolute inset-y-0 right-0 flex w-1/2 items-center justify-end pr-4 sm:pr-10">
             <button
               type="button"
               onClick={(e) => {
@@ -352,7 +352,7 @@ export default function VideoPlayer({
                 pular(15);
               }}
               aria-label="Avançar 15 segundos"
-              className="flex h-14 w-14 items-center justify-center rounded-full text-white transition-colors active:bg-white/15"
+              className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full text-white transition-colors active:bg-white/15"
             >
               <IconeAvancar15 />
             </button>

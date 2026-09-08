@@ -223,24 +223,24 @@ export default function TrailerContent({
         {/* Controles de +15s/-15s: zonas transparentes no meio da tela */}
         {!previaEncerrada && (
           <>
-            <div className="absolute inset-y-0 left-0 flex w-1/2 items-center justify-start pl-6">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex w-1/2 items-center justify-start pl-6">
               <button
                 type="button"
                 onClick={() => pular(-15)}
                 aria-label="Voltar 15 segundos"
-                className={`flex h-14 w-14 items-center justify-center rounded-full text-white transition-all ${
+                className={`pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full text-white transition-all ${
                   feedbackPulo === "tras" ? "scale-110 bg-white/20" : "bg-transparent"
                 }`}
               >
                 <IconePulo direcao="tras" />
               </button>
             </div>
-            <div className="absolute inset-y-0 right-0 flex w-1/2 items-center justify-end pr-6">
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex w-1/2 items-center justify-end pr-6">
               <button
                 type="button"
                 onClick={() => pular(15)}
                 aria-label="Avançar 15 segundos"
-                className={`flex h-14 w-14 items-center justify-center rounded-full text-white transition-all ${
+                className={`pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full text-white transition-all ${
                   feedbackPulo === "frente" ? "scale-110 bg-white/20" : "bg-transparent"
                 }`}
               >
