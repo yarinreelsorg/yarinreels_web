@@ -13,9 +13,15 @@ export const springSuave: Transition = {
   damping: 26,
 };
 
+// Duração fixa (não spring) de propósito: fadeUp roda em massa nas
+// fileiras de carrossel via StaggerGroup/StaggerItem — muitos cards
+// entrando juntos na tela em celular de entrada. Uma mola recalcula
+// física a cada frame até "assentar"; uma transição de duração fixa é
+// bem mais barata de rodar em paralelo, mesmo perdendo o efeito de
+// balanço no final.
 export const fadeUp: Variants = {
   hidden: { opacity: 0, y: 32 },
-  show: { opacity: 1, y: 0, transition: springSuave },
+  show: { opacity: 1, y: 0, transition: { duration: 0.32, ease: "easeOut" } },
 };
 
 export const fadeIn: Variants = {

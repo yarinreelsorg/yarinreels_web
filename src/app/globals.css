@@ -33,18 +33,32 @@ body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
-@keyframes shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
+/* Skeleton de capa carregando. Animar "background-position" (como era
+   antes) força o navegador a REPINTAR a cada frame — em celular de
+   entrada (GPU fraca), isso fica pesado quando várias capas novas
+   entram na tela ao mesmo tempo durante uma rolagem rápida, travando o
+   scroll. "transform" é só composição (a GPU move uma camada já
+   pronta, sem repintar), bem mais barato. O fundo em degradê que cada
+   card já define via className vira só a base estática; esse ::after
+   é quem desliza por cima criando o brilho. */
+.animate-shimmer {
+  position: relative;
+  overflow: hidden;
 }
 
-.animate-shimmer {
-  background-size: 200% 100%;
-  animation: shimmer 1.6s ease-in-out infinite;
+.animate-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.06) 50%, transparent 100%);
+  animation: shimmer-sweep 1.6s ease-in-out infinite;
+}
+
+@keyframes shimmer-sweep {
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 @keyframes pulse-roxo {
