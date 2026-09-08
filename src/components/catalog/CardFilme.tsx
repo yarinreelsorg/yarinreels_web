@@ -70,7 +70,7 @@ export default function CardFilme({
           // mais facilidade do que um carregamento espalhado no tempo.
           loading={variant === "top12" ? "eager" : "lazy"}
           onLoad={() => setCarregada(true)}
-          className={`h-full w-full object-cover transition-opacity duration-300 ${
+          className={`h-full w-full object-cover object-top transition-opacity duration-300 ${
             carregada ? "opacity-100" : "opacity-0"
           }`}
         />
