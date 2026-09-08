@@ -208,6 +208,9 @@ export type Plano = {
   cd_plano: string;
   nm_plano: string;
   nm_categoria: string;
+  /** Categorias extras liberadas por esse plano, além de nm_categoria —
+   * o bot legado não lê/escreve esse campo, é exclusivo deste app. */
+  nm_categorias_adicionais: string[];
   vl_plano: number;
   nr_dias_validade: number;
 };
@@ -216,6 +219,7 @@ export type PlanoInsert = {
   cd_plano?: string;
   nm_plano: string;
   nm_categoria: string;
+  nm_categorias_adicionais?: string[];
   vl_plano: number;
   nr_dias_validade: number;
 };
@@ -223,6 +227,7 @@ export type PlanoInsert = {
 export type PlanoUpdate = {
   nm_plano?: string;
   nm_categoria?: string;
+  nm_categorias_adicionais?: string[];
   vl_plano?: number;
   nr_dias_validade?: number;
 };

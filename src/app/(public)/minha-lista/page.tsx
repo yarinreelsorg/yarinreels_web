@@ -78,10 +78,14 @@ export default async function MinhaListaPage() {
     if (planoAtivo) {
       const { rows: todosConteudos } = await pool.query<Conteudo>('SELECT * FROM "CONTEUDOS"');
       const idsAtivosAvulsos = new Set(ativos.map((v) => v.cd_conteudo));
+      const categoriasDoPlano = [
+        planoAtivo.nm_categoria,
+        ...(planoAtivo.nm_categorias_adicionais ?? []),
+      ];
       liberadosPorAssinatura = todosConteudos.filter(
         (c) =>
           !idsAtivosAvulsos.has(c.cd_conteudo) &&
-          categoriasCompativeis(planoAtivo!.nm_categoria, c.nm_categoria)
+          categoriasDoPlano.some((cat) => categoriasCompativeis(cat, c.nm_categoria))
       );
     }
   }

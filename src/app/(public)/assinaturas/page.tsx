@@ -3,7 +3,7 @@ import { pool } from "@/lib/db";
 import { getSessaoUsuario } from "@/lib/user-auth";
 import { obterIdsTelegramElegiveis } from "@/lib/acesso";
 import Navbar from "@/components/layout/Navbar";
-import { formatarPreco, estaExpirada } from "@/lib/catalogo";
+import { formatarPreco, formatarCategoriasPlano, estaExpirada } from "@/lib/catalogo";
 import { formatarDataHora } from "@/lib/data";
 import type { Plano, Venda } from "@/types/database";
 
@@ -75,7 +75,10 @@ export default async function AssinaturasPage() {
               </div>
               <p className="mt-1.5 text-xl font-black text-foreground">{planoAtivo.nm_plano}</p>
               <p className="mt-0.5 text-sm text-secondary">
-                Libera <span className="font-semibold text-[#A78BFA]">{planoAtivo.nm_categoria}</span>{" "}
+                Libera{" "}
+                <span className="font-semibold text-[#A78BFA]">
+                  {formatarCategoriasPlano(planoAtivo)}
+                </span>{" "}
                 · vale até{" "}
                 {formatarDataHora(assinaturaAtiva.ts_expiracao as string, {
                   day: "2-digit",
@@ -111,7 +114,7 @@ export default async function AssinaturasPage() {
                   className="flex flex-col rounded-lg border border-border bg-surface p-6 transition-colors duration-300 hover:border-foreground/30"
                 >
                   <span className="w-fit text-xs font-semibold uppercase tracking-[0.08em] text-secondary">
-                    {plano.nm_categoria}
+                    {formatarCategoriasPlano(plano)}
                   </span>
 
                   <h2 className="mt-4 text-xl font-black text-foreground">
@@ -130,7 +133,7 @@ export default async function AssinaturasPage() {
                     </li>
                     <li className="flex items-center gap-2">
                       <span className="text-primary">✓</span> Catálogo{" "}
-                      {plano.nm_categoria.toLowerCase()} liberado
+                      {formatarCategoriasPlano(plano).toLowerCase()} liberado
                     </li>
                     <li className="flex items-center gap-2">
                       <span className="text-primary">✓</span> Cancele quando quiser

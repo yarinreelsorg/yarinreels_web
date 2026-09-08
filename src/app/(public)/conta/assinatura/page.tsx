@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { pool } from "@/lib/db";
 import { getSessaoUsuario } from "@/lib/user-auth";
 import Navbar from "@/components/layout/Navbar";
-import { diasRestantes as calcularDiasRestantes, estaExpirada } from "@/lib/catalogo";
+import { diasRestantes as calcularDiasRestantes, estaExpirada, formatarCategoriasPlano } from "@/lib/catalogo";
 import { formatarDataHora } from "@/lib/data";
 import type { Plano, Venda } from "@/types/database";
 
@@ -79,7 +79,7 @@ export default async function ContaAssinaturaPage() {
             </h2>
             {assinatura.plano?.nm_categoria && (
               <p className="mt-1 text-sm text-secondary">
-                Categoria: {assinatura.plano.nm_categoria}
+                Categoria: {formatarCategoriasPlano(assinatura.plano)}
               </p>
             )}
 

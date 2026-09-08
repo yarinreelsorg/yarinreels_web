@@ -49,6 +49,17 @@ export function tituloCorrespondeABusca(titulo: string, busca: string): boolean 
   return palavras.every((palavra) => tituloNormalizado.includes(palavra));
 }
 
+/** Nome de exibição das categorias de um plano — junta nm_categoria com
+ * as adicionais num texto tipo "Americano, Turca e Brasileira". */
+export function formatarCategoriasPlano(plano: {
+  nm_categoria: string;
+  nm_categorias_adicionais?: string[] | null;
+}): string {
+  const categorias = [plano.nm_categoria, ...(plano.nm_categorias_adicionais ?? [])];
+  if (categorias.length === 1) return categorias[0];
+  return `${categorias.slice(0, -1).join(", ")} e ${categorias[categorias.length - 1]}`;
+}
+
 export function formatarPreco(valor: number | null) {
   if (valor === null || valor <= 0) return null;
   return new Intl.NumberFormat("pt-BR", {

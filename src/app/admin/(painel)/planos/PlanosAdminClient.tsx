@@ -28,6 +28,7 @@ export default function PlanosAdminClient({
   const [planoEdicao, setPlanoEdicao] = useState<Plano | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [categoriasAdicionais, setCategoriasAdicionais] = useState<string[]>([]);
   const [planoExcluir, setPlanoExcluir] = useState<Plano | null>(null);
   const [excluindo, setExcluindo] = useState(false);
 
@@ -48,6 +49,7 @@ export default function PlanosAdminClient({
     setModoEdicao(false);
     setPlanoEdicao(null);
     setErro(null);
+    setCategoriasAdicionais([]);
     setModalAberto(true);
   };
 
@@ -55,7 +57,14 @@ export default function PlanosAdminClient({
     setModoEdicao(true);
     setPlanoEdicao(plano);
     setErro(null);
+    setCategoriasAdicionais(plano.nm_categorias_adicionais ?? []);
     setModalAberto(true);
+  };
+
+  const aoAlternarCategoriaAdicional = (categoria: string) => {
+    setCategoriasAdicionais((atual) =>
+      atual.includes(categoria) ? atual.filter((c) => c !== categoria) : [...atual, categoria]
+    );
   };
 
   const aoSubmeter = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -64,6 +73,9 @@ export default function PlanosAdminClient({
     setErro(null);
     try {
       const formData = new FormData(e.currentTarget);
+      for (const categoria of categoriasAdicionais) {
+        formData.append("nm_categorias_adicionais", categoria);
+      }
       if (modoEdicao && planoEdicao) {
         await editarPlano(planoEdicao.cd_plano, formData);
       } else {
@@ -156,9 +168,19 @@ export default function PlanosAdminClient({
                   >
                     <td className="px-6 py-4 font-semibold">{plano.nm_plano}</td>
                     <td className="px-6 py-4">
-                      <span className="bg-[#050208] border border-[rgba(139,92,246,0.2)] px-2 py-0.5 rounded text-xs text-[#A78BFA]">
-                        {plano.nm_categoria}
-                      </span>
+                      <div className="flex flex-wrap gap-1">
+                        <span className="bg-[#050208] border border-[rgba(139,92,246,0.2)] px-2 py-0.5 rounded text-xs text-[#A78BFA]">
+                          {plano.nm_categoria}
+                        </span>
+                        {plano.nm_categorias_adicionais?.map((cat) => (
+                          <span
+                            key={cat}
+                            className="bg-[#050208] border border-[rgba(139,92,246,0.15)] px-2 py-0.5 rounded text-xs text-[#A78BFA]/70"
+                          >
+                            +{cat}
+                          </span>
+                        ))}
+                      </div>
                     </td>
                     <td className="px-6 py-4 font-semibold text-[#A78BFA]">
                       {formatarPreco(plano.vl_plano)}
@@ -265,6 +287,43 @@ export default function PlanosAdminClient({
                   <p className="mt-1 text-[11px] text-[#A78BFA]/60">
                     Use “TODAS” para liberar o catálogo inteiro.
                   </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">
+                    Categorias adicionais (opcional)
+                  </label>
+                  <p className="mb-2 text-[11px] text-[#A78BFA]/60">
+                    Marque outras categorias que esse plano também deve liberar, além da de
+                    cima — ex: um plano &quot;Americanas, Turcas e Brasileiras&quot; marca as três aqui.
+                    Sem efeito se a categoria de cima já for &quot;TODAS&quot;.
+                  </p>
+                  <div className="flex flex-wrap gap-2 rounded-[6px] border border-[rgba(139,92,246,0.3)] bg-[#050208] p-2.5">
+                    {categorias.length === 0 ? (
+                      <span className="text-xs text-[#A78BFA]/50">
+                        Nenhuma outra categoria cadastrada ainda.
+                      </span>
+                    ) : (
+                      categorias.map((cat) => {
+                        const marcada = categoriasAdicionais.includes(cat);
+                        return (
+                          <button
+                            key={cat}
+                            type="button"
+                            onClick={() => aoAlternarCategoriaAdicional(cat)}
+                            className={`rounded-full px-3 py-1 text-xs font-bold transition-colors cursor-pointer ${
+                              marcada
+                                ? "bg-[#7B2FBE] text-white"
+                                : "border border-[rgba(139,92,246,0.3)] text-[#A78BFA] hover:bg-white/5"
+                            }`}
+                          >
+                            {marcada ? "✓ " : "+ "}
+                            {cat}
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">

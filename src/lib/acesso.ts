@@ -133,14 +133,17 @@ export async function obterCategoriasAssinaturaAtiva(cdUsuario: string): Promise
   );
   if (ids.length === 0) return [];
 
-  const { rows: planos } = await pool.query<{ nm_categoria: string }>(
-    `SELECT DISTINCT p.nm_categoria FROM "VENDAS" v
+  const { rows: planos } = await pool.query<{
+    nm_categoria: string;
+    nm_categorias_adicionais: string[];
+  }>(
+    `SELECT DISTINCT p.nm_categoria, p.nm_categorias_adicionais FROM "VENDAS" v
      JOIN "PLANOS" p ON p.cd_plano = v.cd_plano
      WHERE v.nr_id_telegram = ANY($1::bigint[]) AND v.tp_compra = 'ASSINATURA'
        AND v.tp_status = 'APROVADA' AND v.ts_expiracao > now()`,
     [ids]
   );
-  return planos.map((p) => p.nm_categoria);
+  return planos.flatMap((p) => [p.nm_categoria, ...(p.nm_categorias_adicionais ?? [])]);
 }
 
 export function conteudoIncluidoEmCategorias(nmCategoriaConteudo: string, categoriasPlano: string[]) {
@@ -279,14 +282,20 @@ export async function verificarAcessoConteudo(
   );
 
   if (assinaturas.length > 0 && !emCarencia) {
-    const { rows: planos } = await pool.query<{ cd_plano: string; nm_categoria: string }>(
-      'SELECT cd_plano, nm_categoria FROM "PLANOS" WHERE cd_plano = ANY($1::uuid[])',
+    const { rows: planos } = await pool.query<{
+      cd_plano: string;
+      nm_categoria: string;
+      nm_categorias_adicionais: string[];
+    }>(
+      'SELECT cd_plano, nm_categoria, nm_categorias_adicionais FROM "PLANOS" WHERE cd_plano = ANY($1::uuid[])',
       [assinaturas.map((v) => v.cd_plano)]
     );
 
     for (const venda of assinaturas) {
       const plano = planos.find((p) => p.cd_plano === venda.cd_plano);
-      if (plano && categoriasCompativeis(plano.nm_categoria, conteudo.nm_categoria)) {
+      if (!plano) continue;
+      const categoriasDoPlano = [plano.nm_categoria, ...(plano.nm_categorias_adicionais ?? [])];
+      if (categoriasDoPlano.some((cat) => categoriasCompativeis(cat, conteudo.nm_categoria))) {
         return { liberado: true, motivo: "ASSINATURA", expiraEm: venda.ts_expiracao };
       }
     }
