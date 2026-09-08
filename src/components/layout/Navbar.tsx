@@ -50,6 +50,8 @@ function NavbarInner({
   const [escondida, setEscondida] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const ultimoScrollRef = useRef(0);
+  const escondidaRef = useRef(false);
+  const tickAgendadoRef = useRef(false);
 
   useEffect(() => {
     obterUsuarioAtual().then(setUser);
@@ -60,23 +62,51 @@ function NavbarInner({
   // cima — só no celular (no desktop os links do menu ficam nela, então
   // ela precisa continuar sempre visível). Transform puro (sem blur), não
   // reintroduz o travamento de scroll que o backdrop-blur causava aqui.
+  //
+  // O evento "scroll" do navegador dispara MUITAS vezes por segundo
+  // durante o gesto (principalmente no Safari/iOS) — rodar esse cálculo
+  // sem limitador a cada disparo é uma causa clássica de travamento de
+  // scroll no celular. Agenda no máximo um cálculo por frame via
+  // requestAnimationFrame, e só chama setEscondida quando o valor de
+  // fato muda (evita re-render à toa).
   useEffect(() => {
-    function aoRolar() {
+    function calcular() {
+      tickAgendadoRef.current = false;
+
       if (window.innerWidth >= 1024) {
-        setEscondida(false);
+        if (escondidaRef.current) {
+          escondidaRef.current = false;
+          setEscondida(false);
+        }
         return;
       }
+
       const atual = window.scrollY;
       const diferenca = atual - ultimoScrollRef.current;
+      let proximo = escondidaRef.current;
+
       if (atual < 80) {
-        setEscondida(false);
+        proximo = false;
       } else if (diferenca > 8) {
-        setEscondida(true);
+        proximo = true;
       } else if (diferenca < -8) {
-        setEscondida(false);
+        proximo = false;
       }
+
       ultimoScrollRef.current = atual;
+
+      if (proximo !== escondidaRef.current) {
+        escondidaRef.current = proximo;
+        setEscondida(proximo);
+      }
     }
+
+    function aoRolar() {
+      if (tickAgendadoRef.current) return;
+      tickAgendadoRef.current = true;
+      window.requestAnimationFrame(calcular);
+    }
+
     window.addEventListener("scroll", aoRolar, { passive: true });
     return () => window.removeEventListener("scroll", aoRolar);
   }, []);
