@@ -55,7 +55,13 @@ export default function Carrossel({
         )}
       </div>
 
-      <div className="group/carrossel relative overflow-hidden">
+      {/* Sem overflow-hidden aqui: a trilha (StaggerGroup) já tem seu
+          próprio overflow-x-auto pra rolagem horizontal. Um overflow-hidden
+          no pai cortava verticalmente os cards enquanto a animação de
+          entrada (fadeUp, desliza de y:32 até y:0) ainda estava em curso —
+          dava a impressão de a capa ser "comida" bem na hora que a fileira
+          aparecia na tela. */}
+      <div className="group/carrossel relative">
         <StaggerGroup
           ref={trilhoRef}
           className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-4 pb-2 [scrollbar-width:none] sm:px-8 lg:gap-4 [&::-webkit-scrollbar]:hidden"
