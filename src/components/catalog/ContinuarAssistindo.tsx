@@ -33,7 +33,7 @@ export default function ContinuarAssistindo({
               href={`/assistir/${item.conteudo.cd_conteudo}`}
               className="relative block overflow-hidden rounded-lg bg-surface"
             >
-              <div className="relative h-[185px] w-[125px] lg:h-[340px] lg:w-[230px]">
+              <div className="relative aspect-[3/4] w-[125px] lg:w-[230px]">
                 {item.conteudo.ds_url_poster ? (
                   <PosterImg
                     src={item.conteudo.ds_url_poster}

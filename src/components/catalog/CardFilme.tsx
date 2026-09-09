@@ -70,7 +70,7 @@ export default function CardFilme({
           // mais facilidade do que um carregamento espalhado no tempo.
           loading={variant === "top12" ? "eager" : "lazy"}
           onLoad={() => setCarregada(true)}
-          className={`h-full w-full object-cover object-top transition-opacity duration-300 ${
+          className={`h-full w-full object-cover transition-opacity duration-300 ${
             carregada ? "opacity-100" : "opacity-0"
           }`}
         />
@@ -87,7 +87,7 @@ export default function CardFilme({
       <div className="flex items-center gap-2.5 lg:gap-4">
         <motion.div whileTap={{ scale: 0.95 }} className="relative shrink-0">
         <Link href={destino} className="relative block">
-          {poster("w-[75px] h-[105px] lg:w-[130px] lg:h-[182px]", "", 260)}
+          {poster("w-[75px] aspect-[3/4] lg:w-[130px]", "", 260)}
           <span
             className={`absolute bottom-0 left-0 flex h-[25px] w-[25px] items-center justify-center rounded-tr-lg text-sm font-black lg:h-[34px] lg:w-[34px] lg:text-lg ${
               CORES_RANK[rank] ?? "bg-primary text-white"
@@ -143,7 +143,7 @@ export default function CardFilme({
         whileTap={{ scale: 0.96 }}
       >
         <Link href={destino} className="relative block">
-          {poster(fixo ? "w-[125px] h-[185px] lg:w-[230px] lg:h-[340px]" : "aspect-[2/3] w-full", "cursor-pointer", 460)}
+          {poster(fixo ? "w-[125px] aspect-[3/4] lg:w-[230px]" : "aspect-[3/4] w-full", "cursor-pointer", 460)}
           {badge && (
             <span className="absolute left-1.5 top-1.5 rounded bg-black/80 px-1.5 py-0.5 text-[10px] font-bold text-foreground">
               {badge}

@@ -86,7 +86,7 @@ export default function UniversoPage({
               {Array.from({ length: 10 }).map((_, i) => (
                 <div
                   key={i}
-                  className="aspect-[2/3] w-full animate-shimmer rounded-[6px] bg-[linear-gradient(110deg,#0d0a1a_30%,#18101f_50%,#0d0a1a_70%)]"
+                  className="aspect-[3/4] w-full animate-shimmer rounded-[6px] bg-[linear-gradient(110deg,#0d0a1a_30%,#18101f_50%,#0d0a1a_70%)]"
                 />
               ))}
             </motion.div>
