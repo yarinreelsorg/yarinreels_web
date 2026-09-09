@@ -3,7 +3,6 @@
 import { useEffect, useRef } from "react";
 import type { Conteudo } from "@/types/database";
 import CardFilme from "./CardFilme";
-import { StaggerGroup, StaggerItem } from "@/components/motion/Stagger";
 import { buttonTap } from "@/lib/motion";
 import { motion } from "motion/react";
 
@@ -132,7 +131,7 @@ export default function Top12({ itens }: { itens: Conteudo[] }) {
         </div>
       </div>
 
-      <StaggerGroup
+      <div
         ref={trilhoRef}
         onPointerDown={aoPressionarPonteiro}
         onPointerMove={aoMoverPonteiro}
@@ -142,14 +141,13 @@ export default function Top12({ itens }: { itens: Conteudo[] }) {
         onMouseEnter={pausar}
         onMouseLeave={retomar}
         className="grid snap-x snap-mandatory grid-flow-col grid-rows-3 gap-x-3 gap-y-4 overflow-x-auto scroll-smooth px-4 pb-2 [grid-auto-columns:min(calc(50vw-15px),270px)] [scrollbar-width:none] sm:px-8 lg:cursor-grab lg:select-none lg:grid-rows-2 lg:gap-x-5 lg:gap-y-6 lg:[grid-auto-columns:440px] lg:active:cursor-grabbing [&::-webkit-scrollbar]:hidden"
-        staggerChildren={0.04}
       >
         {itens.slice(0, 12).map((item, index) => (
-          <StaggerItem key={item.cd_conteudo} className="snap-start">
+          <div key={item.cd_conteudo} className="snap-start">
             <CardFilme conteudo={item} variant="top12" rank={index + 1} />
-          </StaggerItem>
+          </div>
         ))}
-      </StaggerGroup>
+      </div>
     </section>
   );
 }

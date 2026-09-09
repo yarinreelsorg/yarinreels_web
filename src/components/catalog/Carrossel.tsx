@@ -5,7 +5,6 @@ import { useRef } from "react";
 import { motion } from "motion/react";
 import type { Conteudo } from "@/types/database";
 import CardFilme from "./CardFilme";
-import { StaggerGroup, StaggerItem } from "@/components/motion/Stagger";
 import { buttonTap } from "@/lib/motion";
 
 export default function Carrossel({
@@ -55,24 +54,21 @@ export default function Carrossel({
         )}
       </div>
 
-      {/* Sem overflow-hidden aqui: a trilha (StaggerGroup) já tem seu
-          próprio overflow-x-auto pra rolagem horizontal. Um overflow-hidden
-          no pai cortava verticalmente os cards enquanto a animação de
-          entrada (fadeUp, desliza de y:32 até y:0) ainda estava em curso —
-          dava a impressão de a capa ser "comida" bem na hora que a fileira
-          aparecia na tela. */}
+      {/* Sem animação de entrada (fadeUp) nos cards: o slide vertical
+          (y:32 → 0) somado ao overflow-hidden que essa fileira precisa
+          pra rolagem horizontal cortava um pedaço da capa bem no meio da
+          animação — trocado por divs simples, sem motion. */}
       <div className="group/carrossel relative">
-        <StaggerGroup
+        <div
           ref={trilhoRef}
           className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-4 pb-2 [scrollbar-width:none] sm:px-8 lg:gap-4 [&::-webkit-scrollbar]:hidden"
-          staggerChildren={0.04}
         >
           {itens.map((item) => (
-            <StaggerItem key={item.cd_conteudo} className="snap-start">
+            <div key={item.cd_conteudo} className="snap-start">
               <CardFilme conteudo={item} variant="carrossel" />
-            </StaggerItem>
+            </div>
           ))}
-        </StaggerGroup>
+        </div>
 
         <motion.button
           type="button"
