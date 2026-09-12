@@ -2,6 +2,7 @@
 
 import { pool } from "@/lib/db";
 import { registrarLog } from "@/lib/auditoria";
+import { diasRestantes } from "@/lib/catalogo";
 import { revalidatePath } from "next/cache";
 import type { Plano } from "@/types/database";
 
@@ -87,7 +88,119 @@ export async function editarPlano(id: string, formData: FormData) {
   revalidatePath("/assinaturas");
 }
 
+/** Assinante com assinatura ATIVA (aprovada, ainda não expirada) nesse
+ * plano — é quem precisa ser migrado antes do plano poder ser excluído,
+ * senão perde o acesso que já pagou. */
+export type AssinanteAtivo = {
+  cd_venda: string;
+  nr_id_telegram: number;
+  ts_expiracao: string;
+  dias_restantes: number;
+  nm_email: string | null;
+};
+
+export async function listarAssinantesAtivos(cdPlano: string): Promise<AssinanteAtivo[]> {
+  const agoraIso = new Date().toISOString();
+  const { rows } = await pool.query<{
+    cd_venda: string;
+    nr_id_telegram: number;
+    ts_expiracao: string;
+  }>(
+    `SELECT cd_venda, nr_id_telegram, ts_expiracao FROM "VENDAS"
+     WHERE cd_plano = $1 AND tp_compra = 'ASSINATURA' AND tp_status = 'APROVADA' AND ts_expiracao > $2
+     ORDER BY ts_expiracao ASC`,
+    [cdPlano, agoraIso]
+  );
+
+  if (rows.length === 0) return [];
+
+  const ids = Array.from(new Set(rows.map((r) => r.nr_id_telegram)));
+  const { rows: usuarios } = await pool.query<{
+    nr_id_telegram: number | null;
+    nr_id_telegram_web: number | null;
+    nm_email: string;
+  }>(
+    `SELECT nr_id_telegram, nr_id_telegram_web, nm_email FROM "USUARIOS"
+     WHERE nr_id_telegram = ANY($1::bigint[]) OR nr_id_telegram_web = ANY($1::bigint[])`,
+    [ids]
+  );
+  const emailPorId = new Map<number, string>();
+  for (const u of usuarios) {
+    for (const idTelegram of [u.nr_id_telegram, u.nr_id_telegram_web]) {
+      if (idTelegram !== null) emailPorId.set(idTelegram, u.nm_email);
+    }
+  }
+
+  return rows.map((r) => ({
+    cd_venda: r.cd_venda,
+    nr_id_telegram: r.nr_id_telegram,
+    ts_expiracao: r.ts_expiracao,
+    dias_restantes: diasRestantes(r.ts_expiracao),
+    nm_email: emailPorId.get(r.nr_id_telegram) ?? null,
+  }));
+}
+
+/** Move assinantes ativos de um plano pra outro (usado antes de excluir um
+ * plano) — só troca a referência de plano, mantém a data de expiração
+ * intacta (o cliente não perde nem ganha dias por causa da migração). */
+export async function migrarAssinantes(
+  cdPlanoOrigem: string,
+  cdPlanoDestino: string,
+  cdVendas: string[]
+): Promise<number> {
+  if (cdPlanoOrigem === cdPlanoDestino) {
+    throw new Error("Escolha um plano diferente do atual para migrar os assinantes.");
+  }
+  if (cdVendas.length === 0) {
+    throw new Error("Selecione ao menos um assinante para migrar.");
+  }
+
+  const { rows: destinoRows } = await pool.query<Plano>(
+    'SELECT * FROM "PLANOS" WHERE cd_plano = $1 LIMIT 1',
+    [cdPlanoDestino]
+  );
+  const destino = destinoRows[0];
+  if (!destino) throw new Error("Plano de destino não encontrado.");
+
+  const { rowCount } = await pool.query(
+    `UPDATE "VENDAS" SET cd_plano = $1
+     WHERE cd_plano = $2 AND cd_venda = ANY($3::uuid[])
+       AND tp_compra = 'ASSINATURA' AND tp_status = 'APROVADA'`,
+    [cdPlanoDestino, cdPlanoOrigem, cdVendas]
+  );
+
+  await registrarLog({
+    tp_acao: "MIGRACAO",
+    nm_entidade: "PLANOS",
+    cd_entidade: cdPlanoOrigem,
+    ds_detalhes: {
+      planoDestino: destino.nm_plano,
+      cdPlanoDestino,
+      quantidade: rowCount ?? 0,
+      cdVendas,
+    },
+  });
+
+  revalidatePath("/admin/planos");
+  revalidatePath("/admin/clientes");
+  revalidatePath("/assinaturas");
+
+  return rowCount ?? 0;
+}
+
 export async function removerPlano(id: string) {
+  const agoraIso = new Date().toISOString();
+  const { rows: ativos } = await pool.query<{ total: string }>(
+    `SELECT COUNT(*) AS total FROM "VENDAS"
+     WHERE cd_plano = $1 AND tp_compra = 'ASSINATURA' AND tp_status = 'APROVADA' AND ts_expiracao > $2`,
+    [id, agoraIso]
+  );
+  if (Number(ativos[0]?.total ?? 0) > 0) {
+    throw new Error(
+      "Este plano ainda tem assinantes ativos. Migre-os para outro plano antes de excluir."
+    );
+  }
+
   const { rows } = await pool.query<Plano>('SELECT * FROM "PLANOS" WHERE cd_plano = $1 LIMIT 1', [id]);
   const registro = rows[0];
 

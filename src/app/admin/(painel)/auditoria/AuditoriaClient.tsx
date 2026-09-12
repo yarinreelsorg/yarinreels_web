@@ -15,6 +15,7 @@ const ROTULO_ACAO: Record<string, string> = {
   EDICAO: "Edição",
   EXCLUSAO: "Exclusão",
   RESTAURACAO: "Restauração",
+  MIGRACAO: "Migração de Assinantes",
   CONCESSAO_ACESSO: "Concessão de Acesso",
   ALTERACAO_STATUS: "Alteração de Status",
   ALTERACAO_PAPEL: "Alteração de Papel",
@@ -26,6 +27,7 @@ const COR_ACAO: Record<string, string> = {
   EDICAO: "text-blue-400 border-blue-500/20 bg-blue-500/10",
   EXCLUSAO: "text-red-400 border-red-500/20 bg-red-500/10",
   RESTAURACAO: "text-amber-400 border-amber-500/20 bg-amber-500/10",
+  MIGRACAO: "text-cyan-400 border-cyan-500/20 bg-cyan-500/10",
 };
 
 export default function AuditoriaClient({

@@ -3,8 +3,15 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import type { Plano } from "@/types/database";
-import { formatarPreco } from "@/lib/catalogo";
-import { criarPlano, editarPlano, removerPlano } from "./actions";
+import { formatarPreco, formatarCategoriasPlano } from "@/lib/catalogo";
+import {
+  criarPlano,
+  editarPlano,
+  removerPlano,
+  listarAssinantesAtivos,
+  migrarAssinantes,
+  type AssinanteAtivo,
+} from "./actions";
 import { buttonTap } from "@/lib/motion";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import { useFocoModal } from "@/components/admin/useFocoModal";
@@ -32,11 +39,23 @@ export default function PlanosAdminClient({
   const [planoExcluir, setPlanoExcluir] = useState<Plano | null>(null);
   const [excluindo, setExcluindo] = useState(false);
 
+  // Migração de assinantes ativos — obrigatória antes de excluir um plano
+  // que ainda tem gente pagando nele, senão o cliente perde acesso ao
+  // catálogo que já pagou.
+  const [planoMigrar, setPlanoMigrar] = useState<Plano | null>(null);
+  const [assinantes, setAssinantes] = useState<AssinanteAtivo[]>([]);
+  const [carregandoAssinantes, setCarregandoAssinantes] = useState(false);
+  const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
+  const [planoDestino, setPlanoDestino] = useState("");
+  const [migrando, setMigrando] = useState(false);
+
   const categoriasDisponiveis = Array.from(new Set([CATEGORIA_TODAS, ...categorias]));
 
   const planosFiltrados = planosInicial.filter((p) =>
     p.nm_plano.toLowerCase().includes(busca.toLowerCase())
   );
+
+  const outrosPlanos = planosInicial.filter((p) => p.cd_plano !== planoMigrar?.cd_plano);
 
   const fecharModal = () => {
     setModalAberto(false);
@@ -44,6 +63,15 @@ export default function PlanosAdminClient({
   };
 
   const modalRef = useFocoModal<HTMLDivElement>(modalAberto, fecharModal);
+
+  const fecharModalMigracao = () => {
+    setPlanoMigrar(null);
+    setAssinantes([]);
+    setSelecionados(new Set());
+    setPlanoDestino("");
+  };
+
+  const modalMigracaoRef = useFocoModal<HTMLDivElement>(planoMigrar !== null, fecharModalMigracao);
 
   const abrirAdicionar = () => {
     setModoEdicao(false);
@@ -102,6 +130,73 @@ export default function PlanosAdminClient({
     } finally {
       setExcluindo(false);
     }
+  };
+
+  // Clicar em excluir: se tem assinante ativo, abre a migração primeiro em
+  // vez de ir direto pro diálogo de confirmação — a exclusão em si só fica
+  // disponível depois que a lista de assinantes esvaziar.
+  const abrirExclusao = async (plano: Plano) => {
+    const ativos = assinantesPorPlano[plano.cd_plano] ?? 0;
+    if (ativos === 0) {
+      setPlanoExcluir(plano);
+      return;
+    }
+    setPlanoMigrar(plano);
+    setPlanoDestino("");
+    setCarregandoAssinantes(true);
+    try {
+      const lista = await listarAssinantesAtivos(plano.cd_plano);
+      setAssinantes(lista);
+      setSelecionados(new Set(lista.map((a) => a.cd_venda)));
+    } catch (err) {
+      toast.erro(err instanceof Error ? err.message : "Erro ao carregar assinantes.");
+      setPlanoMigrar(null);
+    } finally {
+      setCarregandoAssinantes(false);
+    }
+  };
+
+  const alternarSelecionado = (cdVenda: string) => {
+    setSelecionados((atual) => {
+      const proximo = new Set(atual);
+      if (proximo.has(cdVenda)) proximo.delete(cdVenda);
+      else proximo.add(cdVenda);
+      return proximo;
+    });
+  };
+
+  const alternarTodosSelecionados = () => {
+    setSelecionados((atual) =>
+      atual.size === assinantes.length ? new Set() : new Set(assinantes.map((a) => a.cd_venda))
+    );
+  };
+
+  const confirmarMigracao = async () => {
+    if (!planoMigrar || !planoDestino || selecionados.size === 0) return;
+    setMigrando(true);
+    try {
+      const quantidade = await migrarAssinantes(
+        planoMigrar.cd_plano,
+        planoDestino,
+        Array.from(selecionados)
+      );
+      toast.sucesso(`${quantidade} assinante(s) migrado(s).`);
+      const lista = await listarAssinantesAtivos(planoMigrar.cd_plano);
+      setAssinantes(lista);
+      setSelecionados(new Set(lista.map((a) => a.cd_venda)));
+      setPlanoDestino("");
+    } catch (err) {
+      toast.erro(err instanceof Error ? err.message : "Erro ao migrar assinantes.");
+    } finally {
+      setMigrando(false);
+    }
+  };
+
+  const continuarParaExclusao = () => {
+    if (!planoMigrar) return;
+    const plano = planoMigrar;
+    fecharModalMigracao();
+    setPlanoExcluir(plano);
   };
 
   return (
@@ -201,7 +296,7 @@ export default function PlanosAdminClient({
                         </button>
                         <button
                           type="button"
-                          onClick={() => setPlanoExcluir(plano)}
+                          onClick={() => abrirExclusao(plano)}
                           aria-label="Remover"
                           className="text-red-400 hover:text-red-300 transition-colors cursor-pointer text-lg disabled:opacity-40"
                         >
@@ -384,14 +479,146 @@ export default function PlanosAdminClient({
         )}
       </AnimatePresence>
 
+      <AnimatePresence>
+        {planoMigrar && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-[8px] p-4"
+          >
+            <motion.div
+              ref={modalMigracaoRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="migracao-modal-titulo"
+              initial={{ opacity: 0, scale: 0.94, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.94, y: 16 }}
+              transition={{ type: "spring", stiffness: 320, damping: 28 }}
+              className="relative flex max-h-[85vh] w-full max-w-2xl flex-col rounded-lg border border-[rgba(139,92,246,0.2)] bg-[#0D0A1A] p-6 shadow-2xl"
+            >
+              <div className="mb-4 flex items-center justify-between border-b border-[rgba(139,92,246,0.15)] pb-4">
+                <div>
+                  <h2 id="migracao-modal-titulo" className="text-xl font-bold text-white">
+                    Migrar assinantes de &quot;{planoMigrar.nm_plano}&quot;
+                  </h2>
+                  <p className="mt-1 text-xs text-[#A78BFA]/70">
+                    Esse plano ainda tem assinante(s) ativo(s). Migre todos pra outro plano antes
+                    de excluir — senão o cliente perde o acesso que já pagou.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={fecharModalMigracao}
+                  className="text-[#A78BFA] hover:text-white text-2xl transition-colors cursor-pointer"
+                >
+                  &times;
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto">
+                {carregandoAssinantes ? (
+                  <p className="py-8 text-center text-sm text-[#A78BFA]/70">Carregando...</p>
+                ) : assinantes.length === 0 ? (
+                  <div className="py-8 text-center">
+                    <p className="text-sm text-emerald-400">
+                      Nenhum assinante ativo restante nesse plano.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={continuarParaExclusao}
+                      className="mt-4 rounded-md bg-red-600 hover:bg-red-500 px-6 py-2.5 text-sm font-bold text-white transition-colors cursor-pointer"
+                    >
+                      Continuar para exclusão
+                    </button>
+                  </div>
+                ) : (
+                  <table className="w-full text-left border-collapse text-sm text-white">
+                    <thead>
+                      <tr className="border-b border-[rgba(139,92,246,0.15)] text-xs font-semibold text-[#A78BFA] uppercase tracking-wider">
+                        <th className="py-2 pr-3">
+                          <input
+                            type="checkbox"
+                            checked={selecionados.size === assinantes.length}
+                            onChange={alternarTodosSelecionados}
+                            className="cursor-pointer"
+                          />
+                        </th>
+                        <th className="py-2 pr-3">ID Telegram</th>
+                        <th className="py-2 pr-3">E-mail</th>
+                        <th className="py-2 pr-3">Dias restantes</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[rgba(139,92,246,0.1)]">
+                      {assinantes.map((a) => (
+                        <tr key={a.cd_venda}>
+                          <td className="py-2 pr-3">
+                            <input
+                              type="checkbox"
+                              checked={selecionados.has(a.cd_venda)}
+                              onChange={() => alternarSelecionado(a.cd_venda)}
+                              className="cursor-pointer"
+                            />
+                          </td>
+                          <td className="py-2 pr-3 font-mono text-xs">{a.nr_id_telegram}</td>
+                          <td className="py-2 pr-3 text-xs text-[#A78BFA]">{a.nm_email ?? "—"}</td>
+                          <td className="py-2 pr-3 text-xs">{a.dias_restantes}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+
+              {assinantes.length > 0 && (
+                <div className="mt-4 border-t border-[rgba(139,92,246,0.15)] pt-4">
+                  {outrosPlanos.length === 0 ? (
+                    <p className="text-sm text-amber-400">
+                      Não há outro plano cadastrado pra migrar esses assinantes. Crie um novo plano
+                      primeiro.
+                    </p>
+                  ) : (
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex-1">
+                        <label className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">
+                          Migrar selecionados para
+                        </label>
+                        <select
+                          value={planoDestino}
+                          onChange={(e) => setPlanoDestino(e.target.value)}
+                          className="w-full bg-[#050208] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white text-sm"
+                        >
+                          <option value="">Selecione um plano...</option>
+                          {outrosPlanos.map((p) => (
+                            <option key={p.cd_plano} value={p.cd_plano}>
+                              {p.nm_plano} ({formatarCategoriasPlano(p)})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={!planoDestino || selecionados.size === 0 || migrando}
+                        onClick={confirmarMigracao}
+                        className="rounded-md bg-[#7B2FBE] hover:bg-[#6D28D9] disabled:opacity-40 disabled:cursor-not-allowed px-6 py-2.5 text-sm font-bold text-white transition-colors cursor-pointer whitespace-nowrap"
+                      >
+                        {migrando ? "Migrando..." : `Migrar ${selecionados.size} selecionado(s)`}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <ConfirmDialog
         aberto={planoExcluir !== null}
         titulo={`Excluir "${planoExcluir?.nm_plano ?? ""}"`}
-        descricao={
-          planoExcluir && (assinantesPorPlano[planoExcluir.cd_plano] ?? 0) > 0
-            ? `Este plano tem ${assinantesPorPlano[planoExcluir.cd_plano]} assinante(s) ativo(s). Remover não cancela os acessos já concedidos, mas o plano some da tela de assinaturas. É possível restaurar depois pela tela de Auditoria.`
-            : "É possível restaurar depois pela tela de Auditoria, a partir do registro da exclusão."
-        }
+        descricao="É possível restaurar depois pela tela de Auditoria, a partir do registro da exclusão."
         palavraConfirmacao="EXCLUIR"
         confirmando={excluindo}
         onConfirmar={confirmarRemocao}

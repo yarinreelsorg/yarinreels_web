@@ -7,6 +7,7 @@ export type AcaoAuditoria =
   | "EDICAO"
   | "EXCLUSAO"
   | "RESTAURACAO"
+  | "MIGRACAO"
   | "CONCESSAO_ACESSO"
   | "REVOGACAO_ACESSO"
   | "BANIMENTO"
