@@ -27,6 +27,7 @@ import {
 
 interface Filtros {
   busca: string;
+  plano: string;
   ordenarPor: "nr_id_telegram" | "total_compras" | "ultima_compra";
   direcao: "asc" | "desc";
   pagina: number;
@@ -119,6 +120,7 @@ export default function ClientesAdminClient({
     const proximo: Filtros = { ...filtrosAtuais, ...mudancas };
     const params = new URLSearchParams();
     if (proximo.busca) params.set("busca", proximo.busca);
+    if (proximo.plano) params.set("plano", proximo.plano);
     if (proximo.ordenarPor !== "ultima_compra") params.set("sort", proximo.ordenarPor);
     if (proximo.direcao !== "desc") params.set("dir", proximo.direcao);
     if (proximo.pagina > 1) params.set("page", String(proximo.pagina));
@@ -130,6 +132,10 @@ export default function ClientesAdminClient({
     setBuscaLocal(valor);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => atualizarUrl({ busca: valor, pagina: 1 }), 400);
+  };
+
+  const aoFiltrarPlano = (cdPlano: string) => {
+    atualizarUrl({ plano: cdPlano, pagina: 1 });
   };
 
   const aoOrdenar = (campo: Filtros["ordenarPor"]) => {
@@ -318,7 +324,10 @@ export default function ClientesAdminClient({
   const aoExportar = async () => {
     setExportando(true);
     try {
-      const csv = await exportarClientesCsv(filtrosAtuais.busca || undefined);
+      const csv = await exportarClientesCsv(
+        filtrosAtuais.busca || undefined,
+        filtrosAtuais.plano || undefined
+      );
       baixarCsv(csv, "clientes.csv");
     } catch {
       toast.erro("Erro ao exportar CSV.");
@@ -356,15 +365,31 @@ export default function ClientesAdminClient({
         </div>
       </div>
 
-      {/* Search Input */}
-      <div className="max-w-md">
-        <input
-          type="text"
-          placeholder="Buscar por ID Telegram ou e-mail..."
-          value={buscaLocal}
-          onChange={(e) => aoBuscar(e.target.value)}
-          className="w-full bg-[#0D0A1A] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] py-2 px-4 text-white text-sm"
-        />
+      {/* Search Input + Filtro por Plano */}
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="max-w-md flex-1">
+          <input
+            type="text"
+            placeholder="Buscar por ID Telegram ou e-mail..."
+            value={buscaLocal}
+            onChange={(e) => aoBuscar(e.target.value)}
+            className="w-full bg-[#0D0A1A] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] py-2 px-4 text-white text-sm"
+          />
+        </div>
+        <div className="max-w-xs flex-1">
+          <select
+            value={filtrosAtuais.plano}
+            onChange={(e) => aoFiltrarPlano(e.target.value)}
+            className="w-full bg-[#0D0A1A] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] py-2 px-4 text-white text-sm cursor-pointer"
+          >
+            <option value="">Todos os planos</option>
+            {planos.map((p) => (
+              <option key={p.cd_plano} value={p.cd_plano}>
+                {p.nm_plano}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Clientes Table */}

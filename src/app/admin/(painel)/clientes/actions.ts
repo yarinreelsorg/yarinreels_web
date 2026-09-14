@@ -238,14 +238,24 @@ export async function removerVenda(cdVenda: string) {
   revalidatePath("/admin/dashboard");
 }
 
-export async function exportarClientesCsv(busca?: string): Promise<string> {
+export async function exportarClientesCsv(busca?: string, cdPlano?: string): Promise<string> {
   const valores: unknown[] = [];
-  const whereSql = busca
-    ? (() => {
-        valores.push(`%${busca}%`);
-        return `WHERE id_telegram_texto ILIKE $${valores.length}`;
-      })()
-    : "";
+  const condicoes: string[] = [];
+  if (busca) {
+    valores.push(`%${busca}%`);
+    condicoes.push(`id_telegram_texto ILIKE $${valores.length}`);
+  }
+  if (cdPlano) {
+    valores.push(cdPlano);
+    condicoes.push(`EXISTS (
+      SELECT 1 FROM "VENDAS" v
+      WHERE v.nr_id_telegram = vw_clientes.nr_id_telegram
+        AND v.cd_plano = $${valores.length}
+        AND v.tp_compra = 'ASSINATURA' AND v.tp_status = 'APROVADA'
+        AND v.ts_expiracao > now()
+    )`);
+  }
+  const whereSql = condicoes.length > 0 ? `WHERE ${condicoes.join(" AND ")}` : "";
 
   const { rows } = await pool.query<ClienteResumo>(
     `SELECT * FROM vw_clientes ${whereSql} ORDER BY ultima_compra DESC`,

@@ -15,6 +15,7 @@ export default async function ClientesAdminPage({
 }) {
   const params = await searchParams;
   const busca = typeof params.busca === "string" ? params.busca : "";
+  const plano = typeof params.plano === "string" ? params.plano : "";
   const ordenarPor = CAMPOS_ORDENACAO.includes(params.sort as CampoOrdenacao)
     ? (params.sort as CampoOrdenacao)
     : "ultima_compra";
@@ -22,17 +23,29 @@ export default async function ClientesAdminPage({
   const pagina = Math.max(1, Number(params.page) || 1);
 
   const valores: unknown[] = [];
-  const whereSql = busca
-    ? (() => {
-        valores.push(`%${busca}%`);
-        return `WHERE vc.id_telegram_texto ILIKE $${valores.length}
-          OR EXISTS (
-            SELECT 1 FROM "USUARIOS" u
-            WHERE (u.nr_id_telegram = vc.nr_id_telegram OR u.nr_id_telegram_web = vc.nr_id_telegram)
-              AND u.nm_email ILIKE $${valores.length}
-          )`;
-      })()
-    : "";
+  const condicoes: string[] = [];
+  if (busca) {
+    valores.push(`%${busca}%`);
+    condicoes.push(`(vc.id_telegram_texto ILIKE $${valores.length}
+      OR EXISTS (
+        SELECT 1 FROM "USUARIOS" u
+        WHERE (u.nr_id_telegram = vc.nr_id_telegram OR u.nr_id_telegram_web = vc.nr_id_telegram)
+          AND u.nm_email ILIKE $${valores.length}
+      ))`);
+  }
+  if (plano) {
+    // Assinante ATIVO nesse plano (aprovado, ainda não expirado) — não
+    // histórico, senão o filtro devolveria também quem já trocou de plano.
+    valores.push(plano);
+    condicoes.push(`EXISTS (
+      SELECT 1 FROM "VENDAS" v
+      WHERE v.nr_id_telegram = vc.nr_id_telegram
+        AND v.cd_plano = $${valores.length}
+        AND v.tp_compra = 'ASSINATURA' AND v.tp_status = 'APROVADA'
+        AND v.ts_expiracao > now()
+    )`);
+  }
+  const whereSql = condicoes.length > 0 ? `WHERE ${condicoes.join(" AND ")}` : "";
   const direcaoSql = direcao === "asc" ? "ASC" : "DESC";
 
   valores.push(ITENS_POR_PAGINA, (pagina - 1) * ITENS_POR_PAGINA);
@@ -81,7 +94,7 @@ export default async function ClientesAdminPage({
       clientes={clientes}
       totalRegistros={totalRegistros}
       itensPorPagina={ITENS_POR_PAGINA}
-      filtrosAtuais={{ busca, ordenarPor, direcao, pagina }}
+      filtrosAtuais={{ busca, plano, ordenarPor, direcao, pagina }}
       conteudos={conteudosResult.rows}
       planos={planosResult.rows}
       avatares={avatares}
