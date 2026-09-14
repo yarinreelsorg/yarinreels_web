@@ -60,6 +60,39 @@ export function formatarCategoriasPlano(plano: {
   return `${categorias.slice(0, -1).join(", ")} e ${categorias[categorias.length - 1]}`;
 }
 
+/**
+ * Valor aproximado de uma venda quando vl_pago não foi registrado — comum
+ * em vendas feitas pelo bot/manualmente pelo admin, que não passam pelo
+ * checkout do site (só ele grava vl_pago). Pra ASSINATURA busca o preço
+ * real do plano (cd_plano); pra ALUGUEL/VITALICIO busca o preço real do
+ * conteúdo. Nunca usa um valor fixo pra ASSINATURA — planos diferentes
+ * custam valores bem diferentes entre si (era um bug: toda venda de
+ * assinatura sem vl_pago aparecia como "R$20" no admin, independente do
+ * plano real).
+ */
+export function obterValorAproximadoVenda(
+  venda: {
+    vl_pago: number | null;
+    tp_compra: "ALUGUEL" | "VITALICIO" | "ASSINATURA";
+    cd_conteudo: string | null;
+    cd_plano: string | null;
+  },
+  conteudosMap: Map<string, { vl_aluguel: number | null; vl_vitalicio: number | null }>,
+  planosMap: Map<string, { vl_plano: number }>
+): number {
+  if (venda.vl_pago != null) return venda.vl_pago;
+  if (venda.tp_compra === "ASSINATURA") {
+    return (venda.cd_plano ? planosMap.get(venda.cd_plano)?.vl_plano : null) ?? 0;
+  }
+  if (venda.tp_compra === "ALUGUEL") {
+    return (venda.cd_conteudo ? conteudosMap.get(venda.cd_conteudo)?.vl_aluguel : null) ?? 10;
+  }
+  if (venda.tp_compra === "VITALICIO") {
+    return (venda.cd_conteudo ? conteudosMap.get(venda.cd_conteudo)?.vl_vitalicio : null) ?? 30;
+  }
+  return 0;
+}
+
 export function formatarPreco(valor: number | null) {
   if (valor === null || valor <= 0) return null;
   return new Intl.NumberFormat("pt-BR", {

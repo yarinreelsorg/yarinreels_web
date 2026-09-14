@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import type { ClienteResumo, TpCompra, Venda, Conteudo, Plano } from "@/types/database";
-import { formatarPreco } from "@/lib/catalogo";
+import { formatarPreco, obterValorAproximadoVenda } from "@/lib/catalogo";
 import Pagination from "@/components/admin/Pagination";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Stagger";
 import { buttonTap } from "@/lib/motion";
@@ -111,17 +111,7 @@ export default function ClientesAdminClient({
   const planosMap = new Map<string, Plano>();
   for (const p of planos) planosMap.set(p.cd_plano, p);
 
-  const getValorAproximado = (v: Venda) => {
-    if (v.vl_pago != null) return v.vl_pago;
-    if (v.tp_compra === "ASSINATURA") return 20;
-    if (v.tp_compra === "ALUGUEL") {
-      return (v.cd_conteudo ? conteudosMap.get(v.cd_conteudo)?.vl_aluguel : null) ?? 10;
-    }
-    if (v.tp_compra === "VITALICIO") {
-      return (v.cd_conteudo ? conteudosMap.get(v.cd_conteudo)?.vl_vitalicio : null) ?? 30;
-    }
-    return 0;
-  };
+  const getValorAproximado = (v: Venda) => obterValorAproximadoVenda(v, conteudosMap, planosMap);
 
   const totalPaginas = Math.max(1, Math.ceil(totalRegistros / itensPorPagina));
 

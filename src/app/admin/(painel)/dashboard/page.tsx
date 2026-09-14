@@ -1,5 +1,5 @@
 import { pool } from "@/lib/db";
-import { formatarPreco } from "@/lib/catalogo";
+import { formatarPreco, obterValorAproximadoVenda } from "@/lib/catalogo";
 import { chaveDiaBrasil, formatarDataHora } from "@/lib/data";
 import type { Conteudo, Venda, Plano } from "@/types/database";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Stagger";
@@ -36,17 +36,7 @@ export default async function DashboardPage() {
   const anoAtual = agora.getFullYear();
   const mesAtual = agora.getMonth();
 
-  const getValorAproximado = (v: Venda) => {
-    if (v.vl_pago != null) return v.vl_pago;
-    if (v.tp_compra === "ASSINATURA") return 20;
-    if (v.tp_compra === "ALUGUEL") {
-      return (v.cd_conteudo ? conteudosMap.get(v.cd_conteudo)?.vl_aluguel : null) ?? 10;
-    }
-    if (v.tp_compra === "VITALICIO") {
-      return (v.cd_conteudo ? conteudosMap.get(v.cd_conteudo)?.vl_vitalicio : null) ?? 30;
-    }
-    return 0;
-  };
+  const getValorAproximado = (v: Venda) => obterValorAproximadoVenda(v, conteudosMap, planosMap);
 
   // Faturamento do mês (contar vendas APROVADAS do mês atual)
   const faturamentoMes = vendas

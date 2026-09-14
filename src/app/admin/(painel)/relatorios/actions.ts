@@ -2,6 +2,7 @@
 
 import { pool } from "@/lib/db";
 import { chaveDiaBrasil } from "@/lib/data";
+import { obterValorAproximadoVenda } from "@/lib/catalogo";
 import type { Conteudo, Plano, Venda, TpStatusVenda } from "@/types/database";
 
 // Meia-noite (00:00 em Brasília, UTC-3 fixo — Brasil não tem mais horário de
@@ -141,17 +142,7 @@ export async function carregarDadosRelatorios(filtros: FiltrosRelatorio) {
   const planosMap = new Map<string, Plano>();
   for (const p of planos) planosMap.set(p.cd_plano, p);
 
-  const getValorVenda = (v: Venda) => {
-    if (v.vl_pago != null) return v.vl_pago;
-    if (v.tp_compra === "ASSINATURA") return 20;
-    if (v.tp_compra === "ALUGUEL") {
-      return (v.cd_conteudo ? conteudosMap.get(v.cd_conteudo)?.vl_aluguel : null) ?? 10;
-    }
-    if (v.tp_compra === "VITALICIO") {
-      return (v.cd_conteudo ? conteudosMap.get(v.cd_conteudo)?.vl_vitalicio : null) ?? 30;
-    }
-    return 0;
-  };
+  const getValorVenda = (v: Venda) => obterValorAproximadoVenda(v, conteudosMap, planosMap);
 
   // Identificação de QR Codes substituídos/abandonados
   // Se o usuário tem uma venda APROVADA para um item, vendas PENDENTE anteriores daquele item foram QR codes abandonados.

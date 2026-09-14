@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { Conteudo, TpCompra, Venda } from "@/types/database";
-import { formatarPreco } from "@/lib/catalogo";
+import type { Conteudo, Plano, TpCompra, Venda } from "@/types/database";
+import { formatarPreco, obterValorAproximadoVenda } from "@/lib/catalogo";
 import Reveal from "@/components/motion/Reveal";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Stagger";
 
@@ -25,31 +25,24 @@ const MESES_ABREV = [
   "Jul", "Ago", "Set", "Out", "Nov", "Dez",
 ];
 
-function getValorAproximado(v: Venda, conteudosMap: Map<string, Conteudo>) {
-  if (v.vl_pago != null) return v.vl_pago;
-  if (v.tp_compra === "ASSINATURA") return 20;
-  if (v.tp_compra === "ALUGUEL") {
-    return (v.cd_conteudo ? conteudosMap.get(v.cd_conteudo)?.vl_aluguel : null) ?? 10;
-  }
-  if (v.tp_compra === "VITALICIO") {
-    return (v.cd_conteudo ? conteudosMap.get(v.cd_conteudo)?.vl_vitalicio : null) ?? 30;
-  }
-  return 0;
-}
-
 export default function FinanceiroClient({
   vendas,
   conteudos,
+  planos,
 }: {
   vendas: Venda[];
   conteudos: Conteudo[];
+  planos: Plano[];
 }) {
   const [meses, setMeses] = useState<(typeof OPCOES_PERIODO)[number]>(6);
 
   const conteudosMap = new Map<string, Conteudo>();
   for (const c of conteudos) conteudosMap.set(c.cd_conteudo, c);
 
-  const valor = (v: Venda) => getValorAproximado(v, conteudosMap);
+  const planosMap = new Map<string, Plano>();
+  for (const p of planos) planosMap.set(p.cd_plano, p);
+
+  const valor = (v: Venda) => obterValorAproximadoVenda(v, conteudosMap, planosMap);
 
   const aprovadas = vendas.filter((v) => v.tp_status === "APROVADA");
   const pendentes = vendas.filter((v) => v.tp_status === "PENDENTE");
