@@ -21,7 +21,7 @@ function formatarDuracao(dias: number) {
 
 export default async function AssinaturasPage() {
   const [{ rows: planos }, sessao] = await Promise.all([
-    pool.query<Plano>('SELECT * FROM "PLANOS"'),
+    pool.query<Plano>('SELECT * FROM "PLANOS" ORDER BY vl_plano ASC'),
     getSessaoUsuario(),
   ]);
 
