@@ -10,6 +10,7 @@ import {
   removerPlano,
   listarAssinantesAtivos,
   migrarAssinantes,
+  alterarDiasRestantes,
   type AssinanteAtivo,
 } from "./actions";
 import { buttonTap } from "@/lib/motion";
@@ -50,8 +51,13 @@ export default function PlanosAdminClient({
   const [migrando, setMigrando] = useState(false);
   // "excluir": veio do botão de lixeira, exige migrar todo mundo antes de
   // liberar a exclusão. "visualizar": veio de clicar no número de
-  // assinantes, só mostra a lista (sem forçar migração nem excluir nada).
+  // assinantes — mesma tela (migrar plano, editar dias), só sem forçar
+  // nada nem oferecer excluir o plano.
   const [contextoModal, setContextoModal] = useState<"excluir" | "visualizar">("excluir");
+  // Edição inline de dias restantes por assinante: cd_venda -> valor
+  // digitado no input (string, pra aceitar campo vazio durante a digitação).
+  const [diasEditando, setDiasEditando] = useState<Record<string, string>>({});
+  const [salvandoDiasId, setSalvandoDiasId] = useState<string | null>(null);
 
   const categoriasDisponiveis = Array.from(new Set([CATEGORIA_TODAS, ...categorias]));
 
@@ -73,6 +79,11 @@ export default function PlanosAdminClient({
     setAssinantes([]);
     setSelecionados(new Set());
     setPlanoDestino("");
+    setDiasEditando({});
+  };
+
+  const popularDiasEditando = (lista: AssinanteAtivo[]) => {
+    setDiasEditando(Object.fromEntries(lista.map((a) => [a.cd_venda, String(a.dias_restantes)])));
   };
 
   const modalMigracaoRef = useFocoModal<HTMLDivElement>(planoMigrar !== null, fecharModalMigracao);
@@ -164,6 +175,7 @@ export default function PlanosAdminClient({
       const lista = await listarAssinantesAtivos(plano.cd_plano);
       setAssinantes(lista);
       setSelecionados(new Set(lista.map((a) => a.cd_venda)));
+      popularDiasEditando(lista);
     } catch (err) {
       toast.erro(err instanceof Error ? err.message : "Erro ao carregar assinantes.");
       setPlanoMigrar(null);
@@ -200,11 +212,34 @@ export default function PlanosAdminClient({
       const lista = await listarAssinantesAtivos(planoMigrar.cd_plano);
       setAssinantes(lista);
       setSelecionados(new Set(lista.map((a) => a.cd_venda)));
+      popularDiasEditando(lista);
       setPlanoDestino("");
     } catch (err) {
       toast.erro(err instanceof Error ? err.message : "Erro ao migrar assinantes.");
     } finally {
       setMigrando(false);
+    }
+  };
+
+  const salvarDias = async (cdVenda: string) => {
+    if (!planoMigrar) return;
+    const valor = Number(diasEditando[cdVenda]);
+    if (!Number.isFinite(valor) || valor < 0) {
+      toast.erro("Dias restantes precisa ser um número válido (0 ou mais).");
+      return;
+    }
+    setSalvandoDiasId(cdVenda);
+    try {
+      await alterarDiasRestantes(cdVenda, Math.floor(valor));
+      toast.sucesso("Dias restantes atualizados.");
+      const lista = await listarAssinantesAtivos(planoMigrar.cd_plano);
+      setAssinantes(lista);
+      setSelecionados((atual) => new Set([...atual].filter((id) => lista.some((a) => a.cd_venda === id))));
+      popularDiasEditando(lista);
+    } catch (err) {
+      toast.erro(err instanceof Error ? err.message : "Erro ao atualizar dias restantes.");
+    } finally {
+      setSalvandoDiasId(null);
     }
   };
 
@@ -535,7 +570,7 @@ export default function PlanosAdminClient({
                   <p className="mt-1 text-xs text-[#A78BFA]/70">
                     {contextoModal === "excluir"
                       ? "Esse plano ainda tem assinante(s) ativo(s). Migre todos pra outro plano antes de excluir — senão o cliente perde o acesso que já pagou."
-                      : "Quem tem assinatura ativa nesse plano agora, e quantos dias de acesso ainda restam pra cada um."}
+                      : "Quem tem assinatura ativa nesse plano agora. Migre pra outro plano ou ajuste os dias restantes de cada um."}
                   </p>
                 </div>
                 <button
@@ -569,16 +604,14 @@ export default function PlanosAdminClient({
                   <table className="w-full text-left border-collapse text-sm text-white">
                     <thead>
                       <tr className="border-b border-[rgba(139,92,246,0.15)] text-xs font-semibold text-[#A78BFA] uppercase tracking-wider">
-                        {contextoModal === "excluir" && (
-                          <th className="py-2 pr-3">
-                            <input
-                              type="checkbox"
-                              checked={selecionados.size === assinantes.length}
-                              onChange={alternarTodosSelecionados}
-                              className="cursor-pointer"
-                            />
-                          </th>
-                        )}
+                        <th className="py-2 pr-3">
+                          <input
+                            type="checkbox"
+                            checked={selecionados.size === assinantes.length}
+                            onChange={alternarTodosSelecionados}
+                            className="cursor-pointer"
+                          />
+                        </th>
                         <th className="py-2 pr-3">ID Telegram</th>
                         <th className="py-2 pr-3">E-mail</th>
                         <th className="py-2 pr-3">Dias restantes</th>
@@ -587,19 +620,42 @@ export default function PlanosAdminClient({
                     <tbody className="divide-y divide-[rgba(139,92,246,0.1)]">
                       {assinantes.map((a) => (
                         <tr key={a.cd_venda}>
-                          {contextoModal === "excluir" && (
-                            <td className="py-2 pr-3">
-                              <input
-                                type="checkbox"
-                                checked={selecionados.has(a.cd_venda)}
-                                onChange={() => alternarSelecionado(a.cd_venda)}
-                                className="cursor-pointer"
-                              />
-                            </td>
-                          )}
+                          <td className="py-2 pr-3">
+                            <input
+                              type="checkbox"
+                              checked={selecionados.has(a.cd_venda)}
+                              onChange={() => alternarSelecionado(a.cd_venda)}
+                              className="cursor-pointer"
+                            />
+                          </td>
                           <td className="py-2 pr-3 font-mono text-xs">{a.nr_id_telegram}</td>
                           <td className="py-2 pr-3 text-xs text-[#A78BFA]">{a.nm_email ?? "—"}</td>
-                          <td className="py-2 pr-3 text-xs">{a.dias_restantes}</td>
+                          <td className="py-2 pr-3">
+                            <div className="flex items-center gap-1.5">
+                              <input
+                                type="number"
+                                min="0"
+                                step="1"
+                                value={diasEditando[a.cd_venda] ?? String(a.dias_restantes)}
+                                onChange={(e) =>
+                                  setDiasEditando((atual) => ({ ...atual, [a.cd_venda]: e.target.value }))
+                                }
+                                className="w-16 bg-[#050208] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[4px] px-1.5 py-1 text-white text-xs"
+                              />
+                              <button
+                                type="button"
+                                disabled={
+                                  salvandoDiasId === a.cd_venda ||
+                                  (diasEditando[a.cd_venda] ?? String(a.dias_restantes)) ===
+                                    String(a.dias_restantes)
+                                }
+                                onClick={() => salvarDias(a.cd_venda)}
+                                className="rounded-[4px] border border-[rgba(139,92,246,0.3)] px-2 py-1 text-[10px] font-bold text-[#A78BFA] hover:bg-white/5 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                              >
+                                {salvandoDiasId === a.cd_venda ? "..." : "Salvar"}
+                              </button>
+                            </div>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -607,7 +663,7 @@ export default function PlanosAdminClient({
                 )}
               </div>
 
-              {contextoModal === "excluir" && assinantes.length > 0 && (
+              {assinantes.length > 0 && (
                 <div className="mt-4 border-t border-[rgba(139,92,246,0.15)] pt-4">
                   {outrosPlanos.length === 0 ? (
                     <p className="text-sm text-amber-400">

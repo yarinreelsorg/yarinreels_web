@@ -188,6 +188,35 @@ export async function migrarAssinantes(
   return rowCount ?? 0;
 }
 
+/** Ajusta manualmente os dias restantes de UM assinante (ex: cortesia,
+ * correção de cobrança duplicada, compensação por instabilidade) — recalcula
+ * ts_expiracao a partir de agora + novosDias, não soma/subtrai em cima do
+ * valor antigo. */
+export async function alterarDiasRestantes(cdVenda: string, novosDias: number): Promise<void> {
+  if (!Number.isFinite(novosDias) || novosDias < 0) {
+    throw new Error("Dias restantes precisa ser um número válido (0 ou mais).");
+  }
+
+  const novaExpiracao = new Date(Date.now() + novosDias * 86_400_000).toISOString();
+
+  const { rowCount } = await pool.query(
+    `UPDATE "VENDAS" SET ts_expiracao = $1
+     WHERE cd_venda = $2 AND tp_compra = 'ASSINATURA' AND tp_status = 'APROVADA'`,
+    [novaExpiracao, cdVenda]
+  );
+  if (!rowCount) throw new Error("Assinatura não encontrada.");
+
+  await registrarLog({
+    tp_acao: "EDICAO",
+    nm_entidade: "VENDAS",
+    cd_entidade: cdVenda,
+    ds_detalhes: { novosDias, novaExpiracao },
+  });
+
+  revalidatePath("/admin/planos");
+  revalidatePath("/admin/clientes");
+}
+
 export async function removerPlano(id: string) {
   const agoraIso = new Date().toISOString();
   const { rows: ativos } = await pool.query<{ total: string }>(
