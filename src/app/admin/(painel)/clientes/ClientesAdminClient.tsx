@@ -631,10 +631,15 @@ export default function ClientesAdminClient({
                     {vendasCliente.map((v) => {
                       const valor = getValorAproximado(v);
                       let itemNome = "-";
+                      // Nome atual do plano; se o plano foi excluído (cd_plano
+                      // nulo) cai pro nome original guardado na migração, se
+                      // teve; sem nenhum dos dois, é uma venda antiga de um
+                      // plano excluído que nunca passou pela migração.
+                      let planoMigrado = false;
                       if (v.tp_compra === "ASSINATURA") {
-                        itemNome =
-                          (v.cd_plano && planosMap.get(v.cd_plano)?.nm_plano) ??
-                          `Plano #${v.cd_plano}`;
+                        const nomeAtual = v.cd_plano ? planosMap.get(v.cd_plano)?.nm_plano : null;
+                        itemNome = nomeAtual ?? v.nm_plano_original ?? "Plano removido";
+                        planoMigrado = !!nomeAtual && !!v.nm_plano_original && nomeAtual !== v.nm_plano_original;
                       } else {
                         itemNome =
                           (v.cd_conteudo && conteudosMap.get(v.cd_conteudo)?.nm_titulo) ??
@@ -672,6 +677,11 @@ export default function ClientesAdminClient({
                           <div className="text-sm font-semibold text-white truncate">
                             {itemNome}
                           </div>
+                          {planoMigrado && (
+                            <p className="text-[10px] text-[#A78BFA]/60">
+                              Comprou originalmente em &quot;{v.nm_plano_original}&quot; — migrado depois
+                            </p>
+                          )}
 
                           <div className="flex items-center justify-between text-xs pt-1">
                             <div>

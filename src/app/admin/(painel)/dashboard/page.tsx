@@ -209,9 +209,8 @@ export default async function DashboardPage() {
                   const valor = getValorAproximado(venda);
                   let itemNome = "-";
                   if (venda.tp_compra === "ASSINATURA") {
-                    itemNome =
-                      (venda.cd_plano && planosMap.get(venda.cd_plano)?.nm_plano) ??
-                      `Plano #${venda.cd_plano}`;
+                    const nomeAtual = venda.cd_plano ? planosMap.get(venda.cd_plano)?.nm_plano : null;
+                    itemNome = nomeAtual ?? venda.nm_plano_original ?? "Plano removido";
                   } else {
                     itemNome =
                       (venda.cd_conteudo && conteudosMap.get(venda.cd_conteudo)?.nm_titulo) ??

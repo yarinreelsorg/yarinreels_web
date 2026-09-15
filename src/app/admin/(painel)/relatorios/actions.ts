@@ -262,7 +262,8 @@ export async function carregarDadosRelatorios(filtros: FiltrosRelatorio) {
   const itensTabela: VendaRelatorioItem[] = vendasFiltradas.map((v) => {
     let itemNome = "-";
     if (v.tp_compra === "ASSINATURA") {
-      itemNome = (v.cd_plano && planosMap.get(v.cd_plano)?.nm_plano) ?? `Plano #${v.cd_plano}`;
+      const nomeAtual = v.cd_plano ? planosMap.get(v.cd_plano)?.nm_plano : null;
+      itemNome = nomeAtual ?? v.nm_plano_original ?? "Plano removido";
     } else {
       itemNome =
         (v.cd_conteudo && conteudosMap.get(v.cd_conteudo)?.nm_titulo) ??

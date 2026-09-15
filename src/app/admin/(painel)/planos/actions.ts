@@ -162,11 +162,22 @@ export async function migrarAssinantes(
   const destino = destinoRows[0];
   if (!destino) throw new Error("Plano de destino não encontrado.");
 
+  const { rows: origemRows } = await pool.query<Plano>(
+    'SELECT * FROM "PLANOS" WHERE cd_plano = $1 LIMIT 1',
+    [cdPlanoOrigem]
+  );
+  const nomeOrigem = origemRows[0]?.nm_plano ?? null;
+
+  // Migrar reescreve o cd_plano na MESMA venda (não cria uma nova) — sem
+  // guardar o nome original, o histórico de compra do cliente passaria a
+  // mostrar o plano novo pra uma compra antiga. Só preenche na primeira
+  // migração (COALESCE) pra preservar o plano ORIGINAL de verdade, mesmo
+  // se o assinante for migrado mais de uma vez depois.
   const { rowCount } = await pool.query(
-    `UPDATE "VENDAS" SET cd_plano = $1
+    `UPDATE "VENDAS" SET cd_plano = $1, nm_plano_original = COALESCE(nm_plano_original, $4)
      WHERE cd_plano = $2 AND cd_venda = ANY($3::uuid[])
        AND tp_compra = 'ASSINATURA' AND tp_status = 'APROVADA'`,
-    [cdPlanoDestino, cdPlanoOrigem, cdVendas]
+    [cdPlanoDestino, cdPlanoOrigem, cdVendas, nomeOrigem]
   );
 
   await registrarLog({

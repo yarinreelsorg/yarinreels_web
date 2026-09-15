@@ -1,0 +1,13 @@
+-- Migrar um assinante de plano (tela /admin/planos) faz UPDATE direto no
+-- cd_plano da venda já existente, em vez de criar uma venda nova — então
+-- sem isso, o histórico de compra do cliente passava a mostrar o plano
+-- NOVO pra uma compra antiga, escondendo o que ele realmente pagou na
+-- época (reportado pelo atendente: "vai mudar no histórico de compras").
+--
+-- Guarda o nome do plano (texto, não FK) na primeira vez que a venda é
+-- migrada — não a cada migração, pra preservar o plano ORIGINAL mesmo se
+-- o assinante for migrado mais de uma vez depois. Usa nome em vez de
+-- referência ao cd_plano porque o plano original normalmente É o que tá
+-- sendo excluído logo em seguida (esse é o motivo da migração existir).
+-- Coluna aditiva e invisível pro bot legado.
+alter table "VENDAS" add column if not exists nm_plano_original text;

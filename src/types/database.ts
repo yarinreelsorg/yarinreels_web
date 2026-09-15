@@ -159,6 +159,12 @@ export type Venda = {
   tp_metodo_pagamento: TpMetodoPagamento | null;
   /** Origem/Canal do Telegram do qual a venda partiu. */
   ds_origem: string | null;
+  /** Nome do plano ORIGINAL (na hora da compra), preenchido só quando o
+   * assinante é migrado de plano pela tela de Planos — sem isso, migrar
+   * reescrevia o histórico (a compra antiga passava a mostrar o plano
+   * novo). Nulo pra venda nunca migrada. Guardado como texto (não FK)
+   * porque o plano original tipicamente é o que está sendo excluído. */
+  nm_plano_original: string | null;
 };
 
 export type VendaInsert = {
