@@ -48,6 +48,10 @@ export default function PlanosAdminClient({
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
   const [planoDestino, setPlanoDestino] = useState("");
   const [migrando, setMigrando] = useState(false);
+  // "excluir": veio do botão de lixeira, exige migrar todo mundo antes de
+  // liberar a exclusão. "visualizar": veio de clicar no número de
+  // assinantes, só mostra a lista (sem forçar migração nem excluir nada).
+  const [contextoModal, setContextoModal] = useState<"excluir" | "visualizar">("excluir");
 
   const categoriasDisponiveis = Array.from(new Set([CATEGORIA_TODAS, ...categorias]));
 
@@ -141,6 +145,18 @@ export default function PlanosAdminClient({
       setPlanoExcluir(plano);
       return;
     }
+    setContextoModal("excluir");
+    await abrirListaAssinantes(plano);
+  };
+
+  // Clicar no número de "Assinantes Ativos" — só consulta, não força
+  // migração nem leva pra exclusão.
+  const abrirVisualizacao = async (plano: Plano) => {
+    setContextoModal("visualizar");
+    await abrirListaAssinantes(plano);
+  };
+
+  const abrirListaAssinantes = async (plano: Plano) => {
     setPlanoMigrar(plano);
     setPlanoDestino("");
     setCarregandoAssinantes(true);
@@ -282,7 +298,17 @@ export default function PlanosAdminClient({
                     </td>
                     <td className="px-6 py-4 text-xs">{plano.nr_dias_validade} dias</td>
                     <td className="px-6 py-4 font-mono text-xs">
-                      {assinantesPorPlano[plano.cd_plano] ?? 0}
+                      {(assinantesPorPlano[plano.cd_plano] ?? 0) > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => abrirVisualizacao(plano)}
+                          className="cursor-pointer underline decoration-dotted underline-offset-2 text-[#A78BFA] hover:text-white transition-colors"
+                        >
+                          {assinantesPorPlano[plano.cd_plano]}
+                        </button>
+                      ) : (
+                        0
+                      )}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-3">
@@ -502,11 +528,14 @@ export default function PlanosAdminClient({
               <div className="mb-4 flex items-center justify-between border-b border-[rgba(139,92,246,0.15)] pb-4">
                 <div>
                   <h2 id="migracao-modal-titulo" className="text-xl font-bold text-white">
-                    Migrar assinantes de &quot;{planoMigrar.nm_plano}&quot;
+                    {contextoModal === "excluir"
+                      ? `Migrar assinantes de "${planoMigrar.nm_plano}"`
+                      : `Assinantes ativos de "${planoMigrar.nm_plano}"`}
                   </h2>
                   <p className="mt-1 text-xs text-[#A78BFA]/70">
-                    Esse plano ainda tem assinante(s) ativo(s). Migre todos pra outro plano antes
-                    de excluir — senão o cliente perde o acesso que já pagou.
+                    {contextoModal === "excluir"
+                      ? "Esse plano ainda tem assinante(s) ativo(s). Migre todos pra outro plano antes de excluir — senão o cliente perde o acesso que já pagou."
+                      : "Quem tem assinatura ativa nesse plano agora, e quantos dias de acesso ainda restam pra cada um."}
                   </p>
                 </div>
                 <button
@@ -524,28 +553,32 @@ export default function PlanosAdminClient({
                 ) : assinantes.length === 0 ? (
                   <div className="py-8 text-center">
                     <p className="text-sm text-emerald-400">
-                      Nenhum assinante ativo restante nesse plano.
+                      Nenhum assinante ativo nesse plano.
                     </p>
-                    <button
-                      type="button"
-                      onClick={continuarParaExclusao}
-                      className="mt-4 rounded-md bg-red-600 hover:bg-red-500 px-6 py-2.5 text-sm font-bold text-white transition-colors cursor-pointer"
-                    >
-                      Continuar para exclusão
-                    </button>
+                    {contextoModal === "excluir" && (
+                      <button
+                        type="button"
+                        onClick={continuarParaExclusao}
+                        className="mt-4 rounded-md bg-red-600 hover:bg-red-500 px-6 py-2.5 text-sm font-bold text-white transition-colors cursor-pointer"
+                      >
+                        Continuar para exclusão
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <table className="w-full text-left border-collapse text-sm text-white">
                     <thead>
                       <tr className="border-b border-[rgba(139,92,246,0.15)] text-xs font-semibold text-[#A78BFA] uppercase tracking-wider">
-                        <th className="py-2 pr-3">
-                          <input
-                            type="checkbox"
-                            checked={selecionados.size === assinantes.length}
-                            onChange={alternarTodosSelecionados}
-                            className="cursor-pointer"
-                          />
-                        </th>
+                        {contextoModal === "excluir" && (
+                          <th className="py-2 pr-3">
+                            <input
+                              type="checkbox"
+                              checked={selecionados.size === assinantes.length}
+                              onChange={alternarTodosSelecionados}
+                              className="cursor-pointer"
+                            />
+                          </th>
+                        )}
                         <th className="py-2 pr-3">ID Telegram</th>
                         <th className="py-2 pr-3">E-mail</th>
                         <th className="py-2 pr-3">Dias restantes</th>
@@ -554,14 +587,16 @@ export default function PlanosAdminClient({
                     <tbody className="divide-y divide-[rgba(139,92,246,0.1)]">
                       {assinantes.map((a) => (
                         <tr key={a.cd_venda}>
-                          <td className="py-2 pr-3">
-                            <input
-                              type="checkbox"
-                              checked={selecionados.has(a.cd_venda)}
-                              onChange={() => alternarSelecionado(a.cd_venda)}
-                              className="cursor-pointer"
-                            />
-                          </td>
+                          {contextoModal === "excluir" && (
+                            <td className="py-2 pr-3">
+                              <input
+                                type="checkbox"
+                                checked={selecionados.has(a.cd_venda)}
+                                onChange={() => alternarSelecionado(a.cd_venda)}
+                                className="cursor-pointer"
+                              />
+                            </td>
+                          )}
                           <td className="py-2 pr-3 font-mono text-xs">{a.nr_id_telegram}</td>
                           <td className="py-2 pr-3 text-xs text-[#A78BFA]">{a.nm_email ?? "—"}</td>
                           <td className="py-2 pr-3 text-xs">{a.dias_restantes}</td>
@@ -572,7 +607,7 @@ export default function PlanosAdminClient({
                 )}
               </div>
 
-              {assinantes.length > 0 && (
+              {contextoModal === "excluir" && assinantes.length > 0 && (
                 <div className="mt-4 border-t border-[rgba(139,92,246,0.15)] pt-4">
                   {outrosPlanos.length === 0 ? (
                     <p className="text-sm text-amber-400">
