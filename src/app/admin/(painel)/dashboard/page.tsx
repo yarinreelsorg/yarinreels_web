@@ -50,14 +50,18 @@ export default async function DashboardPage() {
     })
     .reduce((sum, v) => sum + getValorAproximado(v), 0);
 
-  // Assinantes ativos (ASSINATURA, APROVADA, ts_expiracao > now)
-  const agoraIso = agora.toISOString();
+  // Assinantes ativos (ASSINATURA, APROVADA, ts_expiracao > now). Compara
+  // via Date/getTime(), não como string — ts_expiracao chega do driver `pg`
+  // como objeto Date (apesar do tipo TS dizer `string`), e comparar Date
+  // direto com uma string ISO (`v.ts_expiracao > agoraIso`) nunca dá certo
+  // em JS: fazia esse card sempre mostrar 0, não importa quantos assinantes
+  // ativos existissem de verdade.
   const assinantesAtivos = vendas.filter(
     (v) =>
       v.tp_compra === "ASSINATURA" &&
       v.tp_status === "APROVADA" &&
       !!v.ts_expiracao &&
-      v.ts_expiracao > agoraIso
+      new Date(v.ts_expiracao).getTime() > agora.getTime()
   ).length;
 
   // 10 últimas vendas

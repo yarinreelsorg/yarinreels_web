@@ -701,7 +701,7 @@ export default function ClientesAdminClient({
                             <div className="flex items-center gap-3">
                               {v.tp_status === "APROVADA" &&
                                 v.ts_expiracao &&
-                                v.ts_expiracao > new Date().toISOString() && (
+                                new Date(v.ts_expiracao).getTime() > new Date().getTime() && (
                                   <button
                                     type="button"
                                     disabled={revogandoId === v.cd_venda}

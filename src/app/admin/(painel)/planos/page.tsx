@@ -20,12 +20,17 @@ export default async function PlanosAdminPage() {
     new Set(nomesCategorias.map((c) => canonPorNomeCategoria.get(c) ?? c))
   ).sort();
 
-  const agoraIso = new Date().toISOString();
+  const agora = new Date();
   const assinantesPorPlano: Record<string, number> = {};
   for (const v of vendas) {
     if (!v.cd_plano) continue;
     if (v.tp_status !== "APROVADA") continue;
-    if (!v.ts_expiracao || v.ts_expiracao <= agoraIso) continue;
+    // ts_expiracao vem do driver `pg` como objeto Date, não string — apesar
+    // do tipo TS dizer `string`. Comparar direto com uma string ISO
+    // (`v.ts_expiracao <= agoraIso`) nunca dá certo em JS: o Date usa
+    // toString() na comparação, não o formato ISO, então a checagem de
+    // "já expirou" nunca batia e contava assinante expirado como ativo.
+    if (!v.ts_expiracao || new Date(v.ts_expiracao).getTime() <= agora.getTime()) continue;
     assinantesPorPlano[v.cd_plano] = (assinantesPorPlano[v.cd_plano] ?? 0) + 1;
   }
 
