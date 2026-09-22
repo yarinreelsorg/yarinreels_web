@@ -18,6 +18,17 @@ const nextConfig: NextConfig = {
     // carregamento de página.
     remotePatterns: [{ protocol: "https", hostname: "*.googleusercontent.com" }],
     minimumCacheTTL: 2_592_000, // 30 dias — pôster de um título não muda sozinho
+    // Cada combinação (largura × formato) de uma MESMA imagem conta como
+    // uma transformação nova pra cota da Vercel — estourou o plano Hobby
+    // (5.000/mês) com a lista padrão do Next (8 larguras de dispositivo +
+    // 8 larguras de ícone, quase todas muito maiores que qualquer capa
+    // daqui, ex: 1920/2048/3840). Reduz pro punhado de larguras que os
+    // cards realmente usam (~75 a 420px) e tira o AVIF (WebP já é bem
+    // menor que o JPEG original e sozinho já corta a metade das variantes
+    // por imagem).
+    deviceSizes: [384, 480, 640],
+    imageSizes: [96, 160, 256],
+    formats: ["image/webp"],
   },
 };
 
