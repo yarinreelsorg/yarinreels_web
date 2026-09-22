@@ -86,10 +86,18 @@ function PosterImgComEstado({
     );
   }
 
+  // Na retentativa, muda a URL em vez da `key` do elemento — trocar a key
+  // força o React a desmontar/remontar o <Image> do zero, o que faz o
+  // Chrome perder o rastro do elemento pro cálculo de LCP (contribuiu pro
+  // PageSpeed não conseguir nem detectar o LCP da página). Acrescentar um
+  // parâmetro na URL já basta pra pular o cache da Vercel e tentar buscar
+  // de novo, sem recriar o elemento.
+  const srcComRetry =
+    tentativa === 0 ? src : `${src}${src.includes("?") ? "&" : "?"}_retry=${tentativa}`;
+
   return (
     <Image
-      key={tentativa}
-      src={src}
+      src={srcComRetry}
       alt={alt}
       fill
       sizes={sizes ?? `${largura}px`}
