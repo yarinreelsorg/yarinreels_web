@@ -125,9 +125,14 @@ export default function FilmeContent({
             {conteudo.ds_url_poster ? (
               <PosterImg
                 src={conteudo.ds_url_poster}
-                largura={520}
+                largura={260}
+                sizes="260px"
                 alt={conteudo.nm_titulo}
-                loading="eager"
+                // "lazy" mesmo sendo above-the-fold no desktop: esse poster
+                // fica com "hidden lg:block" (só existe visualmente a partir
+                // de 1024px) — "eager" baixava a imagem incondicionalmente,
+                // inclusive no celular, onde ela nunca aparece na tela.
+                loading="lazy"
                 className="object-cover"
               />
             ) : (

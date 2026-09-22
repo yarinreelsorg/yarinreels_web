@@ -61,9 +61,11 @@ export default function HeroBanner({ destaques }: { destaques: Conteudo[] }) {
           {item.ds_url_poster ? (
             <PosterImg
               src={item.ds_url_poster}
-              largura={700}
+              largura={420}
+              sizes="(min-width: 640px) 420px, 88vw"
               alt={item.nm_titulo}
               loading={indice === 0 ? "eager" : "lazy"}
+              priority={indice === 0}
               className="h-full w-full object-cover"
             />
           ) : (

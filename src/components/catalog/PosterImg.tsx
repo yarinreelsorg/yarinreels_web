@@ -13,6 +13,20 @@ interface PosterImgProps {
   className?: string;
   loading?: "lazy" | "eager";
   onLoad?: () => void;
+  /** Prioridade de rede máxima (preload + fetchpriority=high) — reservar
+   * só pra imagem que É o LCP de verdade (ex: primeiro slide do
+   * HeroBanner). Antes vinha junto de loading="eager", então TODAS as
+   * capas eager (as 12 do Top 12, por exemplo) brigavam por prioridade
+   * máxima ao mesmo tempo — provável causa do PageSpeed não conseguir
+   * nem detectar qual elemento era o LCP. */
+  priority?: boolean;
+  /** Hint de tamanho real renderizado (CSS), responsivo por breakpoint —
+   * ex: "(min-width: 1024px) 230px, 125px". Sem isso, o next/image não
+   * sabe que o card é bem menor no celular e sempre baixa a variante do
+   * tamanho de DESKTOP (`largura`) pra todo mundo — é a causa raiz do
+   * "economia estimada" gigante de imagem que o PageSpeed reporta.
+   * Cai pra "${largura}px" fixo só se o chamador não informar. */
+  sizes?: string;
 }
 
 /**
@@ -38,7 +52,16 @@ export default function PosterImg(props: PosterImgProps) {
   return <PosterImgComEstado key={props.src} {...props} />;
 }
 
-function PosterImgComEstado({ src, largura, alt, className, loading = "lazy", onLoad }: PosterImgProps) {
+function PosterImgComEstado({
+  src,
+  largura,
+  alt,
+  className,
+  loading = "lazy",
+  onLoad,
+  sizes,
+  priority = false,
+}: PosterImgProps) {
   const [tentativa, setTentativa] = useState(0);
   const [ultimoRecurso, setUltimoRecurso] = useState(false);
 
@@ -69,8 +92,9 @@ function PosterImgComEstado({ src, largura, alt, className, loading = "lazy", on
       src={src}
       alt={alt}
       fill
-      sizes={`${largura}px`}
-      priority={loading === "eager"}
+      sizes={sizes ?? `${largura}px`}
+      priority={priority}
+      loading={priority ? undefined : loading}
       onLoad={onLoad}
       onError={aoDarErro}
       className={className}

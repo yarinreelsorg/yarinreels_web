@@ -37,7 +37,8 @@ export default function ContinuarAssistindo({
                 {item.conteudo.ds_url_poster ? (
                   <PosterImg
                     src={item.conteudo.ds_url_poster}
-                    largura={460}
+                    largura={230}
+                    sizes="(min-width: 1024px) 230px, 125px"
                     alt={item.conteudo.nm_titulo}
                     className="object-cover"
                   />

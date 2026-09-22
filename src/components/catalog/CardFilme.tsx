@@ -51,7 +51,7 @@ export default function CardFilme({
   const incluido = !!conteudo.incluidoNaAssinatura;
   const destinoAssistir = `/assistir/${conteudo.cd_conteudo}`;
 
-  const poster = (sizeClasses: string, className: string, largura: number) => (
+  const poster = (sizeClasses: string, className: string, largura: number, sizes: string) => (
     <div className={`relative overflow-hidden rounded-lg bg-surface ${sizeClasses} ${className}`}>
       {!carregada && conteudo.ds_url_poster && (
         <div className="absolute inset-0 animate-shimmer bg-[linear-gradient(110deg,#161616_30%,#222_50%,#161616_70%)]" />
@@ -60,6 +60,7 @@ export default function CardFilme({
         <PosterImg
           src={conteudo.ds_url_poster}
           largura={largura}
+          sizes={sizes}
           alt={conteudo.nm_titulo}
           // Top12 é um conjunto pequeno e fixo (12) logo no topo da home —
           // carrega sem esperar entrar no viewport. Isso evita que, ao
@@ -87,7 +88,12 @@ export default function CardFilme({
       <div className="flex items-center gap-2.5 lg:gap-4">
         <motion.div whileTap={{ scale: 0.95 }} className="relative shrink-0">
         <Link href={destino} className="relative block">
-          {poster("w-[75px] aspect-[3/4] lg:w-[130px]", "", 260)}
+          {poster(
+            "w-[75px] aspect-[3/4] lg:w-[130px]",
+            "",
+            130,
+            "(min-width: 1024px) 130px, 75px"
+          )}
           <span
             className={`absolute bottom-0 left-0 flex h-[25px] w-[25px] items-center justify-center rounded-tr-lg text-sm font-black lg:h-[34px] lg:w-[34px] lg:text-lg ${
               CORES_RANK[rank] ?? "bg-primary text-white"
@@ -143,7 +149,14 @@ export default function CardFilme({
         whileTap={{ scale: 0.96 }}
       >
         <Link href={destino} className="relative block">
-          {poster(fixo ? "w-[125px] aspect-[3/4] lg:w-[230px]" : "aspect-[3/4] w-full", "cursor-pointer", 460)}
+          {poster(
+            fixo ? "w-[125px] aspect-[3/4] lg:w-[230px]" : "aspect-[3/4] w-full",
+            "cursor-pointer",
+            fixo ? 230 : 300,
+            fixo
+              ? "(min-width: 1024px) 230px, 125px"
+              : "(min-width: 1024px) 280px, (min-width: 768px) 23vw, (min-width: 640px) 30vw, 45vw"
+          )}
           {badge && (
             <span className="absolute left-1.5 top-1.5 rounded bg-black/80 px-1.5 py-0.5 text-[10px] font-bold text-foreground">
               {badge}
