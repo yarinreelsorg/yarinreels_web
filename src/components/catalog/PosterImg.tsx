@@ -4,8 +4,6 @@ import { useState } from "react";
 import Image from "next/image";
 import { otimizarUrlPoster } from "@/lib/catalogo";
 
-const ATRASO_RETRY_MS = 1000;
-
 interface PosterImgProps {
   src: string;
   largura: number;
@@ -38,9 +36,12 @@ interface PosterImgProps {
  * causa raiz do "capa quebrada" (esse CDN historicamente derruba conexão
  * sob concorrência — testado direto), em vez de só mascarar com retry.
  *
- * Ainda assim mantém uma tentativa extra + um último recurso (<img>
- * direto pro Blogger, resolução reduzida) pro caso raro do próprio
- * proxy da Vercel falhar nessa primeira busca.
+ * Ainda assim mantém um último recurso (<img> direto pro Blogger,
+ * resolução reduzida) pro caso do proxy de otimização da Vercel falhar
+ * nessa primeira busca — cai direto na primeira falha, sem tentar de
+ * novo pela Vercel: se ela tiver bloqueando por cota (HTTP 402 —
+ * já aconteceu em produção) ou fora do ar, insistir só atrasa todo
+ * mundo sem chance real de dar certo.
  *
  * `key={src}` força o React a criar uma instância nova (e portanto zerar
  * o estado de erro) sempre que a URL muda — sem isso, se o React
@@ -62,14 +63,9 @@ function PosterImgComEstado({
   sizes,
   priority = false,
 }: PosterImgProps) {
-  const [tentativa, setTentativa] = useState(0);
   const [ultimoRecurso, setUltimoRecurso] = useState(false);
 
   function aoDarErro() {
-    if (tentativa === 0) {
-      setTimeout(() => setTentativa(1), ATRASO_RETRY_MS);
-      return;
-    }
     setUltimoRecurso(true);
   }
 
@@ -86,18 +82,9 @@ function PosterImgComEstado({
     );
   }
 
-  // Na retentativa, muda a URL em vez da `key` do elemento — trocar a key
-  // força o React a desmontar/remontar o <Image> do zero, o que faz o
-  // Chrome perder o rastro do elemento pro cálculo de LCP (contribuiu pro
-  // PageSpeed não conseguir nem detectar o LCP da página). Acrescentar um
-  // parâmetro na URL já basta pra pular o cache da Vercel e tentar buscar
-  // de novo, sem recriar o elemento.
-  const srcComRetry =
-    tentativa === 0 ? src : `${src}${src.includes("?") ? "&" : "?"}_retry=${tentativa}`;
-
   return (
     <Image
-      src={srcComRetry}
+      src={src}
       alt={alt}
       fill
       sizes={sizes ?? `${largura}px`}
