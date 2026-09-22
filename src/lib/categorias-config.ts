@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { pool } from "./db";
 
 function normalizar(categoria: string) {
@@ -73,7 +74,11 @@ export function ordenarCategoriasPadrao(categorias: string[]): string[] {
   });
 }
 
-async function obterConfigSalva() {
+// cache() do React dedupe chamadas dentro da MESMA requisição — a home
+// chama obterCategoriasExclusivasAssinantes() e ordenarCategorias() na
+// mesma renderização, e as duas precisam dessa config; sem isso batia
+// duas vezes na mesma tabela em sequência, à toa.
+const obterConfigSalva = cache(async () => {
   const { rows } = await pool.query<{
     ds_ordem: string[];
     ds_ocultas: string[];
@@ -84,7 +89,7 @@ async function obterConfigSalva() {
     ocultas: rows[0]?.ds_ocultas ?? [],
     exclusivas: rows[0]?.ds_exclusivas_assinantes ?? [],
   };
-}
+});
 
 /** Nomes de categoria marcadas como exclusivas de assinante — pra filtrar
  * o conteúdo delas fora de destaques/Top12/carrosséis pra quem não assina. */

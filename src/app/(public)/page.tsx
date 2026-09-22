@@ -23,21 +23,33 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const sessao = await getSessaoUsuario();
-
   // Catálogo completo estilo Netflix pra todo mundo, logado ou não — login
   // só é pedido na hora de comprar/assistir (checkout/player já bloqueiam
   // isso). A landing de apresentação/vendas fica só em /landing e /lp,
   // usadas como destino de anúncio, não mais como página inicial.
-  const { rows: conteudosSemExclusivos } = await pool.query<Conteudo>(
-    'SELECT * FROM "CONTEUDOS" WHERE sn_exclusivo_assinantes = false'
-  );
-  const continuarAssistindo = sessao ? await obterContinuarAssistindo(sessao.cd_usuario) : [];
-  const ehAssinante = sessao ? await usuarioTemAssinaturaAtiva(sessao.cd_usuario) : false;
+  //
+  // As 4 buscas abaixo são independentes entre si — rodar em paralelo em
+  // vez de uma esperando a outra corta boa parte do tempo até a página
+  // pintar (medido no PageSpeed: TTFB bom, mas ~3s até o primeiro
+  // conteúdo aparecer, tudo em idas sequenciais ao banco).
+  const [sessao, { rows: conteudosSemExclusivos }, categoriasExclusivas, apps] = await Promise.all([
+    getSessaoUsuario(),
+    pool.query<Conteudo>('SELECT * FROM "CONTEUDOS" WHERE sn_exclusivo_assinantes = false'),
+    obterCategoriasExclusivasAssinantes(),
+    obterAppsVisiveis(),
+  ]);
+
+  // Só dependem de já saber se tem sessão — também independentes entre si.
+  const [continuarAssistindo, ehAssinante] = sessao
+    ? await Promise.all([
+        obterContinuarAssistindo(sessao.cd_usuario),
+        usuarioTemAssinaturaAtiva(sessao.cd_usuario),
+      ])
+    : [[], false];
+
   const categoriasAssinatura =
     sessao && ehAssinante ? await obterCategoriasAssinaturaAtiva(sessao.cd_usuario) : [];
 
-  const categoriasExclusivas = await obterCategoriasExclusivasAssinantes();
   const canonPorNome = canonicalizarCategorias(
     conteudosSemExclusivos.map((c) => c.nm_categoria)
   );
@@ -57,7 +69,6 @@ export default async function HomePage() {
     new Set(conteudos.map((c) => c.nm_categoria).filter(Boolean))
   );
   const categorias = await ordenarCategorias(categoriasSemOrdem, ehAssinante);
-  const apps = await obterAppsVisiveis();
 
   const destacados = conteudos.filter((c) => c.sn_destaque);
   const destaques =

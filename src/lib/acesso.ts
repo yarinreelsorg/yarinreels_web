@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { pool } from "./db";
 
 /**
@@ -88,7 +89,11 @@ export async function obterIdentidadeParaCompra(cdUsuario: string): Promise<numb
  * assinantes. Não usa obterIdsTelegramElegiveis de propósito (essa função
  * cria uma identidade sintética na hora); aqui só lemos o que já existe.
  */
-export async function usuarioTemAssinaturaAtiva(cdUsuario: string): Promise<boolean> {
+// cache() dedupe dentro da MESMA requisição — usuarioTemAssinaturaAtiva()
+// e obterCategoriasAssinaturaAtiva() antes faziam cada uma sua própria
+// busca idêntica em USUARIOS; a home chama as duas em sequência pro mesmo
+// cd_usuario, dobrando essa ida ao banco à toa.
+const obterIdsTelegramDoUsuario = cache(async (cdUsuario: string): Promise<number[]> => {
   const { rows } = await pool.query<{
     nr_id_telegram: number | null;
     nr_id_telegram_web: number | null;
@@ -96,11 +101,14 @@ export async function usuarioTemAssinaturaAtiva(cdUsuario: string): Promise<bool
     cdUsuario,
   ]);
   const usuario = rows[0];
-  if (!usuario) return false;
-
-  const ids = [usuario.nr_id_telegram, usuario.nr_id_telegram_web].filter(
+  if (!usuario) return [];
+  return [usuario.nr_id_telegram, usuario.nr_id_telegram_web].filter(
     (id): id is number => !!id
   );
+});
+
+export async function usuarioTemAssinaturaAtiva(cdUsuario: string): Promise<boolean> {
+  const ids = await obterIdsTelegramDoUsuario(cdUsuario);
   if (ids.length === 0) return false;
 
   const { rows: assinaturaRows } = await pool.query<{ total: string }>(
@@ -119,18 +127,7 @@ export async function usuarioTemAssinaturaAtiva(cdUsuario: string): Promise<bool
  * item por item.
  */
 export async function obterCategoriasAssinaturaAtiva(cdUsuario: string): Promise<string[]> {
-  const { rows } = await pool.query<{
-    nr_id_telegram: number | null;
-    nr_id_telegram_web: number | null;
-  }>('SELECT nr_id_telegram, nr_id_telegram_web FROM "USUARIOS" WHERE cd_usuario = $1 LIMIT 1', [
-    cdUsuario,
-  ]);
-  const usuario = rows[0];
-  if (!usuario) return [];
-
-  const ids = [usuario.nr_id_telegram, usuario.nr_id_telegram_web].filter(
-    (id): id is number => !!id
-  );
+  const ids = await obterIdsTelegramDoUsuario(cdUsuario);
   if (ids.length === 0) return [];
 
   const { rows: planos } = await pool.query<{
