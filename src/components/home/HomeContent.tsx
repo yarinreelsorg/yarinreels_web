@@ -114,7 +114,12 @@ export default function HomeContent({
               <Carrossel
                 key={categoria}
                 titulo={categoria}
-                itens={porCategoria.get(categoria) ?? []}
+                // Corta em 20 — sem isso, categorias grandes (ex: "Americanas"
+                // tem quase 400 itens) mandavam TODO o catálogo daquela
+                // categoria pro HTML inicial, só pra caber numa fileira que
+                // mostra uns 3-6 de cada vez rolando. "Ver tudo" já existe
+                // pra quem quiser navegar o resto.
+                itens={(porCategoria.get(categoria) ?? []).slice(0, 20)}
                 verTudoHref={`/catalogo?categoria=${encodeURIComponent(categoria)}`}
               />
             ))}
