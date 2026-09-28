@@ -56,6 +56,10 @@ export type Conteudo = {
   tp_fonte_prioritaria: TpFontePrioritaria;
   sn_destaque: boolean;
   nr_ordem_destaque: number | null;
+  /** Esse item do Carrossel de Destaque também entra no carrossel do bot
+   * Telegram (CONFIGURACOES.CARROSSEL_IDS) — default true (sincronizado);
+   * desmarcar deixa ele só no site, sem tirar os outros da sincronização. */
+  sn_incluir_carrossel_bot: boolean;
   sn_top12: boolean;
   nr_ordem_top12: number | null;
   nr_views: number;

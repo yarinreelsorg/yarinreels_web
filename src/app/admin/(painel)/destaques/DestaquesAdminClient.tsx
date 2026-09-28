@@ -1,14 +1,26 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 import type { Conteudo } from "@/types/database";
-import { definirCarrosselDestaque, definirTop12 } from "./actions";
+import {
+  definirCarrosselDestaque,
+  definirFotoStartBot,
+  definirTop12,
+  enviarFotoStartBot,
+  type ItemCarrosselDestaque,
+} from "./actions";
 import { buttonTap } from "@/lib/motion";
 import { otimizarUrlPoster } from "@/lib/catalogo";
 import { useToast } from "@/components/admin/ToastProvider";
 
-type ItemLista = { cd_conteudo: string; nm_titulo: string; ds_url_poster: string | null };
+type ItemLista = {
+  cd_conteudo: string;
+  nm_titulo: string;
+  ds_url_poster: string | null;
+  /** Só usado quando a lista sincroniza com o bot (Carrossel de Destaque). */
+  sincronizarBot?: boolean;
+};
 
 function ListaCurada({
   titulo,
@@ -17,15 +29,21 @@ function ListaCurada({
   todos,
   selecionadosIniciais,
   aoSalvar,
+  aoSalvarComSincronizacao,
 }: {
   titulo: string;
   descricao: string;
   limite: number;
   todos: ItemLista[];
   selecionadosIniciais: ItemLista[];
-  aoSalvar: (idsEmOrdem: string[]) => Promise<void>;
+  /** Usado quando essa lista NÃO sincroniza com o bot (ex: Top 12). */
+  aoSalvar?: (idsEmOrdem: string[]) => Promise<void>;
+  /** Usado quando essa lista sincroniza com o bot (Carrossel de Destaque) —
+   * manda junto quais itens entram/ficam de fora dessa sincronização. */
+  aoSalvarComSincronizacao?: (itens: ItemCarrosselDestaque[]) => Promise<void>;
 }) {
   const toast = useToast();
+  const sincronizaComBot = !!aoSalvarComSincronizacao;
   const [selecionados, setSelecionados] = useState<ItemLista[]>(selecionadosIniciais);
   const [buscaAdicionar, setBuscaAdicionar] = useState("");
   const [indiceArrastado, setIndiceArrastado] = useState<number | null>(null);
@@ -61,15 +79,33 @@ function ListaCurada({
   }
 
   function adicionar(item: ItemLista) {
-    setSelecionados((atual) => [...atual, item]);
+    setSelecionados((atual) => [...atual, { ...item, sincronizarBot: true }]);
     setBuscaAdicionar("");
+    setSalvo(false);
+  }
+
+  function alternarSincronizacaoBot(cdConteudo: string) {
+    setSelecionados((atual) =>
+      atual.map((c) =>
+        c.cd_conteudo === cdConteudo ? { ...c, sincronizarBot: !(c.sincronizarBot ?? true) } : c
+      )
+    );
     setSalvo(false);
   }
 
   async function salvar() {
     setSalvando(true);
     try {
-      await aoSalvar(selecionados.map((c) => c.cd_conteudo));
+      if (aoSalvarComSincronizacao) {
+        await aoSalvarComSincronizacao(
+          selecionados.map((c) => ({
+            cd_conteudo: c.cd_conteudo,
+            sincronizarBot: c.sincronizarBot ?? true,
+          }))
+        );
+      } else if (aoSalvar) {
+        await aoSalvar(selecionados.map((c) => c.cd_conteudo));
+      }
       setSalvo(true);
       toast.sucesso(`${titulo} salvo.`);
     } catch (err) {
@@ -82,7 +118,11 @@ function ListaCurada({
   async function limpar() {
     setSalvando(true);
     try {
-      await aoSalvar([]);
+      if (aoSalvarComSincronizacao) {
+        await aoSalvarComSincronizacao([]);
+      } else if (aoSalvar) {
+        await aoSalvar([]);
+      }
       setSelecionados([]);
       toast.sucesso(`${titulo} voltou ao ranking automático.`);
     } catch (err) {
@@ -103,6 +143,13 @@ function ListaCurada({
           {selecionados.length}/{limite}
         </span>
       </div>
+
+      {sincronizaComBot && (
+        <p className="mt-3 text-xs text-emerald-400">
+          🔄 Sincronizado com o carrossel do bot Telegram — desmarque &quot;Bot&quot; num item pra
+          ele aparecer só aqui no site.
+        </p>
+      )}
 
       {selecionados.length === 0 ? (
         <p className="mt-4 text-sm text-[#A78BFA]">
@@ -152,6 +199,17 @@ function ListaCurada({
               <span className="flex-1 truncate text-sm font-semibold text-white">
                 {item.nm_titulo}
               </span>
+              {sincronizaComBot && (
+                <label className="flex shrink-0 items-center gap-1.5 text-[10px] font-bold text-[#A78BFA]">
+                  <input
+                    type="checkbox"
+                    checked={item.sincronizarBot ?? true}
+                    onChange={() => alternarSincronizacaoBot(item.cd_conteudo)}
+                    className="cursor-pointer"
+                  />
+                  Bot
+                </label>
+              )}
               {indice >= limite && (
                 <span className="shrink-0 text-[10px] font-bold uppercase text-amber-400">
                   fora do limite
@@ -219,7 +277,105 @@ function ListaCurada({
   );
 }
 
-export default function DestaquesAdminClient({ conteudos }: { conteudos: Conteudo[] }) {
+function FotoStartBot({ fotoAtual }: { fotoAtual: string | null }) {
+  const toast = useToast();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [url, setUrl] = useState(fotoAtual ?? "");
+  const [enviando, setEnviando] = useState(false);
+  const [salvando, setSalvando] = useState(false);
+
+  async function aoEscolherArquivo(e: React.ChangeEvent<HTMLInputElement>) {
+    const arquivo = e.target.files?.[0];
+    if (!arquivo) return;
+    setEnviando(true);
+    try {
+      const formData = new FormData();
+      formData.append("arquivo", arquivo);
+      const novaUrl = await enviarFotoStartBot(formData);
+      setUrl(novaUrl);
+      await definirFotoStartBot(novaUrl);
+      toast.sucesso("Foto de boas-vindas do bot atualizada.");
+    } catch (err) {
+      toast.erro(err instanceof Error ? err.message : "Erro ao enviar imagem.");
+    } finally {
+      setEnviando(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  }
+
+  async function salvarUrl() {
+    setSalvando(true);
+    try {
+      await definirFotoStartBot(url);
+      toast.sucesso("Foto de boas-vindas do bot atualizada.");
+    } catch (err) {
+      toast.erro(err instanceof Error ? err.message : "Erro ao salvar.");
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  return (
+    <div className="rounded-lg border border-[rgba(139,92,246,0.15)] bg-[#0D0A1A] p-6 shadow-lg">
+      <h2 className="text-lg font-bold text-white">Foto de boas-vindas do bot</h2>
+      <p className="mt-1 max-w-xl text-sm text-[#A78BFA]">
+        Imagem mostrada quando alguém dá /start no bot do Telegram (Melreels). Mesma configuração
+        que antes só dava pra trocar mandando a foto direto pro bot.
+      </p>
+
+      <div className="mt-4 flex flex-wrap items-start gap-4">
+        {url && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={otimizarUrlPoster(url, 200) ?? url}
+            alt="Foto de boas-vindas atual"
+            className="h-32 w-24 shrink-0 rounded-md border border-[rgba(139,92,246,0.2)] object-cover"
+          />
+        )}
+        <div className="flex min-w-0 flex-1 flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="text"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://..."
+              className="min-w-[240px] flex-1 bg-[#050208] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-sm text-white"
+            />
+            <motion.button
+              type="button"
+              onClick={salvarUrl}
+              disabled={salvando || !url.trim()}
+              {...buttonTap}
+              className="rounded-md bg-[#7B2FBE] hover:bg-[#6D28D9] disabled:opacity-50 px-5 py-2.5 text-sm font-bold text-white transition-colors cursor-pointer"
+            >
+              {salvando ? "Salvando..." : "Salvar URL"}
+            </motion.button>
+          </div>
+
+          <div>
+            <input
+              ref={inputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              onChange={aoEscolherArquivo}
+              disabled={enviando}
+              className="text-xs text-[#A78BFA] file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-[#7B2FBE] file:px-4 file:py-2 file:text-xs file:font-bold file:text-white hover:file:bg-[#6D28D9] disabled:opacity-50"
+            />
+            {enviando && <p className="mt-1 text-xs text-[#A78BFA]">Enviando...</p>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function DestaquesAdminClient({
+  conteudos,
+  fotoStartAtual,
+}: {
+  conteudos: Conteudo[];
+  fotoStartAtual: string | null;
+}) {
   const todos: ItemLista[] = conteudos.map((c) => ({
     cd_conteudo: c.cd_conteudo,
     nm_titulo: c.nm_titulo,
@@ -229,7 +385,12 @@ export default function DestaquesAdminClient({ conteudos }: { conteudos: Conteud
   const carrosselInicial = conteudos
     .filter((c) => c.sn_destaque)
     .sort((a, b) => (a.nr_ordem_destaque ?? 0) - (b.nr_ordem_destaque ?? 0))
-    .map((c) => ({ cd_conteudo: c.cd_conteudo, nm_titulo: c.nm_titulo, ds_url_poster: c.ds_url_poster }));
+    .map((c) => ({
+      cd_conteudo: c.cd_conteudo,
+      nm_titulo: c.nm_titulo,
+      ds_url_poster: c.ds_url_poster,
+      sincronizarBot: c.sn_incluir_carrossel_bot,
+    }));
 
   const top12Inicial = conteudos
     .filter((c) => c.sn_top12)
@@ -248,16 +409,18 @@ export default function DestaquesAdminClient({ conteudos }: { conteudos: Conteud
 
       <ListaCurada
         titulo="Carrossel de Destaque (Hero)"
-        descricao="Banner rotativo no topo da home. Só os 5 primeiros aparecem."
+        descricao="Banner rotativo no topo da home — e também o carrossel do bot Telegram (Melreels), sincronizados. Só os 5 primeiros aparecem no site."
         limite={5}
         todos={todos}
         selecionadosIniciais={carrosselInicial}
-        aoSalvar={definirCarrosselDestaque}
+        aoSalvarComSincronizacao={definirCarrosselDestaque}
       />
+
+      <FotoStartBot fotoAtual={fotoStartAtual} />
 
       <ListaCurada
         titulo="Top 12"
-        descricao="Fileira de mais populares logo abaixo do banner. Só os 12 primeiros aparecem."
+        descricao="Fileira de mais populares logo abaixo do banner. Só os 12 primeiros aparecem. (Sem equivalente no bot.)"
         limite={12}
         todos={todos}
         selecionadosIniciais={top12Inicial}

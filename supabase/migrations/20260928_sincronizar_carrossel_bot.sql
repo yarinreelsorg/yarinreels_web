@@ -1,0 +1,12 @@
+-- Unifica o gerenciamento do carrossel/banner de destaque num só painel
+-- (o admin do site, /admin/destaques) em vez de duas fontes separadas:
+-- hoje o site usa CONTEUDOS.sn_destaque/nr_ordem_destaque, e o bot
+-- Telegram (Melreels) usa uma lista própria (CONFIGURACOES.CARROSSEL_IDS,
+-- ver Melreels_Server/app.js) — editar um não refletia no outro.
+--
+-- A partir de agora, salvar o Carrossel de Destaque no site também
+-- escreve em CONFIGURACOES.CARROSSEL_IDS, sincronizando os dois. Essa
+-- coluna nova permite excluir um item específico dessa sincronização
+-- (aparece no site, mas não entra no carrossel do bot) sem afetar os
+-- demais — aditiva, default true (sincronizado), invisível pro bot.
+alter table "CONTEUDOS" add column if not exists sn_incluir_carrossel_bot boolean not null default true;
