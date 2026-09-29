@@ -23,6 +23,7 @@ function extrairCampos(formData: FormData) {
     .filter((v) => v && v !== nm_categoria);
   const vl_plano = parseNumber(formData.get("vl_plano"));
   const nr_dias_validade = parseNumber(formData.get("nr_dias_validade"));
+  const sn_promocional = formData.get("sn_promocional") === "on";
 
   if (!nm_plano || !nm_categoria) {
     throw new Error("Preencha nome e categoria do plano.");
@@ -31,21 +32,22 @@ function extrairCampos(formData: FormData) {
     throw new Error("Valor e dias de validade devem ser maiores que zero.");
   }
 
-  return { nm_plano, nm_categoria, nm_categorias_adicionais, vl_plano, nr_dias_validade };
+  return { nm_plano, nm_categoria, nm_categorias_adicionais, vl_plano, nr_dias_validade, sn_promocional };
 }
 
 export async function criarPlano(formData: FormData) {
   const campos = extrairCampos(formData);
 
   const { rows } = await pool.query<{ cd_plano: string }>(
-    `INSERT INTO "PLANOS" (nm_plano, nm_categoria, nm_categorias_adicionais, vl_plano, nr_dias_validade)
-     VALUES ($1, $2, $3, $4, $5) RETURNING cd_plano`,
+    `INSERT INTO "PLANOS" (nm_plano, nm_categoria, nm_categorias_adicionais, vl_plano, nr_dias_validade, sn_promocional)
+     VALUES ($1, $2, $3, $4, $5, $6) RETURNING cd_plano`,
     [
       campos.nm_plano,
       campos.nm_categoria,
       campos.nm_categorias_adicionais,
       campos.vl_plano,
       campos.nr_dias_validade,
+      campos.sn_promocional,
     ]
   );
 
@@ -65,14 +67,15 @@ export async function editarPlano(id: string, formData: FormData) {
 
   await pool.query(
     `UPDATE "PLANOS" SET nm_plano = $1, nm_categoria = $2, nm_categorias_adicionais = $3,
-       vl_plano = $4, nr_dias_validade = $5
-     WHERE cd_plano = $6`,
+       vl_plano = $4, nr_dias_validade = $5, sn_promocional = $6
+     WHERE cd_plano = $7`,
     [
       campos.nm_plano,
       campos.nm_categoria,
       campos.nm_categorias_adicionais,
       campos.vl_plano,
       campos.nr_dias_validade,
+      campos.sn_promocional,
       id,
     ]
   );
@@ -261,8 +264,8 @@ export async function removerPlano(id: string) {
 
 export async function restaurarPlano(snapshot: Plano) {
   await pool.query(
-    `INSERT INTO "PLANOS" (cd_plano, nm_plano, nm_categoria, nm_categorias_adicionais, vl_plano, nr_dias_validade)
-     VALUES ($1, $2, $3, $4, $5, $6)`,
+    `INSERT INTO "PLANOS" (cd_plano, nm_plano, nm_categoria, nm_categorias_adicionais, vl_plano, nr_dias_validade, sn_promocional)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
     [
       snapshot.cd_plano,
       snapshot.nm_plano,
@@ -270,6 +273,7 @@ export async function restaurarPlano(snapshot: Plano) {
       snapshot.nm_categorias_adicionais ?? [],
       snapshot.vl_plano,
       snapshot.nr_dias_validade,
+      snapshot.sn_promocional ?? false,
     ]
   );
 

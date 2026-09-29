@@ -312,7 +312,17 @@ export default function PlanosAdminClient({
                     }}
                     className="hover:bg-[rgba(139,92,246,0.05)] transition-colors"
                   >
-                    <td className="px-6 py-4 font-semibold">{plano.nm_plano}</td>
+                    <td className="px-6 py-4 font-semibold">
+                      {plano.nm_plano}
+                      {plano.sn_promocional && (
+                        <span
+                          title="Compra única por cliente"
+                          className="ml-2 bg-[#7B2FBE]/20 border border-[#7B2FBE]/40 px-2 py-0.5 rounded text-[10px] font-bold text-[#A78BFA] uppercase align-middle"
+                        >
+                          Promo
+                        </span>
+                      )}
+                    </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-wrap gap-1">
                         <span className="bg-[#050208] border border-[rgba(139,92,246,0.2)] px-2 py-0.5 rounded text-xs text-[#A78BFA]">
@@ -515,6 +525,19 @@ export default function PlanosAdminClient({
                     />
                   </div>
                 </div>
+
+                <label htmlFor="sn_promocional" className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    id="sn_promocional"
+                    name="sn_promocional"
+                    defaultChecked={planoEdicao?.sn_promocional ?? false}
+                    className="h-4 w-4 rounded border-[rgba(139,92,246,0.3)] bg-[#050208] accent-[#7B2FBE]"
+                  />
+                  <span className="text-xs font-semibold text-[#A78BFA] uppercase">
+                    Plano promocional (compra única por cliente)
+                  </span>
+                </label>
 
                 {erro && <p className="text-sm text-red-400">{erro}</p>}
 

@@ -223,6 +223,9 @@ export type Plano = {
   nm_categorias_adicionais: string[];
   vl_plano: number;
   nr_dias_validade: number;
+  /** Plano promocional: cada cliente só pode assiná-lo uma vez na vida,
+   * mesmo depois de expirar — checado em iniciarCheckoutPixPlano/Cartão. */
+  sn_promocional: boolean;
 };
 
 export type PlanoInsert = {
@@ -232,6 +235,7 @@ export type PlanoInsert = {
   nm_categorias_adicionais?: string[];
   vl_plano: number;
   nr_dias_validade: number;
+  sn_promocional?: boolean;
 };
 
 export type PlanoUpdate = {
@@ -240,6 +244,7 @@ export type PlanoUpdate = {
   nm_categorias_adicionais?: string[];
   vl_plano?: number;
   nr_dias_validade?: number;
+  sn_promocional?: boolean;
 };
 
 export type TpBanimento = "TOTAL" | "COMPRAS" | "PERSONALIZADO";

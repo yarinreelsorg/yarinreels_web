@@ -100,6 +100,26 @@ async function obterDadosComissao(
   };
 }
 
+/** Planos promocionais só podem ser comprados uma vez por cliente, mesmo
+ * depois de expirar — checa se já existe alguma venda APROVADA desse
+ * cd_plano pra qualquer id_telegram elegível do usuário antes de deixar
+ * gerar uma cobrança nova. */
+async function bloquearRecompraPromocional(nr_id_telegram: number, cd_plano: string) {
+  const { rows } = await pool.query<{ sn_promocional: boolean }>(
+    'SELECT sn_promocional FROM "PLANOS" WHERE cd_plano = $1 LIMIT 1',
+    [cd_plano]
+  );
+  if (!rows[0]?.sn_promocional) return;
+
+  const { rows: jaComprou } = await pool.query<{ cd_venda: string }>(
+    `SELECT cd_venda FROM "VENDAS" WHERE nr_id_telegram = $1 AND cd_plano = $2 AND tp_status = 'APROVADA' LIMIT 1`,
+    [nr_id_telegram, cd_plano]
+  );
+  if (jaComprou.length > 0) {
+    throw new Error("Você já utilizou essa promoção antes. Ela é válida apenas uma vez por cliente.");
+  }
+}
+
 async function calcularDiasValidade(tp_compra: TpCompra, cd_plano: string | null) {
   if (tp_compra === "VITALICIO") return DIAS_VITALICIO;
   if (tp_compra === "ASSINATURA" && cd_plano) {
@@ -213,6 +233,7 @@ export async function iniciarCheckoutPixPlano(cd_plano: string): Promise<Checkou
   if (!plano) throw new Error("Plano não encontrado.");
 
   const nr_id_telegram = await obterIdentidadeParaCompra(sessao.cd_usuario);
+  await bloquearRecompraPromocional(nr_id_telegram, cd_plano);
 
   const existente = await reaproveitarVendaPixPendente(nr_id_telegram, "ASSINATURA", null, cd_plano);
   if (existente) return existente;
@@ -404,6 +425,7 @@ export async function iniciarCheckoutCartaoPlano(
   if (!plano) throw new Error("Plano não encontrado.");
 
   const nr_id_telegram = await obterIdentidadeParaCompra(sessao.cd_usuario);
+  await bloquearRecompraPromocional(nr_id_telegram, cd_plano);
 
   return finalizarCompraCartao(
     sessao.cd_usuario,
