@@ -247,6 +247,13 @@ export type PlanoUpdate = {
   sn_promocional?: boolean;
 };
 
+export type SolicitacaoDrama = {
+  cd_solicitacao: string;
+  nr_id_telegram: number;
+  ds_titulo: string;
+  ts_criacao: string;
+};
+
 export type TpBanimento = "TOTAL" | "COMPRAS" | "PERSONALIZADO";
 
 export type Ban = {

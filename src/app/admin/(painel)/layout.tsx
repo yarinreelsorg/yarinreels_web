@@ -24,6 +24,7 @@ const GRUPOS_NAV = [
       { href: "/admin/catalogo", label: "Catálogo", icon: "🎬" },
       { href: "/admin/destaques", label: "Destaques da Home", icon: "⭐" },
       { href: "/admin/avatares", label: "Avatares", icon: "🖼️" },
+      { href: "/admin/solicitacoes", label: "Solicitações", icon: "📩" },
     ],
   },
   {
