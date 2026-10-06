@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { motion } from "motion/react";
 import { useToast } from "@/components/admin/ToastProvider";
 import Reveal from "@/components/motion/Reveal";
-import { excluirSolicitacao, type SolicitacaoAgrupada } from "./actions";
+import { avisarSolicitacao, excluirSolicitacao, type SolicitacaoAgrupada } from "./actions";
 
 function formatarData(iso: string) {
   return new Date(iso).toLocaleDateString("pt-BR", {
@@ -39,6 +39,25 @@ export default function SolicitacoesAdminClient({
         toast.sucesso("Pedido removido da lista.");
       } catch {
         toast.erro("Erro ao remover o pedido.");
+      }
+    });
+  };
+
+  const aoAvisar = (s: SolicitacaoAgrupada) => {
+    if (
+      !window.confirm(
+        `Avisar ${s.total} cliente(s) por Telegram que "${s.ds_titulo}" já está disponível? Isso remove o pedido da lista.`
+      )
+    )
+      return;
+
+    startTransition(async () => {
+      try {
+        await avisarSolicitacao(s.chave, s.ds_titulo);
+        setSolicitacoes(solicitacoes.filter((item) => item.chave !== s.chave));
+        toast.sucesso("Clientes avisados!");
+      } catch (err) {
+        toast.erro(err instanceof Error ? err.message : "Erro ao avisar os clientes.");
       }
     });
   };
@@ -113,14 +132,24 @@ export default function SolicitacoesAdminClient({
                       </td>
                       <td className="px-6 py-4 text-xs text-[#A78BFA]">{formatarData(s.ultima_solicitacao)}</td>
                       <td className="px-6 py-4 text-right">
-                        <button
-                          type="button"
-                          disabled={isPending}
-                          onClick={() => aoExcluir(s)}
-                          className="rounded border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-bold text-red-400 hover:bg-red-500/20 transition-colors cursor-pointer disabled:opacity-50"
-                        >
-                          🗑️ Remover
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            disabled={isPending}
+                            onClick={() => aoAvisar(s)}
+                            className="rounded border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-400 hover:bg-emerald-500/20 transition-colors cursor-pointer disabled:opacity-50"
+                          >
+                            📢 Avisar
+                          </button>
+                          <button
+                            type="button"
+                            disabled={isPending}
+                            onClick={() => aoExcluir(s)}
+                            className="rounded border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-bold text-red-400 hover:bg-red-500/20 transition-colors cursor-pointer disabled:opacity-50"
+                          >
+                            🗑️ Remover
+                          </button>
+                        </div>
                       </td>
                     </motion.tr>
                   ))}
