@@ -103,10 +103,32 @@ export default function VideoPlayer({
     let tentativasErro = 0;
     const MAX_TENTATIVAS_ERRO = 3;
     const ATRASO_RETRY_BASE_MS = 2000;
+    // Timeout de segurança: já aconteceu de travar girando pra sempre (nem
+    // "loadedmetadata" nem "error" disparavam) — um caso visto foi provável
+    // bloqueio de CORS no fetch que o hls.js faz pro manifesto, que às
+    // vezes não vira um erro "fatal" reconhecível, só fica pendurado. Sem
+    // isso, nada no código reagia e o spinner nunca saía da tela.
+    const TIMEOUT_CARREGAMENTO_MS = 15000;
+    let timeoutCarregamento: ReturnType<typeof setTimeout> | null = null;
+
+    function limparTimeoutCarregamento() {
+      if (timeoutCarregamento) {
+        clearTimeout(timeoutCarregamento);
+        timeoutCarregamento = null;
+      }
+    }
+
+    function agendarTimeoutCarregamento() {
+      limparTimeoutCarregamento();
+      timeoutCarregamento = setTimeout(() => {
+        if (!destruido) aoDarErro();
+      }, TIMEOUT_CARREGAMENTO_MS);
+    }
 
     function aoCarregarMetadados() {
       if (!video) return;
       tentativasErro = 0;
+      limparTimeoutCarregamento();
       const progressoSalvo = lerProgressoSalvo(idProgresso);
       if (progressoSalvo > 5 && progressoSalvo < video.duration * RETOMAR_ATE_PORCENTAGEM) {
         video.currentTime = progressoSalvo;
@@ -117,6 +139,7 @@ export default function VideoPlayer({
 
     function aoDarErro() {
       if (destruido || !video) return;
+      limparTimeoutCarregamento();
 
       if (tentativasErro < MAX_TENTATIVAS_ERRO) {
         tentativasErro++;
@@ -133,6 +156,7 @@ export default function VideoPlayer({
 
     function iniciarFonte() {
       if (!video) return;
+      agendarTimeoutCarregamento();
       if (src.includes(".m3u8")) {
         import("hls.js").then(({ default: Hls }) => {
           if (destruido) return;
@@ -198,6 +222,7 @@ export default function VideoPlayer({
 
     return () => {
       destruido = true;
+      limparTimeoutCarregamento();
       window.clearInterval(intervalo);
       video.removeEventListener("loadedmetadata", aoCarregarMetadados);
       video.removeEventListener("error", aoDarErro);
