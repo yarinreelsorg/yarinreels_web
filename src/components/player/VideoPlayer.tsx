@@ -95,9 +95,18 @@ export default function VideoPlayer({
 
     let hls: import("hls.js").default | null = null;
     let destruido = false;
+    // Falha passageira é comum aqui: boa parte do catálogo vem de um
+    // servidor de mídia próprio sem redundância (cai ocasionalmente) — sem
+    // retentativa automática, qualquer soluço de alguns segundos virava
+    // "não foi possível carregar o vídeo" permanente, exigindo o cliente
+    // recarregar a página na mão.
+    let tentativasErro = 0;
+    const MAX_TENTATIVAS_ERRO = 3;
+    const ATRASO_RETRY_BASE_MS = 2000;
 
     function aoCarregarMetadados() {
       if (!video) return;
+      tentativasErro = 0;
       const progressoSalvo = lerProgressoSalvo(idProgresso);
       if (progressoSalvo > 5 && progressoSalvo < video.duration * RETOMAR_ATE_PORCENTAGEM) {
         video.currentTime = progressoSalvo;
@@ -107,8 +116,46 @@ export default function VideoPlayer({
     }
 
     function aoDarErro() {
+      if (destruido || !video) return;
+
+      if (tentativasErro < MAX_TENTATIVAS_ERRO) {
+        tentativasErro++;
+        setTimeout(() => {
+          if (destruido || !video) return;
+          iniciarFonte();
+        }, ATRASO_RETRY_BASE_MS * tentativasErro);
+        return;
+      }
+
       setErro("Não foi possível carregar o vídeo. Tente novamente em instantes.");
       setCarregando(false);
+    }
+
+    function iniciarFonte() {
+      if (!video) return;
+      if (src.includes(".m3u8")) {
+        import("hls.js").then(({ default: Hls }) => {
+          if (destruido) return;
+
+          if (Hls.isSupported()) {
+            hls?.destroy();
+            hls = new Hls({ maxBufferLength: 30 });
+            hls.loadSource(src);
+            hls.attachMedia(video);
+            hls.on(Hls.Events.ERROR, (_evento, data) => {
+              if (data.fatal) aoDarErro();
+            });
+          } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+            // Safari toca HLS nativamente
+            video.src = src;
+          } else {
+            aoDarErro();
+          }
+        });
+      } else {
+        video.src = src;
+        video.load();
+      }
     }
 
     function aoAtualizarTempo() {
@@ -132,27 +179,7 @@ export default function VideoPlayer({
     video.addEventListener("play", aoTocar);
     video.addEventListener("pause", aoPausarEvento);
 
-    if (src.includes(".m3u8")) {
-      import("hls.js").then(({ default: Hls }) => {
-        if (destruido) return;
-
-        if (Hls.isSupported()) {
-          hls = new Hls({ maxBufferLength: 30 });
-          hls.loadSource(src);
-          hls.attachMedia(video);
-          hls.on(Hls.Events.ERROR, (_evento, data) => {
-            if (data.fatal) aoDarErro();
-          });
-        } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-          // Safari toca HLS nativamente
-          video.src = src;
-        } else {
-          aoDarErro();
-        }
-      });
-    } else {
-      video.src = src;
-    }
+    iniciarFonte();
 
     const intervalo = window.setInterval(() => {
       if (!video.paused && !video.ended) {
