@@ -6,10 +6,13 @@ import { pool } from "@/lib/db";
 import { getSessaoAdmin } from "@/lib/admin-auth";
 import { registrarLog } from "@/lib/auditoria";
 
-async function exigirSuperAdmin() {
+// Gestão de Apps de Navegação é tarefa do dia a dia da equipe de suporte
+// (cadastro de conteúdo, reordenar a barrinha) — não precisa ser exclusivo
+// de SUPER_ADMIN como outras áreas mais sensíveis (financeiro, afiliados).
+async function exigirAdmin() {
   const sessao = await getSessaoAdmin();
-  if (!sessao || sessao.tp_papel !== "SUPER_ADMIN") {
-    throw new Error("Apenas super administradores podem gerenciar os apps.");
+  if (!sessao) {
+    throw new Error("Sessão expirada — faça login novamente.");
   }
   return sessao;
 }
@@ -18,7 +21,7 @@ const TAMANHO_MAXIMO_LOGO = 2 * 1024 * 1024; // 2MB
 const TIPOS_ACEITOS = ["image/png", "image/jpeg", "image/webp", "image/svg+xml", "image/gif"];
 
 export async function enviarLogoApp(formData: FormData): Promise<string> {
-  await exigirSuperAdmin();
+  await exigirAdmin();
 
   const arquivo = formData.get("arquivo");
   if (!(arquivo instanceof File) || arquivo.size === 0) {
@@ -51,7 +54,7 @@ function revalidarTudo() {
 }
 
 export async function criarApp(nmApp: string, dsIcone: string) {
-  await exigirSuperAdmin();
+  await exigirAdmin();
 
   const nome = nmApp.trim();
   if (!nome) throw new Error("Informe o nome do app.");
@@ -78,7 +81,7 @@ export async function criarApp(nmApp: string, dsIcone: string) {
 }
 
 export async function editarApp(cdApp: string, nmApp: string, dsIcone: string, nomeAntigo: string) {
-  await exigirSuperAdmin();
+  await exigirAdmin();
 
   const nome = nmApp.trim();
   if (!nome) throw new Error("Informe o nome do app.");
@@ -108,7 +111,7 @@ export async function editarApp(cdApp: string, nmApp: string, dsIcone: string, n
 }
 
 export async function removerApp(cdApp: string) {
-  await exigirSuperAdmin();
+  await exigirAdmin();
 
   await pool.query('DELETE FROM "APPS_NAVEGACAO" WHERE cd_app = $1', [cdApp]);
 
@@ -117,7 +120,7 @@ export async function removerApp(cdApp: string) {
 }
 
 export async function alternarVisibilidadeApp(cdApp: string, visivel: boolean) {
-  await exigirSuperAdmin();
+  await exigirAdmin();
 
   await pool.query('UPDATE "APPS_NAVEGACAO" SET sn_visivel = $1 WHERE cd_app = $2', [
     visivel,
@@ -127,7 +130,7 @@ export async function alternarVisibilidadeApp(cdApp: string, visivel: boolean) {
 }
 
 export async function atualizarOrdemApps(ordem: string[]) {
-  await exigirSuperAdmin();
+  await exigirAdmin();
 
   await Promise.all(
     ordem.map((cdApp, indice) =>
