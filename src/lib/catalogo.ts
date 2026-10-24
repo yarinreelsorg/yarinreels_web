@@ -162,6 +162,13 @@ const BASE_URL_MEDIA_LOCAL = "https://media.melreels.com.br/filmes/";
  */
 export type TrilhaAudio = "dublado" | "legendado";
 
+function montarUrlLocal(nomeArquivo: string): string | null {
+  const nomeBase = nomeArquivo.trim();
+  if (!nomeBase) return null;
+  const arquivo = nomeBase.toLowerCase().endsWith(".mp4") ? nomeBase : `${nomeBase}.mp4`;
+  return `${BASE_URL_MEDIA_LOCAL}${encodeURIComponent(arquivo)}`;
+}
+
 export function resolverUrlVideo(
   item: {
     tp_fonte_prioritaria: string;
@@ -173,44 +180,50 @@ export function resolverUrlVideo(
   },
   trilha: TrilhaAudio = "dublado"
 ): string | null {
+  // A faixa legendada tem sua PRÓPRIA fonte, independente de
+  // tp_fonte_prioritaria (que descreve só a faixa principal/dublada) —
+  // tenta Bunny legendado, senão arquivo local/Telegram legendado, sem
+  // amarrar isso à fonte prioritária global. Bug reportado: cadastrar o
+  // dublado no Bunny e o legendado como arquivo local, com fonte
+  // prioritária = BUNNY, fazia a faixa legendada "sumir" (o código só
+  // olhava ds_url_bunny_legendado e ignorava que havia um arquivo local
+  // legendado cadastrado).
+  if (trilha === "legendado") {
+    if (item.ds_url_bunny_legendado?.startsWith("http")) {
+      return item.ds_url_bunny_legendado;
+    }
+    if (item.ds_file_id_telegram_legendado) {
+      return montarUrlLocal(item.ds_file_id_telegram_legendado);
+    }
+    // Nenhuma faixa legendada cadastrada — cai pra faixa principal abaixo.
+  }
+
   // Dado legado do bot grava esse campo com casing inconsistente
   // ("LOCAL", "local", etc) — normaliza antes de comparar.
   const fonte = (item.tp_fonte_prioritaria || "").toUpperCase();
 
-  // Faixa legendada é opcional — se não foi cadastrada pra esse item, cai
-  // de volta pra faixa padrão (dublado) em vez de quebrar a reprodução.
-  const urlBunny =
-    (trilha === "legendado" ? item.ds_url_bunny_legendado : null) || item.ds_url_bunny;
-  const fileIdTelegram =
-    (trilha === "legendado" ? item.ds_file_id_telegram_legendado : null) ||
-    item.ds_file_id_telegram;
-
   if (fonte === "BUNNY") {
-    return urlBunny && urlBunny.startsWith("http") ? urlBunny : null;
+    return item.ds_url_bunny?.startsWith("http") ? item.ds_url_bunny : null;
   }
 
   if (fonte === "LOCAL") {
-    const nomeBase = (fileIdTelegram || item.nm_titulo || "").trim();
-    if (!nomeBase) return null;
-    const arquivo = nomeBase.toLowerCase().endsWith(".mp4") ? nomeBase : `${nomeBase}.mp4`;
-    return `${BASE_URL_MEDIA_LOCAL}${encodeURIComponent(arquivo)}`;
+    return montarUrlLocal(item.ds_file_id_telegram || item.nm_titulo || "");
   }
 
   return null;
 }
 
-/** Uma faixa legendada só existe de verdade se tiver um valor DIFERENTE do
- * dublado — value idêntico normalmente significa que ninguém cadastrou a
- * versão legendada ainda. */
+/** Faixa legendada existe se tiver Bunny OU arquivo local/Telegram
+ * cadastrado — independente de qual é a fonte prioritária da faixa
+ * principal (mesmo motivo do fix em resolverUrlVideo acima: um título
+ * pode ter o dublado no Bunny e o legendado como arquivo local, ou
+ * vice-versa, e os dois precisam continuar selecionáveis no player). */
 export function temTrilhaLegendada(item: {
   tp_fonte_prioritaria: string;
   ds_url_bunny_legendado?: string | null;
   ds_file_id_telegram_legendado?: string | null;
 }): boolean {
-  const fonte = (item.tp_fonte_prioritaria || "").toUpperCase();
-  if (fonte === "BUNNY") return !!item.ds_url_bunny_legendado?.trim();
-  if (fonte === "LOCAL") return !!item.ds_file_id_telegram_legendado?.trim();
-  return false;
+  return !!item.ds_url_bunny_legendado?.trim() || !!item.ds_file_id_telegram_legendado?.trim();
 }
 
 export function diasRestantes(tsExpiracao: string) {
