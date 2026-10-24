@@ -7,6 +7,7 @@ import type { Conteudo, Episodio } from "@/types/database";
 import VideoPlayer from "@/components/player/VideoPlayer";
 import {
   formatarPreco,
+  obterTrilhaPrincipal,
   otimizarUrlPoster,
   resolverUrlVideo,
   temTrilhaLegendada,
@@ -39,11 +40,14 @@ export default function AssistirClient({
    * só compra avulsa (aluguel/vitalício). */
   emCarencia?: boolean;
 }) {
-  const [trilha, setTrilha] = useState<TrilhaAudio>("dublado");
+  // Começa pela trilha principal do título (default "dublado", mas pode ser
+  // "legendado" se o título foi cadastrado assim — ver tp_trilha_principal).
+  const [trilha, setTrilha] = useState<TrilhaAudio>(() => obterTrilhaPrincipal(conteudo));
 
   const itemFonte = episodioAtual
     ? {
         tp_fonte_prioritaria: conteudo.tp_fonte_prioritaria,
+        tp_trilha_principal: conteudo.tp_trilha_principal,
         ds_url_bunny: episodioAtual.ds_url_bunny,
         ds_file_id_telegram: episodioAtual.ds_file_id_telegram,
         ds_url_bunny_legendado: episodioAtual.ds_url_bunny_legendado,

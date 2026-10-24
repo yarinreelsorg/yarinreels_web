@@ -2,6 +2,8 @@ export type TpFormato = "FILME" | "SERIE" | "DOCUMENTARIO" | "AULA";
 
 export type TpFontePrioritaria = "LOCAL" | "BUNNY" | "TELEGRAM";
 
+export type TpTrilhaPrincipal = "DUBLADO" | "LEGENDADO";
+
 export type TpCompra = "ALUGUEL" | "VITALICIO" | "ASSINATURA";
 
 export type TpStatusVenda = "PENDENTE" | "APROVADA";
@@ -49,11 +51,17 @@ export type Conteudo = {
   ds_url_poster: string | null;
   ds_file_id_telegram: string | null;
   ds_url_bunny: string | null;
-  /** Faixa alternativa (legendado) — quando ausente, o player usa a faixa
-   * padrão (ds_url_bunny/ds_file_id_telegram, tratada como "dublado"). */
+  /** Faixa alternativa — quando ausente, o player usa só a faixa principal
+   * (ds_url_bunny/ds_file_id_telegram). Qual trilha (dublado/legendado) cada
+   * par de campos representa é definido por tp_trilha_principal: o par
+   * "_legendado" sempre guarda "a outra trilha", não necessariamente a
+   * legendada (ex: título cadastrado só em legendado desde o início usa
+   * tp_trilha_principal=LEGENDADO, e esse par passa a guardar o dublado
+   * quando ele sair depois). */
   ds_url_bunny_legendado: string | null;
   ds_file_id_telegram_legendado: string | null;
   tp_fonte_prioritaria: TpFontePrioritaria;
+  tp_trilha_principal: TpTrilhaPrincipal;
   sn_destaque: boolean;
   nr_ordem_destaque: number | null;
   /** Esse item do Carrossel de Destaque também entra no carrossel do bot
@@ -97,6 +105,7 @@ export type ConteudoInsert = {
   ds_url_bunny_legendado?: string | null;
   ds_file_id_telegram_legendado?: string | null;
   tp_fonte_prioritaria?: TpFontePrioritaria;
+  tp_trilha_principal?: TpTrilhaPrincipal;
   sn_destaque?: boolean;
   nr_views?: number;
   nm_app_origem?: string | null;
@@ -125,6 +134,7 @@ export type ConteudoUpdate = {
   ds_url_bunny_legendado?: string | null;
   ds_file_id_telegram_legendado?: string | null;
   tp_fonte_prioritaria?: TpFontePrioritaria;
+  tp_trilha_principal?: TpTrilhaPrincipal;
   sn_destaque?: boolean;
   nr_views?: number;
   nm_app_origem?: string | null;

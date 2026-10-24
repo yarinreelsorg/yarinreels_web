@@ -169,9 +169,26 @@ function montarUrlLocal(nomeArquivo: string): string | null {
   return `${BASE_URL_MEDIA_LOCAL}${encodeURIComponent(arquivo)}`;
 }
 
+/**
+ * Qual trilha (dublado/legendado) o par de campos PRINCIPAIS
+ * (ds_url_bunny/ds_file_id_telegram, via tp_fonte_prioritaria) representa
+ * pra esse título. Default "dublado" preserva o comportamento de todo
+ * título cadastrado antes dessa coluna existir. O par "_legendado" sempre
+ * guarda "a outra trilha" — não necessariamente a legendada: um título
+ * cadastrado originalmente só em legendado (tp_trilha_principal=LEGENDADO)
+ * usa o par "_legendado" pra guardar o DUBLADO quando ele sair depois, sem
+ * precisar duplicar o cadastro inteiro.
+ */
+export function obterTrilhaPrincipal(item: {
+  tp_trilha_principal?: string | null;
+}): TrilhaAudio {
+  return (item.tp_trilha_principal || "").toUpperCase() === "LEGENDADO" ? "legendado" : "dublado";
+}
+
 export function resolverUrlVideo(
   item: {
     tp_fonte_prioritaria: string;
+    tp_trilha_principal?: string | null;
     ds_url_bunny: string | null;
     ds_file_id_telegram: string | null;
     ds_url_bunny_legendado?: string | null;
@@ -180,22 +197,23 @@ export function resolverUrlVideo(
   },
   trilha: TrilhaAudio = "dublado"
 ): string | null {
-  // A faixa legendada tem sua PRÓPRIA fonte, independente de
-  // tp_fonte_prioritaria (que descreve só a faixa principal/dublada) —
-  // tenta Bunny legendado, senão arquivo local/Telegram legendado, sem
-  // amarrar isso à fonte prioritária global. Bug reportado: cadastrar o
-  // dublado no Bunny e o legendado como arquivo local, com fonte
-  // prioritária = BUNNY, fazia a faixa legendada "sumir" (o código só
-  // olhava ds_url_bunny_legendado e ignorava que havia um arquivo local
-  // legendado cadastrado).
-  if (trilha === "legendado") {
+  const principal = obterTrilhaPrincipal(item);
+
+  // A trilha que NÃO é a principal tem sua PRÓPRIA fonte, independente de
+  // tp_fonte_prioritaria (que descreve só a trilha principal) — tenta
+  // Bunny, senão arquivo local/Telegram, sem amarrar isso à fonte
+  // prioritária global. Bug reportado: cadastrar o dublado no Bunny e o
+  // legendado como arquivo local, com fonte prioritária = BUNNY, fazia a
+  // faixa legendada "sumir" (o código só olhava ds_url_bunny_legendado e
+  // ignorava que havia um arquivo local legendado cadastrado).
+  if (trilha !== principal) {
     if (item.ds_url_bunny_legendado?.startsWith("http")) {
       return item.ds_url_bunny_legendado;
     }
     if (item.ds_file_id_telegram_legendado) {
       return montarUrlLocal(item.ds_file_id_telegram_legendado);
     }
-    // Nenhuma faixa legendada cadastrada — cai pra faixa principal abaixo.
+    // Nenhuma faixa secundária cadastrada — cai pra faixa principal abaixo.
   }
 
   // Dado legado do bot grava esse campo com casing inconsistente
@@ -213,13 +231,10 @@ export function resolverUrlVideo(
   return null;
 }
 
-/** Faixa legendada existe se tiver Bunny OU arquivo local/Telegram
- * cadastrado — independente de qual é a fonte prioritária da faixa
- * principal (mesmo motivo do fix em resolverUrlVideo acima: um título
- * pode ter o dublado no Bunny e o legendado como arquivo local, ou
- * vice-versa, e os dois precisam continuar selecionáveis no player). */
+/** Existe uma segunda trilha cadastrada (Bunny OU arquivo local/Telegram no
+ * par "_legendado") além da principal — independente de qual das duas é a
+ * dublada e qual é a legendada (ver obterTrilhaPrincipal acima). */
 export function temTrilhaLegendada(item: {
-  tp_fonte_prioritaria: string;
   ds_url_bunny_legendado?: string | null;
   ds_file_id_telegram_legendado?: string | null;
 }): boolean {

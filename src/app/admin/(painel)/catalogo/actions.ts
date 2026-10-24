@@ -3,7 +3,7 @@
 import { pool } from "@/lib/db";
 import { registrarLog } from "@/lib/auditoria";
 import { revalidatePath } from "next/cache";
-import type { Conteudo, TpFontePrioritaria, TpFormato } from "@/types/database";
+import type { Conteudo, TpFontePrioritaria, TpFormato, TpTrilhaPrincipal } from "@/types/database";
 
 const parseNumber = (val: unknown) => {
   if (val === null || val === undefined || val === "") return null;
@@ -53,6 +53,8 @@ function extrairCampos(formData: FormData) {
     segundosPreview && segundosPreview > 0 ? Math.round(segundosPreview) : 60;
   const tp_fonte_prioritaria = (parseString(formData.get("tp_fonte_prioritaria")) ??
     "LOCAL") as TpFontePrioritaria;
+  const tp_trilha_principal = (parseString(formData.get("tp_trilha_principal")) ??
+    "DUBLADO") as TpTrilhaPrincipal;
   const vl_aluguel = parseNumber(formData.get("vl_aluguel"));
   const vl_vitalicio = parseNumber(formData.get("vl_vitalicio"));
 
@@ -112,6 +114,7 @@ function extrairCampos(formData: FormData) {
     ds_url_teaser_vertical,
     nr_segundos_preview_trailer,
     tp_fonte_prioritaria,
+    tp_trilha_principal,
     sn_destaque: formData.get("sn_destaque") === "on" || formData.get("sn_destaque") === "true",
     dt_lancamento: parseString(formData.get("dt_lancamento")),
     sn_exclusivo_assinantes:
@@ -130,10 +133,10 @@ export async function adicionarConteudo(cdConteudo: string, formData: FormData) 
        (cd_conteudo, nm_titulo, nm_categoria, nm_categorias_adicionais, tp_formato, nm_idioma,
         ds_generos, ds_descricao, vl_aluguel, vl_vitalicio, ds_url_poster, ds_url_bunny,
         ds_file_id_telegram, ds_url_bunny_legendado, ds_file_id_telegram_legendado,
-        ds_url_teaser_vertical, nr_segundos_preview_trailer, tp_fonte_prioritaria, sn_destaque,
-        dt_lancamento, nm_app_origem, nm_apps_origem, sn_exclusivo_assinantes, sn_carencia_ativa,
-        nr_views)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,0)`,
+        ds_url_teaser_vertical, nr_segundos_preview_trailer, tp_fonte_prioritaria,
+        tp_trilha_principal, sn_destaque, dt_lancamento, nm_app_origem, nm_apps_origem,
+        sn_exclusivo_assinantes, sn_carencia_ativa, nr_views)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,0)`,
     [
       cdConteudo,
       campos.nm_titulo,
@@ -153,6 +156,7 @@ export async function adicionarConteudo(cdConteudo: string, formData: FormData) 
       campos.ds_url_teaser_vertical,
       campos.nr_segundos_preview_trailer,
       campos.tp_fonte_prioritaria,
+      campos.tp_trilha_principal,
       campos.sn_destaque,
       campos.dt_lancamento,
       campos.nm_app_origem,
@@ -183,9 +187,9 @@ export async function editarConteudo(id: string, formData: FormData) {
        ds_url_poster = $10, ds_url_bunny = $11, ds_file_id_telegram = $12,
        ds_url_bunny_legendado = $13, ds_file_id_telegram_legendado = $14,
        ds_url_teaser_vertical = $15, nr_segundos_preview_trailer = $16, tp_fonte_prioritaria = $17,
-       sn_destaque = $18, dt_lancamento = $19, nm_app_origem = $20, nm_apps_origem = $21,
-       sn_exclusivo_assinantes = $22, sn_carencia_ativa = $23
-     WHERE cd_conteudo = $24`,
+       tp_trilha_principal = $18, sn_destaque = $19, dt_lancamento = $20, nm_app_origem = $21,
+       nm_apps_origem = $22, sn_exclusivo_assinantes = $23, sn_carencia_ativa = $24
+     WHERE cd_conteudo = $25`,
     [
       campos.nm_titulo,
       campos.nm_categoria,
@@ -204,6 +208,7 @@ export async function editarConteudo(id: string, formData: FormData) {
       campos.ds_url_teaser_vertical,
       campos.nr_segundos_preview_trailer,
       campos.tp_fonte_prioritaria,
+      campos.tp_trilha_principal,
       campos.sn_destaque,
       campos.dt_lancamento,
       campos.nm_app_origem,

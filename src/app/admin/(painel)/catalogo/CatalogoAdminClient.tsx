@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
-import type { Conteudo, TpFormato } from "@/types/database";
+import type { Conteudo, TpFormato, TpTrilhaPrincipal } from "@/types/database";
 import {
   adicionarConteudo,
   editarConteudo,
@@ -78,6 +78,7 @@ export default function CatalogoAdminClient({
     string[]
   >([]);
   const [urlPoster, setUrlPoster] = useState("");
+  const [trilhaPrincipal, setTrilhaPrincipal] = useState<TpTrilhaPrincipal>("DUBLADO");
   const [appsOrigemSelecionados, setAppsOrigemSelecionados] = useState<string[]>([]);
   const [salvando, setSalvando] = useState(false);
 
@@ -153,6 +154,7 @@ export default function CatalogoAdminClient({
     setNovaCategoria("");
     setCategoriasAdicionaisSelecionadas([]);
     setUrlPoster("");
+    setTrilhaPrincipal("DUBLADO");
     setAppsOrigemSelecionados([]);
     setModalAberto(true);
   };
@@ -165,6 +167,7 @@ export default function CatalogoAdminClient({
     setNovaCategoria("");
     setCategoriasAdicionaisSelecionadas(conteudo.nm_categorias_adicionais ?? []);
     setUrlPoster(conteudo.ds_url_poster || "");
+    setTrilhaPrincipal(conteudo.tp_trilha_principal || "DUBLADO");
     setAppsOrigemSelecionados(
       conteudo.nm_apps_origem?.length ? conteudo.nm_apps_origem : conteudo.nm_app_origem ? [conteudo.nm_app_origem] : []
     );
@@ -848,8 +851,29 @@ export default function CatalogoAdminClient({
                   </div>
 
                   <div>
+                    <label htmlFor="tp_trilha_principal" className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">
+                      Faixa principal (campos abaixo)
+                    </label>
+                    <select
+                      id="tp_trilha_principal"
+                      name="tp_trilha_principal"
+                      value={trilhaPrincipal}
+                      onChange={(e) => setTrilhaPrincipal(e.target.value as TpTrilhaPrincipal)}
+                      className="w-full bg-[#0D0A1A] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white"
+                    >
+                      <option value="DUBLADO">Dublado</option>
+                      <option value="LEGENDADO">Legendado</option>
+                    </select>
+                    <p className="mt-1 text-[11px] text-[#A78BFA]/70">
+                      Qual trilha é essa, cadastrada abaixo nos campos principais. Se o título
+                      foi lançado só com uma versão e a outra sair depois, não precisa recadastrar
+                      tudo — cadastre a nova versão no bloco &quot;Versão oposta&quot; abaixo.
+                    </p>
+                  </div>
+
+                  <div>
                     <label htmlFor="ds_url_bunny" className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">
-                      URL Bunny Video
+                      URL Bunny Video ({trilhaPrincipal === "LEGENDADO" ? "Legendado" : "Dublado"})
                     </label>
                     <input
                       type="text"
@@ -863,7 +887,7 @@ export default function CatalogoAdminClient({
 
                   <div>
                     <label htmlFor="ds_file_id_telegram" className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">
-                      Telegram File ID
+                      Telegram File ID ({trilhaPrincipal === "LEGENDADO" ? "Legendado" : "Dublado"})
                     </label>
                     <input
                       type="text"
@@ -876,16 +900,17 @@ export default function CatalogoAdminClient({
 
                   <div className="rounded-md border border-dashed border-[rgba(139,92,246,0.25)] p-3">
                     <p className="mb-3 text-xs font-semibold uppercase text-[#A78BFA]">
-                      Versão Legendada (opcional)
+                      Versão {trilhaPrincipal === "LEGENDADO" ? "Dublada" : "Legendada"} (opcional)
                     </p>
                     <p className="mb-3 text-[11px] text-[#A78BFA]/70">
                       Preencha só se essa novela tiver as duas versões. Deixe em branco pra usar
-                      só o dublado — o cliente escolhe a faixa no player quando os dois existirem.
+                      só a faixa principal acima — o cliente escolhe a faixa no player quando os
+                      dois existirem.
                     </p>
                     <div className="space-y-3">
                       <div>
                         <label htmlFor="ds_url_bunny_legendado" className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">
-                          URL Bunny Video (Legendado)
+                          URL Bunny Video ({trilhaPrincipal === "LEGENDADO" ? "Dublado" : "Legendado"})
                         </label>
                         <input
                           type="text"
@@ -898,7 +923,7 @@ export default function CatalogoAdminClient({
                       </div>
                       <div>
                         <label htmlFor="ds_file_id_telegram_legendado" className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">
-                          Telegram File ID (Legendado)
+                          Telegram File ID ({trilhaPrincipal === "LEGENDADO" ? "Dublado" : "Legendado"})
                         </label>
                         <input
                           type="text"

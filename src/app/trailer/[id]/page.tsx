@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { pool } from "@/lib/db";
 import { getSessaoUsuario } from "@/lib/user-auth";
-import { resolverUrlVideo } from "@/lib/catalogo";
+import { obterTrilhaPrincipal, resolverUrlVideo } from "@/lib/catalogo";
 import TrailerContent from "./TrailerContent";
 import type { Conteudo } from "@/types/database";
 import type { Metadata } from "next";
@@ -50,7 +50,8 @@ export default async function TrailerPage({
   // arquivo à parte. Sem NENHuma fonte tocável na web (ex: fonte TELEGRAM
   // sem cópia), não tem o que mostrar nessa tela.
   const usaClipeManual = !!conteudo.ds_url_teaser_vertical;
-  const src = conteudo.ds_url_teaser_vertical || resolverUrlVideo(conteudo, "dublado");
+  const src =
+    conteudo.ds_url_teaser_vertical || resolverUrlVideo(conteudo, obterTrilhaPrincipal(conteudo));
   if (!src) notFound();
 
   pool
