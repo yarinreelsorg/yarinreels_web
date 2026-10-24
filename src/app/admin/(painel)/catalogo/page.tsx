@@ -1,5 +1,6 @@
 import { pool } from "@/lib/db";
 import { canonicalizarCategorias } from "@/lib/categorias-config";
+import { obterTodosApps } from "@/lib/apps-config";
 import type { Conteudo, TpFormato } from "@/types/database";
 import CatalogoAdminClient from "./CatalogoAdminClient";
 
@@ -33,8 +34,13 @@ export default async function CatalogoAdminPage({
   if (categoria) {
     valores.push(categoria);
     // Categorias divergindo só por maiúscula/minúscula (ex: "Brasileira" vs
-    // "BRASILEIRA") não podem ficar de fora ao filtrar por uma delas.
-    condicoes.push(`LOWER(nm_categoria) = LOWER($${valores.length})`);
+    // "BRASILEIRA") não podem ficar de fora ao filtrar por uma delas — e um
+    // conteúdo pode bater pela categoria principal OU por uma adicional.
+    condicoes.push(
+      `(LOWER(nm_categoria) = LOWER($${valores.length}) OR EXISTS (
+         SELECT 1 FROM unnest(nm_categorias_adicionais) c WHERE LOWER(c) = LOWER($${valores.length})
+       ))`
+    );
   }
   if (formato) {
     valores.push(formato);
@@ -47,19 +53,24 @@ export default async function CatalogoAdminPage({
   const limitParam = valores.length - 1;
   const offsetParam = valores.length;
 
-  const [conteudosResult, rankingResult, categoriasResult] = await Promise.all([
+  const [conteudosResult, rankingResult, categoriasResult, apps] = await Promise.all([
     pool.query<Conteudo & { total_count: string }>(
       `SELECT *, COUNT(*) OVER() AS total_count FROM "CONTEUDOS" ${whereSql}
        ORDER BY ${ordenarPor} ${direcaoSql} NULLS LAST LIMIT $${limitParam} OFFSET $${offsetParam}`,
       valores
     ),
     pool.query<{ cd_conteudo: string; total_vendas: number }>("SELECT * FROM vw_ranking_mensal"),
-    pool.query<{ nm_categoria: string }>('SELECT nm_categoria FROM "CONTEUDOS"'),
+    pool.query<{ nm_categoria: string; nm_categorias_adicionais: string[] }>(
+      'SELECT nm_categoria, nm_categorias_adicionais FROM "CONTEUDOS"'
+    ),
+    obterTodosApps(),
   ]);
 
   const conteudos: Conteudo[] = conteudosResult.rows;
   const totalRegistros = Number(conteudosResult.rows[0]?.total_count ?? 0);
-  const nomesCategorias = categoriasResult.rows.map((c) => c.nm_categoria).filter(Boolean);
+  const nomesCategorias = categoriasResult.rows
+    .flatMap((c) => [c.nm_categoria, ...(c.nm_categorias_adicionais ?? [])])
+    .filter(Boolean);
   const canonPorNomeCategoria = canonicalizarCategorias(nomesCategorias);
   const categorias = Array.from(
     new Set(nomesCategorias.map((c) => canonPorNomeCategoria.get(c) ?? c))
@@ -75,6 +86,7 @@ export default async function CatalogoAdminPage({
       conteudos={conteudos}
       vendasMensais={vendasMensais}
       categoriasDisponiveis={categorias}
+      appsDisponiveis={apps.map((a) => a.nm_app)}
       totalRegistros={totalRegistros}
       itensPorPagina={ITENS_POR_PAGINA}
       filtrosAtuais={{ busca, categoria, formato, ordenarPor, direcao, pagina }}

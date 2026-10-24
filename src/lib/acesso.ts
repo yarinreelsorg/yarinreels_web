@@ -225,6 +225,7 @@ export async function verificarAcessoConteudo(
   conteudo: {
     cd_conteudo: string;
     nm_categoria: string;
+    nm_categorias_adicionais?: string[] | null;
     ts_criacao: string;
     sn_carencia_ativa: boolean;
   },
@@ -292,7 +293,12 @@ export async function verificarAcessoConteudo(
       const plano = planos.find((p) => p.cd_plano === venda.cd_plano);
       if (!plano) continue;
       const categoriasDoPlano = [plano.nm_categoria, ...(plano.nm_categorias_adicionais ?? [])];
-      if (categoriasDoPlano.some((cat) => categoriasCompativeis(cat, conteudo.nm_categoria))) {
+      const categoriasDoConteudo = [conteudo.nm_categoria, ...(conteudo.nm_categorias_adicionais ?? [])];
+      if (
+        categoriasDoPlano.some((cp) =>
+          categoriasDoConteudo.some((cc) => categoriasCompativeis(cp, cc))
+        )
+      ) {
         return { liberado: true, motivo: "ASSINATURA", expiraEm: venda.ts_expiracao };
       }
     }

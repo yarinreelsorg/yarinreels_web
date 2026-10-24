@@ -47,9 +47,17 @@ export default function HomeContent({
   // numa categoria, ela assume o topo e empurra as demais pra baixo.
   const porCategoria = new Map<string, Conteudo[]>();
   for (const conteudo of conteudos) {
-    const lista = porCategoria.get(conteudo.nm_categoria) ?? [];
-    lista.push(conteudo);
-    porCategoria.set(conteudo.nm_categoria, lista);
+    // Um título entra em todas as categorias que tiver — a principal e as
+    // adicionais (ex: licenciado como "Turca" e também "Romance").
+    const categoriasDoTitulo = [
+      conteudo.nm_categoria,
+      ...(conteudo.nm_categorias_adicionais ?? []),
+    ];
+    for (const cat of categoriasDoTitulo) {
+      const lista = porCategoria.get(cat) ?? [];
+      lista.push(conteudo);
+      porCategoria.set(cat, lista);
+    }
   }
   for (const lista of porCategoria.values()) {
     lista.sort((a, b) => {

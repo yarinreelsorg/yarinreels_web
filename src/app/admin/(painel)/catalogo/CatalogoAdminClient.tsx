@@ -47,6 +47,7 @@ export default function CatalogoAdminClient({
   conteudos,
   vendasMensais,
   categoriasDisponiveis,
+  appsDisponiveis,
   totalRegistros,
   itensPorPagina,
   filtrosAtuais,
@@ -54,6 +55,7 @@ export default function CatalogoAdminClient({
   conteudos: Conteudo[];
   vendasMensais: Record<string, number>;
   categoriasDisponiveis: string[];
+  appsDisponiveis: string[];
   totalRegistros: number;
   itensPorPagina: number;
   filtrosAtuais: Filtros;
@@ -72,9 +74,24 @@ export default function CatalogoAdminClient({
 
   const [categoriaSelecionada, setCategoriaSelecionada] = useState("");
   const [novaCategoria, setNovaCategoria] = useState("");
+  const [categoriasAdicionaisSelecionadas, setCategoriasAdicionaisSelecionadas] = useState<
+    string[]
+  >([]);
   const [urlPoster, setUrlPoster] = useState("");
-  const [appOrigemValor, setAppOrigemValor] = useState("");
+  const [appsOrigemSelecionados, setAppsOrigemSelecionados] = useState<string[]>([]);
   const [salvando, setSalvando] = useState(false);
+
+  const alternarAppOrigem = (app: string) => {
+    setAppsOrigemSelecionados((atual) =>
+      atual.includes(app) ? atual.filter((a) => a !== app) : [...atual, app]
+    );
+  };
+
+  const alternarCategoriaAdicional = (cat: string) => {
+    setCategoriasAdicionaisSelecionadas((atual) =>
+      atual.includes(cat) ? atual.filter((c) => c !== cat) : [...atual, cat]
+    );
+  };
 
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
   const [confirmandoExclusao, setConfirmandoExclusao] = useState<
@@ -88,7 +105,8 @@ export default function CatalogoAdminClient({
     setModalAberto(false);
     setConteudoEdicao(null);
     setUrlPoster("");
-    setAppOrigemValor("");
+    setAppsOrigemSelecionados([]);
+    setCategoriasAdicionaisSelecionadas([]);
   };
 
   const modalRef = useFocoModal<HTMLDivElement>(modalAberto, fecharModal);
@@ -133,8 +151,9 @@ export default function CatalogoAdminClient({
     setCdEdicao(crypto.randomUUID());
     setCategoriaSelecionada(categoriasDisponiveis[0] || "CRIAR_NOVA");
     setNovaCategoria("");
+    setCategoriasAdicionaisSelecionadas([]);
     setUrlPoster("");
-    setAppOrigemValor("");
+    setAppsOrigemSelecionados([]);
     setModalAberto(true);
   };
 
@@ -144,8 +163,11 @@ export default function CatalogoAdminClient({
     setCdEdicao(conteudo.cd_conteudo);
     setCategoriaSelecionada(conteudo.nm_categoria);
     setNovaCategoria("");
+    setCategoriasAdicionaisSelecionadas(conteudo.nm_categorias_adicionais ?? []);
     setUrlPoster(conteudo.ds_url_poster || "");
-    setAppOrigemValor(conteudo.nm_app_origem || "");
+    setAppsOrigemSelecionados(
+      conteudo.nm_apps_origem?.length ? conteudo.nm_apps_origem : conteudo.nm_app_origem ? [conteudo.nm_app_origem] : []
+    );
     setModalAberto(true);
   };
 
@@ -212,6 +234,14 @@ export default function CatalogoAdminClient({
       }
       formData.set("nm_categoria", cat);
       formData.set("ds_url_poster", urlPoster);
+      for (const catAdicional of categoriasAdicionaisSelecionadas) {
+        if (normalizarCategoria(catAdicional) !== normalizarCategoria(cat)) {
+          formData.append("nm_categorias_adicionais", catAdicional);
+        }
+      }
+      for (const app of appsOrigemSelecionados) {
+        formData.append("nm_apps_origem", app);
+      }
 
       if (modoEdicao && conteudoEdicao) {
         await editarConteudo(conteudoEdicao.cd_conteudo, formData);
@@ -626,13 +656,40 @@ export default function CatalogoAdminClient({
                         onChange={(e) => setNovaCategoria(e.target.value)}
                         className="w-full bg-[#0D0A1A] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white"
                       />
-                      <p className="mt-1 text-[11px] text-[#A78BFA]/70">
-                        Uma categoria só por vez — vírgula não separa em várias. Pra cadastrar
-                        &quot;Turcas&quot; e &quot;Brasileiras&quot;, salve esse título numa e edite outro título
-                        depois pra usar a outra.
-                      </p>
                     </>
                   )}
+
+                  <p className="mt-2 mb-1 text-[11px] font-semibold uppercase text-[#A78BFA]">
+                    Categorias adicionais (opcional)
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {categoriasDisponiveis
+                      .filter(
+                        (cat) =>
+                          normalizarCategoria(cat) !==
+                          normalizarCategoria(
+                            categoriaSelecionada === "CRIAR_NOVA" ? novaCategoria : categoriaSelecionada
+                          )
+                      )
+                      .map((cat) => {
+                        const ativo = categoriasAdicionaisSelecionadas.includes(cat);
+                        return (
+                          <button
+                            key={cat}
+                            type="button"
+                            onClick={() => alternarCategoriaAdicional(cat)}
+                            className={`rounded-full border px-2.5 py-1 text-[11px] transition-colors cursor-pointer ${
+                              ativo
+                                ? "border-[#9D4EDD] bg-[#7B2FBE]/30 text-white"
+                                : "border-[rgba(139,92,246,0.3)] text-[#A78BFA] hover:border-[#9D4EDD] hover:text-white"
+                            }`}
+                          >
+                            {ativo ? "✓ " : ""}
+                            {cat}
+                          </button>
+                        );
+                      })}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -682,30 +739,33 @@ export default function CatalogoAdminClient({
                 </div>
 
                 <div>
-                  <label htmlFor="nm_app_origem" className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">
-                    App de origem — digite qualquer nome, não é uma lista fechada
+                  <label className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">
+                    Apps de origem — pode selecionar mais de um
                   </label>
-                  <input
-                    type="text"
-                    id="nm_app_origem"
-                    name="nm_app_origem"
-                    placeholder="Digite o nome do app (ex: ReelShort, DramaWave, ou um novo)"
-                    value={appOrigemValor}
-                    onChange={(e) => setAppOrigemValor(e.target.value)}
-                    className="w-full bg-[#0D0A1A] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white"
-                  />
-                  <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    {["ReelShort", "DramaBox", "ShortMax", "MoboReels", "DramaWave"].map((app) => (
-                      <button
-                        key={app}
-                        type="button"
-                        onClick={() => setAppOrigemValor(app)}
-                        className="rounded-full border border-[rgba(139,92,246,0.3)] px-2.5 py-1 text-[11px] text-[#A78BFA] transition-colors hover:border-[#9D4EDD] hover:text-white"
-                      >
-                        {app}
-                      </button>
-                    ))}
+                  <div className="flex flex-wrap gap-1.5">
+                    {appsDisponiveis.map((app) => {
+                      const ativo = appsOrigemSelecionados.includes(app);
+                      return (
+                        <button
+                          key={app}
+                          type="button"
+                          onClick={() => alternarAppOrigem(app)}
+                          className={`rounded-full border px-2.5 py-1 text-[11px] transition-colors cursor-pointer ${
+                            ativo
+                              ? "border-[#9D4EDD] bg-[#7B2FBE]/30 text-white"
+                              : "border-[rgba(139,92,246,0.3)] text-[#A78BFA] hover:border-[#9D4EDD] hover:text-white"
+                          }`}
+                        >
+                          {ativo ? "✓ " : ""}
+                          {app}
+                        </button>
+                      );
+                    })}
                   </div>
+                  <p className="mt-1.5 text-[11px] text-[#A78BFA]/70">
+                    Lista vem de Configurações → Apps de Navegação. Cadastre o app lá antes se
+                    não aparecer aqui.
+                  </p>
                 </div>
 
                 <div>

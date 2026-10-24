@@ -74,10 +74,30 @@ function extrairCampos(formData: FormData) {
   // caso chegue algo digitado direto sem passar pela normalização do
   // formulário (ver CatalogoAdminClient.tsx).
   const nmCategoriaBruta = parseString(formData.get("nm_categoria"));
+  const nm_categoria = nmCategoriaBruta?.replace(/[,;.\s]+$/, "").trim() || "Geral";
+
+  // Apps/categorias adicionais vêm como vários campos (um por opção
+  // marcada no multi-select) — nunca digitados à mão, então não sofrem do
+  // mesmo risco de typo/casing que nm_app_origem já sofreu (bug
+  // reportado: "STORYREEL" digitado não batia com o app cadastrado).
+  const nm_apps_origem = formData
+    .getAll("nm_apps_origem")
+    .map((v) => String(v).trim())
+    .filter(Boolean);
+  const nm_categorias_adicionais = formData
+    .getAll("nm_categorias_adicionais")
+    .map((v) => String(v).trim())
+    .filter((v) => v && v !== nm_categoria);
 
   return {
     nm_titulo: parseString(formData.get("nm_titulo")) ?? "",
-    nm_categoria: nmCategoriaBruta?.replace(/[,;.\s]+$/, "").trim() || "Geral",
+    nm_categoria,
+    nm_categorias_adicionais,
+    // Mantém nm_app_origem (singular) preenchido com o primeiro app
+    // selecionado — compatibilidade com qualquer leitura antiga desse
+    // campo enquanto nm_apps_origem (plural) é a fonte de verdade nova.
+    nm_app_origem: nm_apps_origem[0] ?? null,
+    nm_apps_origem,
     tp_formato: (parseString(formData.get("tp_formato")) ?? "FILME") as TpFormato,
     nm_idioma: parseString(formData.get("nm_idioma")),
     ds_generos: parseString(formData.get("ds_generos")),
@@ -94,7 +114,6 @@ function extrairCampos(formData: FormData) {
     tp_fonte_prioritaria,
     sn_destaque: formData.get("sn_destaque") === "on" || formData.get("sn_destaque") === "true",
     dt_lancamento: parseString(formData.get("dt_lancamento")),
-    nm_app_origem: parseString(formData.get("nm_app_origem")),
     sn_exclusivo_assinantes:
       formData.get("sn_exclusivo_assinantes") === "on" ||
       formData.get("sn_exclusivo_assinantes") === "true",
@@ -108,16 +127,18 @@ export async function adicionarConteudo(cdConteudo: string, formData: FormData) 
 
   await pool.query(
     `INSERT INTO "CONTEUDOS"
-       (cd_conteudo, nm_titulo, nm_categoria, tp_formato, nm_idioma, ds_generos, ds_descricao,
-        vl_aluguel, vl_vitalicio, ds_url_poster, ds_url_bunny, ds_file_id_telegram,
-        ds_url_bunny_legendado, ds_file_id_telegram_legendado, ds_url_teaser_vertical,
-        nr_segundos_preview_trailer, tp_fonte_prioritaria, sn_destaque, dt_lancamento,
-        nm_app_origem, sn_exclusivo_assinantes, sn_carencia_ativa, nr_views)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,0)`,
+       (cd_conteudo, nm_titulo, nm_categoria, nm_categorias_adicionais, tp_formato, nm_idioma,
+        ds_generos, ds_descricao, vl_aluguel, vl_vitalicio, ds_url_poster, ds_url_bunny,
+        ds_file_id_telegram, ds_url_bunny_legendado, ds_file_id_telegram_legendado,
+        ds_url_teaser_vertical, nr_segundos_preview_trailer, tp_fonte_prioritaria, sn_destaque,
+        dt_lancamento, nm_app_origem, nm_apps_origem, sn_exclusivo_assinantes, sn_carencia_ativa,
+        nr_views)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,0)`,
     [
       cdConteudo,
       campos.nm_titulo,
       campos.nm_categoria,
+      campos.nm_categorias_adicionais,
       campos.tp_formato,
       campos.nm_idioma,
       campos.ds_generos,
@@ -135,6 +156,7 @@ export async function adicionarConteudo(cdConteudo: string, formData: FormData) 
       campos.sn_destaque,
       campos.dt_lancamento,
       campos.nm_app_origem,
+      campos.nm_apps_origem,
       campos.sn_exclusivo_assinantes,
       campos.sn_carencia_ativa,
     ]
@@ -156,17 +178,18 @@ export async function editarConteudo(id: string, formData: FormData) {
 
   await pool.query(
     `UPDATE "CONTEUDOS" SET
-       nm_titulo = $1, nm_categoria = $2, tp_formato = $3, nm_idioma = $4, ds_generos = $5,
-       ds_descricao = $6, vl_aluguel = $7, vl_vitalicio = $8, ds_url_poster = $9,
-       ds_url_bunny = $10, ds_file_id_telegram = $11, ds_url_bunny_legendado = $12,
-       ds_file_id_telegram_legendado = $13, ds_url_teaser_vertical = $14,
-       nr_segundos_preview_trailer = $15, tp_fonte_prioritaria = $16,
-       sn_destaque = $17, dt_lancamento = $18, nm_app_origem = $19, sn_exclusivo_assinantes = $20,
-       sn_carencia_ativa = $21
-     WHERE cd_conteudo = $22`,
+       nm_titulo = $1, nm_categoria = $2, nm_categorias_adicionais = $3, tp_formato = $4,
+       nm_idioma = $5, ds_generos = $6, ds_descricao = $7, vl_aluguel = $8, vl_vitalicio = $9,
+       ds_url_poster = $10, ds_url_bunny = $11, ds_file_id_telegram = $12,
+       ds_url_bunny_legendado = $13, ds_file_id_telegram_legendado = $14,
+       ds_url_teaser_vertical = $15, nr_segundos_preview_trailer = $16, tp_fonte_prioritaria = $17,
+       sn_destaque = $18, dt_lancamento = $19, nm_app_origem = $20, nm_apps_origem = $21,
+       sn_exclusivo_assinantes = $22, sn_carencia_ativa = $23
+     WHERE cd_conteudo = $24`,
     [
       campos.nm_titulo,
       campos.nm_categoria,
+      campos.nm_categorias_adicionais,
       campos.tp_formato,
       campos.nm_idioma,
       campos.ds_generos,
@@ -184,6 +207,7 @@ export async function editarConteudo(id: string, formData: FormData) {
       campos.sn_destaque,
       campos.dt_lancamento,
       campos.nm_app_origem,
+      campos.nm_apps_origem,
       campos.sn_exclusivo_assinantes,
       campos.sn_carencia_ativa,
       id,

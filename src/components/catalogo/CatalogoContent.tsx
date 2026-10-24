@@ -82,9 +82,14 @@ export default function CatalogoContent({
   const filtrados = conteudos.filter((c) => {
     const bateBusca = tituloCorrespondeABusca(c.nm_titulo, busca);
     const bateCategoria =
-      categoriaAtiva === null || c.nm_categoria === categoriaAtiva;
+      categoriaAtiva === null ||
+      c.nm_categoria === categoriaAtiva ||
+      (c.nm_categorias_adicionais ?? []).includes(categoriaAtiva);
     const bateFormato = formatoAtivo === null || c.tp_formato === formatoAtivo;
-    const bateApp = appAtivo === null || c.nm_app_origem === appAtivo;
+    const bateApp =
+      appAtivo === null ||
+      c.nm_app_origem === appAtivo ||
+      (c.nm_apps_origem ?? []).includes(appAtivo);
     return bateBusca && bateCategoria && bateFormato && bateApp;
   });
 

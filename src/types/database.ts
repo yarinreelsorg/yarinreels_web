@@ -64,6 +64,13 @@ export type Conteudo = {
   nr_ordem_top12: number | null;
   nr_views: number;
   nm_app_origem: string | null;
+  /** Demais apps de origem, além de nm_app_origem — um título pode ser
+   * licenciado por mais de um app ao mesmo tempo. Aditiva, exclusiva
+   * desse app web (o bot legado não lê/escreve). */
+  nm_apps_origem: string[];
+  /** Demais categorias, além de nm_categoria — mesmo padrão de
+   * PLANOS.nm_categorias_adicionais. Aditiva, exclusiva desse app web. */
+  nm_categorias_adicionais: string[];
   sn_exclusivo_assinantes: boolean;
   sn_carencia_ativa: boolean;
   ts_criacao: string;
@@ -93,6 +100,8 @@ export type ConteudoInsert = {
   sn_destaque?: boolean;
   nr_views?: number;
   nm_app_origem?: string | null;
+  nm_apps_origem?: string[];
+  nm_categorias_adicionais?: string[];
   sn_exclusivo_assinantes?: boolean;
 };
 
@@ -119,6 +128,8 @@ export type ConteudoUpdate = {
   sn_destaque?: boolean;
   nr_views?: number;
   nm_app_origem?: string | null;
+  nm_apps_origem?: string[];
+  nm_categorias_adicionais?: string[];
   sn_exclusivo_assinantes?: boolean;
 };
 
