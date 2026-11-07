@@ -31,7 +31,12 @@ function LoginPageInner() {
 
     try {
       const formData = new FormData(e.currentTarget);
-      await loginUsuario(formData);
+      const resultado = await loginUsuario(formData);
+      if (resultado.erro) {
+        setErro(resultado.erro);
+        setCarregando(false);
+        return;
+      }
       router.push(redirectTo);
       router.refresh();
     } catch (err) {

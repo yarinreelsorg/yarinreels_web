@@ -5,12 +5,12 @@ import { pool } from "@/lib/db";
 import { definirCookieSessao } from "@/lib/user-auth";
 import type { Usuario } from "@/types/database";
 
-export async function loginUsuario(formData: FormData) {
+export async function loginUsuario(formData: FormData): Promise<{ erro?: string }> {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const senha = String(formData.get("senha") ?? "");
 
   if (!email || !senha) {
-    throw new Error("Informe e-mail e senha.");
+    return { erro: "Informe e-mail e senha." };
   }
 
   const { rows } = await pool.query<Usuario>(
@@ -20,12 +20,12 @@ export async function loginUsuario(formData: FormData) {
   const usuario = rows[0];
 
   if (!usuario) {
-    throw new Error("E-mail ou senha inválidos.");
+    return { erro: "E-mail ou senha inválidos." };
   }
 
   const senhaValida = await bcrypt.compare(senha, usuario.ds_senha_hash);
   if (!senhaValida) {
-    throw new Error("E-mail ou senha inválidos.");
+    return { erro: "E-mail ou senha inválidos." };
   }
 
   await definirCookieSessao({
@@ -35,4 +35,5 @@ export async function loginUsuario(formData: FormData) {
     nr_id_telegram: usuario.nr_id_telegram,
     nr_id_telegram_web: usuario.nr_id_telegram_web,
   });
+  return {};
 }

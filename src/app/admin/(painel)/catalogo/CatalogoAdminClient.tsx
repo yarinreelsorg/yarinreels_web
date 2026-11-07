@@ -247,10 +247,18 @@ export default function CatalogoAdminClient({
       }
 
       if (modoEdicao && conteudoEdicao) {
-        await editarConteudo(conteudoEdicao.cd_conteudo, formData);
+        const resultado = await editarConteudo(conteudoEdicao.cd_conteudo, formData);
+        if (resultado.erro) {
+          toast.erro(resultado.erro);
+          return;
+        }
         toast.sucesso("Conteúdo atualizado.");
       } else {
-        await adicionarConteudo(cdEdicao, formData);
+        const resultado = await adicionarConteudo(cdEdicao, formData);
+        if (resultado.erro) {
+          toast.erro(resultado.erro);
+          return;
+        }
         toast.sucesso("Conteúdo adicionado.");
       }
       fecharModal();

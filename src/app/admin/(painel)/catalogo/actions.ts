@@ -19,27 +19,35 @@ const parseString = (val: unknown) => {
 
 const REGEX_TELEGRAM_FILE_ID = /^[A-Za-z0-9_-]{10,}$/;
 
-function validarUrlBunny(valor: string | null) {
-  if (!valor) return;
+type ResultadoAcao = { erro?: string };
+
+// Validações devolvem a mensagem de erro (ou null) em vez de lançar exceção:
+// erro de digitação do admin não é falha do servidor e, com throw, o Next
+// registra como erro no log e mascara a mensagem no cliente em produção.
+function validarUrlBunny(valor: string | null, campo: string): string | null {
+  if (!valor) return null;
   try {
     const url = new URL(valor);
     if (url.protocol !== "https:") throw new Error();
   } catch {
-    throw new Error("URL do Bunny inválida — precisa ser uma URL https:// completa.");
+    return `${campo} inválida — precisa ser uma URL https:// completa.`;
   }
+  return null;
 }
 
-function validarTelegramFileId(valor: string | null) {
-  if (!valor) return;
+function validarTelegramFileId(valor: string | null, campo: string): string | null {
+  if (!valor) return null;
   if (!REGEX_TELEGRAM_FILE_ID.test(valor)) {
-    throw new Error("Telegram File ID inválido — use apenas letras, números, _ e -.");
+    return `${campo} inválido — use apenas letras, números, _ e -.`;
   }
+  return null;
 }
 
-function validarPreco(valor: number | null, campo: string) {
+function validarPreco(valor: number | null, campo: string): string | null {
   if (valor !== null && valor < 0) {
-    throw new Error(`${campo} não pode ser negativo.`);
+    return `${campo} não pode ser negativo.`;
   }
+  return null;
 }
 
 function extrairCampos(formData: FormData) {
@@ -58,19 +66,27 @@ function extrairCampos(formData: FormData) {
   const vl_aluguel = parseNumber(formData.get("vl_aluguel"));
   const vl_vitalicio = parseNumber(formData.get("vl_vitalicio"));
 
-  validarUrlBunny(ds_url_bunny);
-  validarUrlBunny(ds_url_bunny_legendado);
-  validarUrlBunny(ds_url_teaser_vertical);
+  const erros: Array<string | null> = [
+    validarUrlBunny(ds_url_bunny, "URL do Bunny"),
+    validarUrlBunny(ds_url_bunny_legendado, "URL do Bunny (legendado)"),
+    validarUrlBunny(ds_url_teaser_vertical, "URL do teaser vertical"),
+  ];
   // Esse campo só precisa ser um file_id de verdade quando a fonte é
   // TELEGRAM — quando a fonte é LOCAL, ele guarda o nome do arquivo local
   // (com espaços, acentos, ".mp4" etc), que a regex de file_id rejeitava,
   // quebrando o salvamento de QUALQUER edição em conteúdo LOCAL.
   if (tp_fonte_prioritaria === "TELEGRAM") {
-    validarTelegramFileId(ds_file_id_telegram);
-    validarTelegramFileId(ds_file_id_telegram_legendado);
+    erros.push(
+      validarTelegramFileId(ds_file_id_telegram, "Telegram File ID"),
+      validarTelegramFileId(ds_file_id_telegram_legendado, "Telegram File ID (legendado)")
+    );
   }
-  validarPreco(vl_aluguel, "Valor de aluguel");
-  validarPreco(vl_vitalicio, "Valor vitalício");
+  erros.push(
+    validarPreco(vl_aluguel, "Valor de aluguel"),
+    validarPreco(vl_vitalicio, "Valor vitalício")
+  );
+  const erro = erros.find((e) => e !== null);
+  if (erro) return { erro };
 
   // Reforço server-side: tira vírgula/ponto/espaço sobrando na ponta,
   // caso chegue algo digitado direto sem passar pela normalização do
@@ -92,41 +108,48 @@ function extrairCampos(formData: FormData) {
     .filter((v) => v && v !== nm_categoria);
 
   return {
-    nm_titulo: parseString(formData.get("nm_titulo")) ?? "",
-    nm_categoria,
-    nm_categorias_adicionais,
-    // Mantém nm_app_origem (singular) preenchido com o primeiro app
-    // selecionado — compatibilidade com qualquer leitura antiga desse
-    // campo enquanto nm_apps_origem (plural) é a fonte de verdade nova.
-    nm_app_origem: nm_apps_origem[0] ?? null,
-    nm_apps_origem,
-    tp_formato: (parseString(formData.get("tp_formato")) ?? "FILME") as TpFormato,
-    nm_idioma: parseString(formData.get("nm_idioma")),
-    ds_generos: parseString(formData.get("ds_generos")),
-    ds_descricao: parseString(formData.get("ds_descricao")),
-    vl_aluguel,
-    vl_vitalicio,
-    ds_url_poster: parseString(formData.get("ds_url_poster")),
-    ds_url_bunny,
-    ds_file_id_telegram,
-    ds_url_bunny_legendado,
-    ds_file_id_telegram_legendado,
-    ds_url_teaser_vertical,
-    nr_segundos_preview_trailer,
-    tp_fonte_prioritaria,
-    tp_trilha_principal,
-    sn_destaque: formData.get("sn_destaque") === "on" || formData.get("sn_destaque") === "true",
-    dt_lancamento: parseString(formData.get("dt_lancamento")),
-    sn_exclusivo_assinantes:
-      formData.get("sn_exclusivo_assinantes") === "on" ||
-      formData.get("sn_exclusivo_assinantes") === "true",
-    sn_carencia_ativa:
-      formData.get("sn_carencia_ativa") === "on" || formData.get("sn_carencia_ativa") === "true",
+    campos: {
+      nm_titulo: parseString(formData.get("nm_titulo")) ?? "",
+      nm_categoria,
+      nm_categorias_adicionais,
+      // Mantém nm_app_origem (singular) preenchido com o primeiro app
+      // selecionado — compatibilidade com qualquer leitura antiga desse
+      // campo enquanto nm_apps_origem (plural) é a fonte de verdade nova.
+      nm_app_origem: nm_apps_origem[0] ?? null,
+      nm_apps_origem,
+      tp_formato: (parseString(formData.get("tp_formato")) ?? "FILME") as TpFormato,
+      nm_idioma: parseString(formData.get("nm_idioma")),
+      ds_generos: parseString(formData.get("ds_generos")),
+      ds_descricao: parseString(formData.get("ds_descricao")),
+      vl_aluguel,
+      vl_vitalicio,
+      ds_url_poster: parseString(formData.get("ds_url_poster")),
+      ds_url_bunny,
+      ds_file_id_telegram,
+      ds_url_bunny_legendado,
+      ds_file_id_telegram_legendado,
+      ds_url_teaser_vertical,
+      nr_segundos_preview_trailer,
+      tp_fonte_prioritaria,
+      tp_trilha_principal,
+      sn_destaque: formData.get("sn_destaque") === "on" || formData.get("sn_destaque") === "true",
+      dt_lancamento: parseString(formData.get("dt_lancamento")),
+      sn_exclusivo_assinantes:
+        formData.get("sn_exclusivo_assinantes") === "on" ||
+        formData.get("sn_exclusivo_assinantes") === "true",
+      sn_carencia_ativa:
+        formData.get("sn_carencia_ativa") === "on" || formData.get("sn_carencia_ativa") === "true",
+    },
   };
 }
 
-export async function adicionarConteudo(cdConteudo: string, formData: FormData) {
-  const campos = extrairCampos(formData);
+export async function adicionarConteudo(
+  cdConteudo: string,
+  formData: FormData
+): Promise<ResultadoAcao> {
+  const extraidos = extrairCampos(formData);
+  if ("erro" in extraidos) return { erro: extraidos.erro };
+  const { campos } = extraidos;
 
   await pool.query(
     `INSERT INTO "CONTEUDOS"
@@ -175,10 +198,13 @@ export async function adicionarConteudo(cdConteudo: string, formData: FormData) 
 
   revalidatePath("/admin/catalogo");
   revalidatePath("/");
+  return {};
 }
 
-export async function editarConteudo(id: string, formData: FormData) {
-  const campos = extrairCampos(formData);
+export async function editarConteudo(id: string, formData: FormData): Promise<ResultadoAcao> {
+  const extraidos = extrairCampos(formData);
+  if ("erro" in extraidos) return { erro: extraidos.erro };
+  const { campos } = extraidos;
 
   await pool.query(
     `UPDATE "CONTEUDOS" SET
@@ -228,6 +254,7 @@ export async function editarConteudo(id: string, formData: FormData) {
 
   revalidatePath("/admin/catalogo");
   revalidatePath("/");
+  return {};
 }
 
 async function removerConteudosPorId(ids: string[]) {
