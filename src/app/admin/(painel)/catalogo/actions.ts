@@ -71,10 +71,17 @@ function extrairCampos(formData: FormData) {
   const vl_vitalicio = parseNumber(formData.get("vl_vitalicio"));
 
   const erros: Array<string | null> = [
-    validarUrlBunny(ds_url_bunny, "URL do Bunny"),
-    validarUrlBunny(ds_url_bunny_legendado, "URL do Bunny (legendado)"),
     validarUrlBunny(ds_url_teaser_vertical, "URL do teaser vertical"),
   ];
+  // Com fonte LOCAL os campos de Bunny não são usados (o conteúdo vem do
+  // arquivo local) e podem conter lixo/nome de arquivo — não bloqueia o
+  // salvamento por causa deles. Só exige URL https quando a fonte usa Bunny.
+  if (tp_fonte_prioritaria !== "LOCAL") {
+    erros.push(
+      validarUrlBunny(ds_url_bunny, "URL do Bunny"),
+      validarUrlBunny(ds_url_bunny_legendado, "URL do Bunny (legendado)")
+    );
+  }
   // Esse campo só precisa ser um file_id de verdade quando a fonte é
   // TELEGRAM — quando a fonte é LOCAL, ele guarda o nome do arquivo local
   // (com espaços, acentos, ".mp4" etc), que a regex de file_id rejeitava,
