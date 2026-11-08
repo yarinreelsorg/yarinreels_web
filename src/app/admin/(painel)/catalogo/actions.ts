@@ -14,7 +14,11 @@ const parseNumber = (val: unknown) => {
 
 const parseString = (val: unknown) => {
   if (val === null || val === undefined || val === "") return null;
-  return String(val);
+  // Trim: campo "vazio" com só um espaço/quebra de linha (comum ao colar e
+  // apagar) virava string truthy e caía na validação de URL/file_id,
+  // bloqueando o salvamento de campos que deveriam ser opcionais.
+  const texto = String(val).trim();
+  return texto === "" ? null : texto;
 };
 
 const REGEX_TELEGRAM_FILE_ID = /^[A-Za-z0-9_-]{10,}$/;
