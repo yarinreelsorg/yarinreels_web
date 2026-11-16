@@ -7,10 +7,12 @@ import Reveal from "@/components/motion/Reveal";
 import { avisarSolicitacao, excluirSolicitacao, type SolicitacaoAgrupada } from "./actions";
 
 function formatarData(iso: string) {
-  return new Date(iso).toLocaleDateString("pt-BR", {
+  return new Date(iso).toLocaleString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
@@ -73,8 +75,8 @@ export default function SolicitacoesAdminClient({
           📩 Solicitações de Drama
         </h1>
         <p className="text-sm text-[#A78BFA] mt-1">
-          Títulos pedidos pelos clientes no Mini App, ordenados pelo número de pedidos — use
-          como guia pra decidir o que trazer primeiro.
+          Títulos pedidos pelos clientes no Mini App. Pedidos com o mesmo nome ficam agrupados,
+          e os mais recentes aparecem primeiro.
         </p>
       </div>
 

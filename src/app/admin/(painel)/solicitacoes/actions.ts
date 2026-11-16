@@ -3,6 +3,11 @@
 import { pool } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 
+// Chave de agrupamento: ignora maiúsculas/minúsculas e espaços sobrando
+// (inclusive duplos no meio), pra "Meu  Tutor" e "meu tutor " virarem um
+// único título. Usada igual no SELECT, no DELETE e no aviso.
+const CHAVE_TITULO = `lower(regexp_replace(trim(ds_titulo), '\\s+', ' ', 'g'))`;
+
 export type SolicitacaoAgrupada = {
   chave: string;
   ds_titulo: string;
@@ -17,13 +22,13 @@ export async function listarSolicitacoesAgrupadas(): Promise<SolicitacaoAgrupada
     total: string;
     ultima_solicitacao: string;
   }>(
-    `SELECT lower(trim(ds_titulo)) AS chave,
+    `SELECT ${CHAVE_TITULO} AS chave,
             (array_agg(ds_titulo ORDER BY ts_criacao))[1] AS ds_titulo,
             COUNT(*) AS total,
             MAX(ts_criacao) AS ultima_solicitacao
      FROM "SOLICITACOES_DRAMA"
      GROUP BY chave
-     ORDER BY total DESC, ultima_solicitacao DESC`
+     ORDER BY ultima_solicitacao DESC`
   );
 
   return rows.map((r) => ({ ...r, total: Number(r.total) }));
@@ -33,7 +38,7 @@ export async function listarSolicitacoesAgrupadas(): Promise<SolicitacaoAgrupada
  * trazido pro catálogo (ou quando o pedido era spam/duplicata de grafia). */
 export async function excluirSolicitacao(chave: string) {
   await pool.query(
-    `DELETE FROM "SOLICITACOES_DRAMA" WHERE lower(trim(ds_titulo)) = $1`,
+    `DELETE FROM "SOLICITACOES_DRAMA" WHERE ${CHAVE_TITULO} = $1`,
     [chave]
   );
   revalidatePath("/admin/solicitacoes");
@@ -47,7 +52,7 @@ export async function avisarSolicitacao(chave: string, titulo: string) {
   if (!botToken) throw new Error("BOT_TOKEN não configurado neste app.");
 
   const { rows } = await pool.query<{ nr_id_telegram: number }>(
-    `SELECT DISTINCT nr_id_telegram FROM "SOLICITACOES_DRAMA" WHERE lower(trim(ds_titulo)) = $1`,
+    `SELECT DISTINCT nr_id_telegram FROM "SOLICITACOES_DRAMA" WHERE ${CHAVE_TITULO} = $1`,
     [chave]
   );
 
@@ -72,6 +77,6 @@ export async function avisarSolicitacao(chave: string, titulo: string) {
     )
   );
 
-  await pool.query(`DELETE FROM "SOLICITACOES_DRAMA" WHERE lower(trim(ds_titulo)) = $1`, [chave]);
+  await pool.query(`DELETE FROM "SOLICITACOES_DRAMA" WHERE ${CHAVE_TITULO} = $1`, [chave]);
   revalidatePath("/admin/solicitacoes");
 }
