@@ -25,6 +25,41 @@ export default function SolicitacoesAdminClient({
   const [isPending, startTransition] = useTransition();
   const [solicitacoes, setSolicitacoes] = useState(solicitacoesIniciais);
   const [busca, setBusca] = useState("");
+  const [selecionadas, setSelecionadas] = useState<string[]>([]);
+
+  const alternarSelecao = (chave: string) =>
+    setSelecionadas((atual) =>
+      atual.includes(chave) ? atual.filter((c) => c !== chave) : [...atual, chave]
+    );
+
+  // Junta as grafias selecionadas num aviso só por cliente: quem pediu mais
+  // de uma delas recebe uma única mensagem (o dedupe é feito no servidor).
+  const aoAvisarSelecionadas = () => {
+    const escolhidas = solicitacoes.filter((s) => selecionadas.includes(s.chave));
+    if (escolhidas.length === 0) return;
+
+    const titulo = window.prompt(
+      `Avisar os clientes de ${escolhidas.length} título(s) selecionado(s) com UMA mensagem só.
+
+Nome do drama que vai aparecer no aviso:`,
+      escolhidas[0].ds_titulo
+    )?.trim();
+    if (!titulo) return;
+
+    startTransition(async () => {
+      try {
+        await avisarSolicitacao(
+          escolhidas.flatMap((s) => s.chaves),
+          titulo
+        );
+        setSolicitacoes(solicitacoes.filter((item) => !selecionadas.includes(item.chave)));
+        setSelecionadas([]);
+        toast.sucesso("Clientes avisados!");
+      } catch (err) {
+        toast.erro(err instanceof Error ? err.message : "Erro ao avisar os clientes.");
+      }
+    });
+  };
 
   const aoExcluir = (s: SolicitacaoAgrupada) => {
     if (
@@ -36,7 +71,7 @@ export default function SolicitacoesAdminClient({
 
     startTransition(async () => {
       try {
-        await excluirSolicitacao(s.chave);
+        await excluirSolicitacao(s.chaves);
         setSolicitacoes(solicitacoes.filter((item) => item.chave !== s.chave));
         toast.sucesso("Pedido removido da lista.");
       } catch {
@@ -55,8 +90,9 @@ export default function SolicitacoesAdminClient({
 
     startTransition(async () => {
       try {
-        await avisarSolicitacao(s.chave, s.ds_titulo);
+        await avisarSolicitacao(s.chaves, s.ds_titulo);
         setSolicitacoes(solicitacoes.filter((item) => item.chave !== s.chave));
+        setSelecionadas((atual) => atual.filter((c) => c !== s.chave));
         toast.sucesso("Clientes avisados!");
       } catch (err) {
         toast.erro(err instanceof Error ? err.message : "Erro ao avisar os clientes.");
@@ -90,6 +126,30 @@ export default function SolicitacoesAdminClient({
         />
       </div>
 
+      {selecionadas.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3">
+          <span className="text-sm font-semibold text-emerald-300">
+            {selecionadas.length} selecionado(s)
+          </span>
+          <button
+            type="button"
+            disabled={isPending}
+            onClick={aoAvisarSelecionadas}
+            className="rounded border border-emerald-500/40 bg-emerald-500/20 px-3 py-1.5 text-xs font-bold text-emerald-300 hover:bg-emerald-500/30 transition-colors cursor-pointer disabled:opacity-50"
+          >
+            📢 Avisar selecionados (1 aviso por cliente)
+          </button>
+          <button
+            type="button"
+            disabled={isPending}
+            onClick={() => setSelecionadas([])}
+            className="text-xs font-semibold text-[#A78BFA] hover:text-white cursor-pointer disabled:opacity-50"
+          >
+            Limpar seleção
+          </button>
+        </div>
+      )}
+
       <Reveal>
         {filtradas.length === 0 ? (
           <div className="rounded-lg border border-[rgba(139,92,246,0.15)] bg-[#0D0A1A] p-12 text-center">
@@ -105,6 +165,20 @@ export default function SolicitacoesAdminClient({
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-[rgba(139,92,246,0.15)] bg-[#050208]/50 text-xs font-semibold text-[#A78BFA] uppercase tracking-wider">
+                    <th className="px-4 py-3 w-10">
+                      <input
+                        type="checkbox"
+                        aria-label="Selecionar todos os títulos filtrados"
+                        checked={
+                          filtradas.length > 0 &&
+                          filtradas.every((s) => selecionadas.includes(s.chave))
+                        }
+                        onChange={(e) =>
+                          setSelecionadas(e.target.checked ? filtradas.map((s) => s.chave) : [])
+                        }
+                        className="cursor-pointer accent-[#9D4EDD]"
+                      />
+                    </th>
                     <th className="px-6 py-3">Título</th>
                     <th className="px-6 py-3">Pedidos</th>
                     <th className="px-6 py-3">Último pedido</th>
@@ -126,7 +200,23 @@ export default function SolicitacoesAdminClient({
                       }}
                       className="hover:bg-[rgba(139,92,246,0.05)] transition-colors"
                     >
-                      <td className="px-6 py-4 font-semibold">{s.ds_titulo}</td>
+                      <td className="px-4 py-4">
+                        <input
+                          type="checkbox"
+                          aria-label={`Selecionar ${s.ds_titulo}`}
+                          checked={selecionadas.includes(s.chave)}
+                          onChange={() => alternarSelecao(s.chave)}
+                          className="cursor-pointer accent-[#9D4EDD]"
+                        />
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="font-semibold">{s.ds_titulo}</span>
+                        {s.variacoes.length > 0 && (
+                          <span className="mt-0.5 block text-[11px] text-[#A78BFA]/70">
+                            Também pedido como: {s.variacoes.join(" · ")}
+                          </span>
+                        )}
+                      </td>
                       <td className="px-6 py-4">
                         <span className="bg-[#7B2FBE]/20 border border-[#7B2FBE]/40 px-2.5 py-1 rounded-full text-xs font-bold text-[#A78BFA]">
                           {s.total}
