@@ -87,9 +87,11 @@ export default function FilmeContent({
     ? new Date(conteudo.dt_lancamento).getFullYear()
     : null;
   const duracao = conteudo.nr_duracao_minutos
-    ? `${Math.floor(conteudo.nr_duracao_minutos / 60)}h${String(
-        conteudo.nr_duracao_minutos % 60
-      ).padStart(2, "0")}`
+    ? conteudo.nr_duracao_minutos < 60
+      ? `${conteudo.nr_duracao_minutos} min`
+      : `${Math.floor(conteudo.nr_duracao_minutos / 60)}h${String(
+          conteudo.nr_duracao_minutos % 60
+        ).padStart(2, "0")}`
     : null;
   const trailerId = extrairIdYoutube(conteudo.ds_url_trailer_youtube);
 

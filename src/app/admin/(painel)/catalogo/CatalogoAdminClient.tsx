@@ -1022,6 +1022,25 @@ export default function CatalogoAdminClient({
                     </div>
                   </div>
 
+                  <div>
+                    <label htmlFor="nr_duracao_minutos" className="block text-xs font-semibold text-[#A78BFA] uppercase mb-1">
+                      Duração (minutos)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      step={1}
+                      id="nr_duracao_minutos"
+                      name="nr_duracao_minutos"
+                      placeholder="Ex: 95"
+                      defaultValue={conteudoEdicao?.nr_duracao_minutos ?? ""}
+                      className="w-full bg-[#0D0A1A] border border-[rgba(139,92,246,0.3)] focus:border-[#9D4EDD] focus:outline-none rounded-[6px] p-2.5 text-white"
+                    />
+                    <p className="mt-1 text-[11px] text-[#A78BFA]/70">
+                      Aparece na página do título (ex: 95 min vira 1h35). Deixe em branco pra não mostrar.
+                    </p>
+                  </div>
+
                   <div className="flex items-center pt-2">
                     <input
                       type="checkbox"

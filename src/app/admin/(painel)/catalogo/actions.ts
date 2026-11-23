@@ -69,6 +69,10 @@ function extrairCampos(formData: FormData) {
     "DUBLADO") as TpTrilhaPrincipal;
   const vl_aluguel = parseNumber(formData.get("vl_aluguel"));
   const vl_vitalicio = parseNumber(formData.get("vl_vitalicio"));
+  const duracaoBruta = parseNumber(formData.get("nr_duracao_minutos"));
+  // Minutos inteiros; vazio/0 = "não informado" (a página some com o campo).
+  const nr_duracao_minutos =
+    duracaoBruta !== null && duracaoBruta > 0 ? Math.round(duracaoBruta) : null;
 
   const erros: Array<string | null> = [
     validarUrlBunny(ds_url_teaser_vertical, "URL do teaser vertical"),
@@ -145,6 +149,7 @@ function extrairCampos(formData: FormData) {
       tp_trilha_principal,
       sn_destaque: formData.get("sn_destaque") === "on" || formData.get("sn_destaque") === "true",
       dt_lancamento: parseString(formData.get("dt_lancamento")),
+      nr_duracao_minutos,
       sn_exclusivo_assinantes:
         formData.get("sn_exclusivo_assinantes") === "on" ||
         formData.get("sn_exclusivo_assinantes") === "true",
@@ -169,8 +174,8 @@ export async function adicionarConteudo(
         ds_file_id_telegram, ds_url_bunny_legendado, ds_file_id_telegram_legendado,
         ds_url_teaser_vertical, nr_segundos_preview_trailer, tp_fonte_prioritaria,
         tp_trilha_principal, sn_destaque, dt_lancamento, nm_app_origem, nm_apps_origem,
-        sn_exclusivo_assinantes, sn_carencia_ativa, nr_views)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,0)`,
+        sn_exclusivo_assinantes, sn_carencia_ativa, nr_duracao_minutos, nr_views)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,0)`,
     [
       cdConteudo,
       campos.nm_titulo,
@@ -197,6 +202,7 @@ export async function adicionarConteudo(
       campos.nm_apps_origem,
       campos.sn_exclusivo_assinantes,
       campos.sn_carencia_ativa,
+      campos.nr_duracao_minutos,
     ]
   );
 
@@ -225,8 +231,9 @@ export async function editarConteudo(id: string, formData: FormData): Promise<Re
        ds_url_bunny_legendado = $13, ds_file_id_telegram_legendado = $14,
        ds_url_teaser_vertical = $15, nr_segundos_preview_trailer = $16, tp_fonte_prioritaria = $17,
        tp_trilha_principal = $18, sn_destaque = $19, dt_lancamento = $20, nm_app_origem = $21,
-       nm_apps_origem = $22, sn_exclusivo_assinantes = $23, sn_carencia_ativa = $24
-     WHERE cd_conteudo = $25`,
+       nm_apps_origem = $22, sn_exclusivo_assinantes = $23, sn_carencia_ativa = $24,
+       nr_duracao_minutos = $25
+     WHERE cd_conteudo = $26`,
     [
       campos.nm_titulo,
       campos.nm_categoria,
@@ -252,6 +259,7 @@ export async function editarConteudo(id: string, formData: FormData): Promise<Re
       campos.nm_apps_origem,
       campos.sn_exclusivo_assinantes,
       campos.sn_carencia_ativa,
+      campos.nr_duracao_minutos,
       id,
     ]
   );
