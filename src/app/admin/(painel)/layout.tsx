@@ -31,6 +31,7 @@ const GRUPOS_NAV = [
     titulo: "Vendas",
     links: [
       { href: "/admin/planos", label: "Planos", icon: "🗂️" },
+      { href: "/admin/black-friday", label: "Black Friday", icon: "🛍️" },
       { href: "/admin/cupons", label: "Cupons", icon: "🏷️" },
       { href: "/admin/combos", label: "Combos", icon: "📦" },
       { href: "/admin/recusados", label: "Cartão Recusado", icon: "💳" },
